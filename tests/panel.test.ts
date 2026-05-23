@@ -277,6 +277,8 @@ describe('VeyraWebviewController', () => {
     await onDidReceive({ kind: 'open-change-set-diff', changeSetId: 'change-set-1', filePath: 'src/a.ts' });
     await onDidReceive({ kind: 'accept-change-set', changeSetId: 'change-set-1' });
     await onDidReceive({ kind: 'reject-change-set', changeSetId: 'change-set-1' });
+    await onDidReceive({ kind: 'accept-change-set-file', changeSetId: 'change-set-1', filePath: 'src/a.ts' });
+    await onDidReceive({ kind: 'reject-change-set-file', changeSetId: 'change-set-1', filePath: 'src/a.ts' });
 
     expect((vscode as any).commands.executeCommand).toHaveBeenCalledWith(
       'veyra.openPendingChanges',
@@ -290,6 +292,16 @@ describe('VeyraWebviewController', () => {
     expect((vscode as any).commands.executeCommand).toHaveBeenCalledWith(
       'veyra.rejectPendingChanges',
       'change-set-1',
+    );
+    expect((vscode as any).commands.executeCommand).toHaveBeenCalledWith(
+      'veyra.acceptPendingChangeFile',
+      'change-set-1',
+      'src/a.ts',
+    );
+    expect((vscode as any).commands.executeCommand).toHaveBeenCalledWith(
+      'veyra.rejectPendingChangeFile',
+      'change-set-1',
+      'src/a.ts',
     );
   });
 

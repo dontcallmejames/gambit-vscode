@@ -40,7 +40,7 @@ Use the account, API key, or subscription setup required by each vendor's CLI. V
 1. Install or update to the latest Veyra release that includes the docked view.
 2. Run `Developer: Reload Window` after installing or updating the extension.
 3. Open a real project folder in VS Code. Veyra needs an open workspace before it can route agent work.
-4. Run `Veyra: Open Panel` from the Command Palette and confirm it reveals the docked Veyra view. The command name is kept for compatibility; it reveals the Veyra view instead of opening a separate editor panel.
+4. Run `Veyra: Open View` from the Command Palette and confirm it reveals the docked Veyra view. The compatibility command id `veyra.openPanel` remains available; it reveals the Veyra view instead of opening a separate editor panel.
 5. Run `Veyra: Check agent status` and confirm Claude, Codex, and Gemini are installed and authenticated for the workflows you want to test.
 6. Run `Veyra: Copy Diagnostic Report` once and keep the copied report handy if anything looks off.
 7. If Codex or Gemini needs path recovery on Windows, run `Veyra: Configure Codex/Gemini CLI paths`.
@@ -54,13 +54,13 @@ Use @veyra in VS Code Chat for lightweight native-chat workflows, or use the doc
 
 ## Tester Troubleshooting
 
-If `Veyra: Open Panel` reports `command 'veyra.openPanel' not found`, first confirm Veyra is installed and up to date, then run `Developer: Reload Window`. If the command still fails, disable and re-enable Veyra from the Extensions view and retry in a normal workspace folder. A successful run reveals the Veyra view in the VS Code Secondary Side Bar with other agent views such as Codex and Claude.
+If `Veyra: Open View` reports `command 'veyra.openPanel' not found`, first confirm Veyra is installed and up to date, then run `Developer: Reload Window`. If the command still fails, disable and re-enable Veyra from the Extensions view and retry in a normal workspace folder. A successful run reveals the Veyra view in the VS Code Secondary Side Bar with other agent views such as Codex and Claude.
 
 For any tester report, please include:
 
 - OS and VS Code version.
 - Veyra version from the Extensions view.
-- Whether `Veyra: Open Panel`, `Veyra: Check agent status`, and `@veyra are you here?` worked.
+- Whether `Veyra: Open View`, `Veyra: Check agent status`, and `@veyra are you here?` worked.
 - The copied output from `Veyra: Copy Diagnostic Report`, if the command is available.
 - The exact prompt or command that failed.
 - Logs from `Developer: Show Logs...` -> `Extension Host` around the failure.
@@ -131,7 +131,7 @@ Install the commit hook from the command palette with `Veyra: Install commit hoo
 
 ### Diff Preview And Pending Changes
 
-When an agent edits files, Veyra records a pending change set. Use `Veyra: Open Pending Changes` to inspect the files in VS Code's diff editor, `Veyra: Accept Pending Changes` to mark the change set as kept, or `Veyra: Reject Pending Changes` to restore the pre-dispatch file state.
+When an agent edits files, Veyra records a pending change set. Use `Veyra: Open Pending Changes` to inspect the files in VS Code's diff editor, `Veyra: Accept Pending Changes` to mark the whole change set as kept, or `Veyra: Reject Pending Changes` to restore the whole pre-dispatch file state. Use `Veyra: Accept Pending Change File` or `Veyra: Reject Pending Change File` when you want to resolve individual files first.
 
 Reject refuses to overwrite files that changed after the agent edit. In that case, inspect the file manually before continuing.
 

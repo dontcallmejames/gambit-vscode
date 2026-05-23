@@ -193,7 +193,8 @@ describe('extension manifest', () => {
     expect(readme).toContain('Veyra: Show live validation guide');
     expect(readme).toContain('Veyra: Configure Codex/Gemini CLI paths');
     expect(readme).toContain('Veyra view');
-    expect(readme).toContain('Veyra: Open Panel');
+    expect(readme).toContain('Veyra: Open View');
+    expect(readme).toContain('command id `veyra.openPanel` remains available');
     expect(readme).not.toContain('legacy Veyra panel');
     expect(readme).not.toContain('Use version `0.0.8` or newer');
     expect(readme).not.toContain('updated to `0.0.8` or newer');
@@ -214,6 +215,7 @@ describe('extension manifest', () => {
     expect(smokeChecklist).toContain('paste JS bundle paths, native executable paths, or npm shim paths');
     expect(smokeChecklist).toContain('skips stale PATH shims');
     expect(smokeChecklist).toContain('Veyra: Show live validation guide');
+    expect(smokeChecklist).toContain('Veyra: Open View');
     expect(smokeChecklist).toContain('Veyra docked view');
     expect(smokeChecklist).toContain('@veyra are you here?');
     expect(smokeChecklist).not.toContain('webview tab');
@@ -324,12 +326,18 @@ describe('extension manifest', () => {
     expect(manifest.contributes.commands.map((command) => command.command)).toContain('veyra.openPendingChanges');
     expect(manifest.contributes.commands.map((command) => command.command)).toContain('veyra.acceptPendingChanges');
     expect(manifest.contributes.commands.map((command) => command.command)).toContain('veyra.rejectPendingChanges');
+    expect(manifest.contributes.commands.map((command) => command.command)).toContain('veyra.acceptPendingChangeFile');
+    expect(manifest.contributes.commands.map((command) => command.command)).toContain('veyra.rejectPendingChangeFile');
     expect(commands.get('veyra.openPendingChanges')).toBe('Veyra: Open Pending Changes');
     expect(commands.get('veyra.acceptPendingChanges')).toBe('Veyra: Accept Pending Changes');
     expect(commands.get('veyra.rejectPendingChanges')).toBe('Veyra: Reject Pending Changes');
+    expect(commands.get('veyra.acceptPendingChangeFile')).toBe('Veyra: Accept Pending Change File');
+    expect(commands.get('veyra.rejectPendingChangeFile')).toBe('Veyra: Reject Pending Change File');
     expect(manifest.activationEvents).toContain('onCommand:veyra.openPendingChanges');
     expect(manifest.activationEvents).toContain('onCommand:veyra.acceptPendingChanges');
     expect(manifest.activationEvents).toContain('onCommand:veyra.rejectPendingChanges');
+    expect(manifest.activationEvents).toContain('onCommand:veyra.acceptPendingChangeFile');
+    expect(manifest.activationEvents).toContain('onCommand:veyra.rejectPendingChangeFile');
     expect(properties['veyra.diffPreview.enabled']).toMatchObject({
       type: 'boolean',
       default: true,
@@ -342,6 +350,9 @@ describe('extension manifest', () => {
     expect(readme).toContain('Veyra: Open Pending Changes');
     expect(readme).toContain('Veyra: Accept Pending Changes');
     expect(readme).toContain('Veyra: Reject Pending Changes');
+    expect(readme).toContain('Veyra: Accept Pending Change File');
+    expect(readme).toContain('Veyra: Reject Pending Change File');
+    expect(readme).toContain('individual files');
     expect(readme).toContain('veyra.diffPreview.enabled');
     expect(readme).toContain('veyra.diffPreview.maxFileBytes');
   });
@@ -429,7 +440,10 @@ describe('extension manifest', () => {
     });
   });
 
-  it('contributes command-palette entries for panel, status, and commit-hook operations', () => {
+  it('contributes command-palette entries for view, status, and commit-hook operations', () => {
+    const commands = new Map(manifest.contributes.commands.map((command) => [command.command, command.title]));
+
+    expect(commands.get('veyra.openPanel')).toBe('Veyra: Open View');
     expect(manifest.contributes.commands.map((command) => command.command)).toEqual([
       'veyra.openPanel',
       'veyra.checkStatus',
@@ -443,6 +457,8 @@ describe('extension manifest', () => {
       'veyra.openPendingChanges',
       'veyra.acceptPendingChanges',
       'veyra.rejectPendingChanges',
+      'veyra.acceptPendingChangeFile',
+      'veyra.rejectPendingChangeFile',
       'veyra.createCheckpoint',
       'veyra.listCheckpoints',
       'veyra.rollbackLatestCheckpoint',

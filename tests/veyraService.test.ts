@@ -32,6 +32,72 @@ describe('toRoutedInput', () => {
 });
 
 describe('VeyraSessionService', () => {
+  it('delegates per-file pending change actions to the change ledger', async () => {
+    const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-service-'));
+    const changeLedger = fakeChangeLedger();
+    vi.mocked(changeLedger.acceptChangeSetFile).mockResolvedValue({
+      id: 'change-set-1',
+      agentId: 'codex',
+      messageId: 'msg1',
+      timestamp: 1,
+      readOnly: false,
+      status: 'pending',
+      fileCount: 2,
+      files: [
+        {
+          path: 'src/a.ts',
+          changeKind: 'edited',
+          status: 'accepted',
+          beforeExists: true,
+          afterExists: true,
+          beforeHash: 'before-a',
+          afterHash: 'after-a',
+          beforeSnapshotPath: '/snap/a.ts',
+          canReject: true,
+        },
+        {
+          path: 'src/b.ts',
+          changeKind: 'edited',
+          status: 'pending',
+          beforeExists: true,
+          afterExists: true,
+          beforeHash: 'before-b',
+          afterHash: 'after-b',
+          beforeSnapshotPath: '/snap/b.ts',
+          canReject: true,
+        },
+      ],
+    });
+    vi.mocked(changeLedger.rejectChangeSetFile).mockResolvedValue({
+      status: 'rejected',
+      staleFiles: [],
+      restoredFiles: ['src/b.ts'],
+    });
+    const service = new VeyraSessionService(
+      workspacePath,
+      {
+        claude: agentNoop('claude'),
+        codex: agentNoop('codex'),
+        gemini: agentNoop('gemini'),
+      },
+      {
+        hangSeconds: 0,
+        changeLedger: changeLedger as ChangeLedger,
+      },
+    );
+
+    const accepted = await service.acceptChangeSetFile('change-set-1', 'src/a.ts');
+    const rejected = await service.rejectChangeSetFile('change-set-1', 'src/b.ts');
+
+    expect(changeLedger.acceptChangeSetFile).toHaveBeenCalledWith('change-set-1', 'src/a.ts');
+    expect(changeLedger.rejectChangeSetFile).toHaveBeenCalledWith('change-set-1', 'src/b.ts');
+    expect(accepted.files.map((file) => [file.path, file.status])).toEqual([
+      ['src/a.ts', 'accepted'],
+      ['src/b.ts', 'pending'],
+    ]);
+    expect(rejected.restoredFiles).toEqual(['src/b.ts']);
+  });
+
   it('persists local heartbeat responses without starting agents', async () => {
     let agentStarted = false;
     const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-service-'));
@@ -2004,7 +2070,7 @@ function fakeProjectCommandProvider(
 
 function fakeChangeLedger(
   id = 'change-set-1',
-): Pick<ChangeLedger, 'captureBaseline' | 'createChangeSet' | 'listPendingChangeSets' | 'getChangeSet' | 'diffInputs' | 'acceptChangeSet' | 'rejectChangeSet'> {
+): Pick<ChangeLedger, 'captureBaseline' | 'createChangeSet' | 'listPendingChangeSets' | 'getChangeSet' | 'diffInputs' | 'acceptChangeSet' | 'rejectChangeSet' | 'acceptChangeSetFile' | 'rejectChangeSetFile'> {
   const changeLedger = {
     captureBaseline: vi.fn(async (messageId: string) => ({
       id,
@@ -2031,6 +2097,8 @@ function fakeChangeLedger(
     })),
     acceptChangeSet: vi.fn(),
     rejectChangeSet: vi.fn(),
+    acceptChangeSetFile: vi.fn(),
+    rejectChangeSetFile: vi.fn(),
   };
   return changeLedger;
 }

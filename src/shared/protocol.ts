@@ -7,7 +7,13 @@ export type FileChange = {
   changeKind: FileChangeKind;
 };
 
-export type ChangeSetStatus = 'pending' | 'accepted' | 'rejected' | 'stale';
+export type ChangeSetStatus = 'pending' | 'accepted' | 'rejected' | 'stale' | 'resolved';
+
+export type DispatchChangeSetFileSummary = FileChange & {
+  status?: ChangeSetStatus;
+  canReject?: boolean;
+  rejectReason?: string;
+};
 
 export type DispatchChangeSetSummary = {
   id: string;
@@ -17,7 +23,7 @@ export type DispatchChangeSetSummary = {
   readOnly: boolean;
   status: ChangeSetStatus;
   fileCount: number;
-  files: FileChange[];
+  files: DispatchChangeSetFileSummary[];
 };
 
 export type CheckpointStatus = 'available' | 'rolled-back' | 'stale' | 'pruned';
@@ -153,5 +159,7 @@ export type FromWebview =
   | { kind: 'open-change-set-diff'; changeSetId: string; filePath?: string }
   | { kind: 'accept-change-set'; changeSetId: string }
   | { kind: 'reject-change-set'; changeSetId: string }
+  | { kind: 'accept-change-set-file'; changeSetId: string; filePath: string }
+  | { kind: 'reject-change-set-file'; changeSetId: string; filePath: string }
   | { kind: 'create-checkpoint'; label?: string }
   | { kind: 'rollback-latest-checkpoint' };

@@ -153,6 +153,9 @@ body {
 .change-set-file-kind {
   opacity: 0.65;
 }
+.change-set-file-status {
+  opacity: 0.75;
+}
 .change-set-actions {
   margin-top: 6px;
   display: flex;

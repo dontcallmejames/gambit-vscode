@@ -66,6 +66,8 @@
     "onCommand:veyra.openPendingChanges",
     "onCommand:veyra.acceptPendingChanges",
     "onCommand:veyra.rejectPendingChanges",
+    "onCommand:veyra.acceptPendingChangeFile",
+    "onCommand:veyra.rejectPendingChangeFile",
     "onCommand:veyra.createCheckpoint",
     "onCommand:veyra.listCheckpoints",
     "onCommand:veyra.rollbackLatestCheckpoint",
@@ -99,7 +101,7 @@
     "commands": [
       {
         "command": "veyra.openPanel",
-        "title": "Veyra: Open Panel"
+        "title": "Veyra: Open View"
       },
       {
         "command": "veyra.checkStatus",
@@ -144,6 +146,14 @@
       {
         "command": "veyra.rejectPendingChanges",
         "title": "Veyra: Reject Pending Changes"
+      },
+      {
+        "command": "veyra.acceptPendingChangeFile",
+        "title": "Veyra: Accept Pending Change File"
+      },
+      {
+        "command": "veyra.rejectPendingChangeFile",
+        "title": "Veyra: Reject Pending Change File"
       },
       {
         "command": "veyra.createCheckpoint",

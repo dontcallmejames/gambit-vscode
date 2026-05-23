@@ -7,6 +7,8 @@ export interface DiffPreviewCommandService {
   changeSetDiffInputs(id: string, filePath: string): Promise<ChangeSetDiffInputs>;
   acceptChangeSet(id: string): Promise<DispatchChangeSetSummary>;
   rejectChangeSet(id: string): Promise<RejectChangeSetResult>;
+  acceptChangeSetFile(id: string, filePath: string): Promise<DispatchChangeSetSummary>;
+  rejectChangeSetFile(id: string, filePath: string): Promise<RejectChangeSetResult>;
 }
 
 type ServiceProvider = () => DiffPreviewCommandService | undefined;
@@ -18,6 +20,11 @@ interface ChangeSetQuickPickItem extends vscode.QuickPickItem {
 interface ChangeSetFileQuickPickItem extends vscode.QuickPickItem {
   filePath: string;
 }
+
+type PickChangeSetFileOptions = {
+  placeHolder?: string;
+  unresolvedOnly?: boolean;
+};
 
 export function registerDiffPreviewCommands(
   context: vscode.ExtensionContext,
@@ -32,6 +39,12 @@ export function registerDiffPreviewCommands(
     }),
     vscode.commands.registerCommand('veyra.rejectPendingChanges', async (changeSetId?: string) => {
       await runDiffPreviewCommand(() => rejectPendingChanges(getService, changeSetId));
+    }),
+    vscode.commands.registerCommand('veyra.acceptPendingChangeFile', async (changeSetId?: string, filePath?: string) => {
+      await runDiffPreviewCommand(() => acceptPendingChangeFile(getService, changeSetId, filePath));
+    }),
+    vscode.commands.registerCommand('veyra.rejectPendingChangeFile', async (changeSetId?: string, filePath?: string) => {
+      await runDiffPreviewCommand(() => rejectPendingChangeFile(getService, changeSetId, filePath));
     }),
   );
 }
@@ -99,6 +112,59 @@ async function rejectPendingChanges(
   vscode.window.showInformationMessage(formatChangeSetActionMessage('Rejected', result.restoredFiles.length));
 }
 
+async function acceptPendingChangeFile(
+  getService: ServiceProvider,
+  changeSetId?: string,
+  filePath?: string,
+): Promise<void> {
+  const service = getActiveService(getService);
+  if (!service) return;
+
+  const selection = changeSetId
+    ? { id: changeSetId, changeSet: undefined as DispatchChangeSetSummary | undefined }
+    : await resolveChangeSetSelection(service);
+  if (!selection) return;
+
+  const selectedFilePath = filePath
+    ?? (selection.changeSet
+      ? await pickChangeSetFile(selection.changeSet, { placeHolder: 'Select a file to accept', unresolvedOnly: true })
+      : await pickChangeSetFileById(service, selection.id, { placeHolder: 'Select a file to accept', unresolvedOnly: true }));
+  if (!selectedFilePath) return;
+
+  await service.acceptChangeSetFile(selection.id, selectedFilePath);
+  vscode.window.showInformationMessage(`Accepted Veyra pending change for ${selectedFilePath}.`);
+}
+
+async function rejectPendingChangeFile(
+  getService: ServiceProvider,
+  changeSetId?: string,
+  filePath?: string,
+): Promise<void> {
+  const service = getActiveService(getService);
+  if (!service) return;
+
+  const selection = changeSetId
+    ? { id: changeSetId, changeSet: undefined as DispatchChangeSetSummary | undefined }
+    : await resolveChangeSetSelection(service);
+  if (!selection) return;
+
+  const selectedFilePath = filePath
+    ?? (selection.changeSet
+      ? await pickChangeSetFile(selection.changeSet, { placeHolder: 'Select a file to reject', unresolvedOnly: true })
+      : await pickChangeSetFileById(service, selection.id, { placeHolder: 'Select a file to reject', unresolvedOnly: true }));
+  if (!selectedFilePath) return;
+
+  const result = await service.rejectChangeSetFile(selection.id, selectedFilePath);
+  if (result.status === 'stale') {
+    vscode.window.showWarningMessage(
+      `Veyra could not reject ${selectedFilePath} because it changed after the agent edit.`,
+    );
+    return;
+  }
+
+  vscode.window.showInformationMessage(`Rejected Veyra pending change for ${selectedFilePath}.`);
+}
+
 function getActiveService(getService: ServiceProvider): DiffPreviewCommandService | undefined {
   const service = getService();
   if (!service) {
@@ -136,20 +202,28 @@ async function pickChangeSet(
   return selected?.changeSet;
 }
 
-async function pickChangeSetFile(changeSet: DispatchChangeSetSummary): Promise<string | undefined> {
-  if (changeSet.files.length === 0) {
+async function pickChangeSetFile(
+  changeSet: DispatchChangeSetSummary,
+  options: PickChangeSetFileOptions = {},
+): Promise<string | undefined> {
+  const files = options.unresolvedOnly
+    ? changeSet.files.filter(isUnresolvedFile)
+    : changeSet.files;
+  if (files.length === 0) {
     vscode.window.showInformationMessage('Selected Veyra change set has no files to review.');
     return undefined;
   }
-  if (changeSet.files.length === 1) return changeSet.files[0].path;
+  if (files.length === 1) return files[0].path;
 
   const selected = await vscode.window.showQuickPick(
-    changeSet.files.map((file): ChangeSetFileQuickPickItem => ({
+    files.map((file): ChangeSetFileQuickPickItem => ({
       label: file.path,
-      description: file.changeKind,
+      description: file.status && file.status !== 'pending'
+        ? `${file.changeKind} - ${file.status}`
+        : file.changeKind,
       filePath: file.path,
     })),
-    { placeHolder: 'Select a file to diff' },
+    { placeHolder: options.placeHolder ?? 'Select a file to diff' },
   );
   return selected?.filePath;
 }
@@ -157,6 +231,7 @@ async function pickChangeSetFile(changeSet: DispatchChangeSetSummary): Promise<s
 async function pickChangeSetFileById(
   service: DiffPreviewCommandService,
   changeSetId: string,
+  options: PickChangeSetFileOptions = {},
 ): Promise<string | undefined> {
   const pending = await service.listPendingChangeSets();
   const changeSet = pending.find((entry) => entry.id === changeSetId);
@@ -164,7 +239,11 @@ async function pickChangeSetFileById(
     vscode.window.showWarningMessage(`Veyra pending change set ${changeSetId} was not found.`);
     return undefined;
   }
-  return pickChangeSetFile(changeSet);
+  return pickChangeSetFile(changeSet, options);
+}
+
+function isUnresolvedFile(file: DispatchChangeSetSummary['files'][number]): boolean {
+  return !file.status || file.status === 'pending' || file.status === 'stale';
 }
 
 async function runDiffPreviewCommand(command: () => Promise<void>): Promise<void> {

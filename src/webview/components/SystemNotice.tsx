@@ -32,29 +32,62 @@ export function SystemNotice({
   if (message.kind === 'checkpoint') classes.push('checkpoint');
   if (message.kind === 'change-set' && message.changeSet) {
     const changeSet = message.changeSet;
+    const changeSetOpen = changeSet.status === 'pending' || changeSet.status === 'stale';
     return (
       <div class={classes.join(' ')}>
         <div>{message.text}</div>
         <div class="change-set-files">
-          {changeSet.files.map((file) => (
-            <div class="change-set-file" key={file.path}>
-              <span class="change-set-file-path">{file.path}</span>
-              <span class="change-set-file-kind">{file.changeKind}</span>
-              <button
-                type="button"
-                class="file-edited-link"
-                onClick={() => send?.({
-                  kind: 'open-change-set-diff',
-                  changeSetId: changeSet.id,
-                  filePath: file.path,
-                })}
-              >
-                Open diff
-              </button>
-            </div>
-          ))}
+          {changeSet.files.map((file) => {
+            const fileOpen = !file.status || file.status === 'pending' || file.status === 'stale';
+            return (
+              <div class="change-set-file" key={file.path}>
+                <span class="change-set-file-path">{file.path}</span>
+                <span class="change-set-file-kind">{file.changeKind}</span>
+                {file.status && file.status !== 'pending' && (
+                  <span class="change-set-file-status">{file.status}</span>
+                )}
+                <button
+                  type="button"
+                  class="file-edited-link"
+                  onClick={() => send?.({
+                    kind: 'open-change-set-diff',
+                    changeSetId: changeSet.id,
+                    filePath: file.path,
+                  })}
+                >
+                  Open diff
+                </button>
+                {changeSetOpen && fileOpen && (
+                  <>
+                    <button
+                      type="button"
+                      class="file-edited-link"
+                      onClick={() => send?.({
+                        kind: 'accept-change-set-file',
+                        changeSetId: changeSet.id,
+                        filePath: file.path,
+                      })}
+                    >
+                      Accept file
+                    </button>
+                    <button
+                      type="button"
+                      class="file-edited-link"
+                      onClick={() => send?.({
+                        kind: 'reject-change-set-file',
+                        changeSetId: changeSet.id,
+                        filePath: file.path,
+                      })}
+                    >
+                      Reject file
+                    </button>
+                  </>
+                )}
+              </div>
+            );
+          })}
         </div>
-        {changeSet.status === 'pending' && (
+        {changeSetOpen && (
           <div class="change-set-actions">
             <button
               type="button"

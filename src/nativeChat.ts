@@ -445,7 +445,7 @@ function renderNativeChatEvent(
     }
     if (event.message.kind === 'change-set' && event.message.changeSet) {
       response.markdown(`\n\n${event.message.text}`);
-      if (event.message.changeSet.status === 'pending') {
+      if (event.message.changeSet.status === 'pending' || event.message.changeSet.status === 'stale') {
         emitNativeChatButton(response, {
           command: 'veyra.openPendingChanges',
           title: 'Open pending changes',
@@ -459,6 +459,16 @@ function renderNativeChatEvent(
         emitNativeChatButton(response, {
           command: 'veyra.rejectPendingChanges',
           title: 'Reject pending changes',
+          arguments: [event.message.changeSet.id],
+        });
+        emitNativeChatButton(response, {
+          command: 'veyra.acceptPendingChangeFile',
+          title: 'Accept one file',
+          arguments: [event.message.changeSet.id],
+        });
+        emitNativeChatButton(response, {
+          command: 'veyra.rejectPendingChangeFile',
+          title: 'Reject one file',
           arguments: [event.message.changeSet.id],
         });
       }

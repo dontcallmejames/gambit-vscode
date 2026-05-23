@@ -13,6 +13,8 @@ const mocks = vi.hoisted(() => {
     changeSetDiffInputs: vi.fn(),
     acceptChangeSet: vi.fn(),
     rejectChangeSet: vi.fn(),
+    acceptChangeSetFile: vi.fn(),
+    rejectChangeSetFile: vi.fn(),
     createManualCheckpoint: vi.fn(),
     listCheckpoints: vi.fn(),
     previewLatestCheckpointRollback: vi.fn(),
@@ -134,6 +136,23 @@ const mocks = vi.hoisted(() => {
       });
       this.service.rejectChangeSet.mockReset();
       this.service.rejectChangeSet.mockResolvedValue({
+        status: 'rejected',
+        staleFiles: [],
+        restoredFiles: ['src/a.ts'],
+      });
+      this.service.acceptChangeSetFile.mockReset();
+      this.service.acceptChangeSetFile.mockResolvedValue({
+        id: 'change-set-1',
+        agentId: 'codex',
+        messageId: 'msg1',
+        timestamp: 1,
+        readOnly: false,
+        status: 'pending',
+        fileCount: 1,
+        files: [{ path: 'src/a.ts', changeKind: 'edited', status: 'accepted' }],
+      });
+      this.service.rejectChangeSetFile.mockReset();
+      this.service.rejectChangeSetFile.mockResolvedValue({
         status: 'rejected',
         staleFiles: [],
         restoredFiles: ['src/a.ts'],
@@ -340,6 +359,8 @@ describe('activate', () => {
       'veyra.openPendingChanges',
       'veyra.acceptPendingChanges',
       'veyra.rejectPendingChanges',
+      'veyra.acceptPendingChangeFile',
+      'veyra.rejectPendingChangeFile',
       'veyra.createCheckpoint',
       'veyra.listCheckpoints',
       'veyra.rollbackLatestCheckpoint',
@@ -498,6 +519,54 @@ describe('activate', () => {
 
     expect(mocks.service.acceptChangeSet).toHaveBeenCalledWith('change-set-1');
     expect(mocks.service.rejectChangeSet).toHaveBeenCalledWith('change-set-1');
+  });
+
+  it('accepts and rejects individual pending change files through the active Veyra service', async () => {
+    activate(context() as any);
+    const openPanel = mocks.commandCallbacks.get('veyra.openPanel');
+    expect(openPanel).toBeTypeOf('function');
+    openPanel!();
+
+    const acceptPendingChangeFile = mocks.commandCallbacks.get('veyra.acceptPendingChangeFile');
+    const rejectPendingChangeFile = mocks.commandCallbacks.get('veyra.rejectPendingChangeFile');
+    expect(acceptPendingChangeFile).toBeTypeOf('function');
+    expect(rejectPendingChangeFile).toBeTypeOf('function');
+
+    await acceptPendingChangeFile!('change-set-1', 'src/a.ts');
+    await rejectPendingChangeFile!('change-set-1', 'src/a.ts');
+
+    expect(mocks.service.acceptChangeSetFile).toHaveBeenCalledWith('change-set-1', 'src/a.ts');
+    expect(mocks.service.rejectChangeSetFile).toHaveBeenCalledWith('change-set-1', 'src/a.ts');
+  });
+
+  it('offers only unresolved files when choosing an individual pending change file', async () => {
+    activate(context() as any);
+    const openPanel = mocks.commandCallbacks.get('veyra.openPanel');
+    openPanel!();
+    mocks.service.listPendingChangeSets.mockResolvedValue([{
+      id: 'change-set-1',
+      agentId: 'codex',
+      messageId: 'msg1',
+      timestamp: 1,
+      readOnly: false,
+      status: 'stale',
+      fileCount: 4,
+      files: [
+        { path: 'src/accepted.ts', changeKind: 'edited', status: 'accepted' },
+        { path: 'src/pending.ts', changeKind: 'edited', status: 'pending' },
+        { path: 'src/stale.ts', changeKind: 'edited', status: 'stale' },
+        { path: 'src/rejected.ts', changeKind: 'edited', status: 'rejected' },
+      ],
+    }]);
+    mocks.showQuickPick.mockImplementationOnce(async (items: any[]) => {
+      expect(items.map((item) => item.label)).toEqual(['src/pending.ts', 'src/stale.ts']);
+      return items[1];
+    });
+
+    const acceptPendingChangeFile = mocks.commandCallbacks.get('veyra.acceptPendingChangeFile');
+    await acceptPendingChangeFile!('change-set-1');
+
+    expect(mocks.service.acceptChangeSetFile).toHaveBeenCalledWith('change-set-1', 'src/stale.ts');
   });
 
   it('creates lists and rolls back checkpoints through the active Veyra service', async () => {

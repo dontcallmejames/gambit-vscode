@@ -937,6 +937,74 @@ describe('native chat workflow prompts', () => {
       title: 'Reject pending changes',
       arguments: ['change-set-1'],
     });
+    expect(response.button).toHaveBeenCalledWith({
+      command: 'veyra.acceptPendingChangeFile',
+      title: 'Accept one file',
+      arguments: ['change-set-1'],
+    });
+    expect(response.button).toHaveBeenCalledWith({
+      command: 'veyra.rejectPendingChangeFile',
+      title: 'Reject one file',
+      arguments: ['change-set-1'],
+    });
+  });
+
+  it('keeps stale change-set notices actionable in native chat', async () => {
+    const context = { subscriptions: [] as Array<{ dispose(): void }> };
+    const service = {
+      dispatch: vi.fn(async (_request, emit) => {
+        await emit({
+          kind: 'system-message',
+          message: {
+            id: 'sys1',
+            role: 'system',
+            kind: 'change-set',
+            text: 'Codex changed 2 files. Review pending changes before continuing.',
+            timestamp: 1,
+            agentId: 'codex',
+            changeSet: {
+              id: 'change-set-1',
+              agentId: 'codex',
+              messageId: 'msg1',
+              timestamp: 1,
+              readOnly: false,
+              status: 'stale',
+              fileCount: 2,
+              files: [
+                { path: 'src/a.ts', changeKind: 'edited', status: 'stale' },
+                { path: 'src/b.ts', changeKind: 'created', status: 'pending' },
+              ],
+            },
+          },
+        });
+      }),
+      cancelAll: vi.fn(),
+    };
+
+    registerNativeChatParticipants(
+      context as any,
+      () => ({ service, workspacePath: '/workspace' } as any),
+    );
+
+    const handler = vscodeMocks.participantHandlers.get('veyra.veyra');
+    const response = { markdown: vi.fn(), progress: vi.fn(), reference: vi.fn(), button: vi.fn() };
+    await handler!(
+      { prompt: 'implement this', command: undefined },
+      {},
+      response,
+      cancellationToken(),
+    );
+
+    expect(response.button).toHaveBeenCalledWith({
+      command: 'veyra.acceptPendingChangeFile',
+      title: 'Accept one file',
+      arguments: ['change-set-1'],
+    });
+    expect(response.button).toHaveBeenCalledWith({
+      command: 'veyra.rejectPendingChangeFile',
+      title: 'Reject one file',
+      arguments: ['change-set-1'],
+    });
   });
 
   it('renders checkpoint notices in native chat', async () => {

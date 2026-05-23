@@ -10,6 +10,8 @@ export const DIAGNOSTIC_COMMAND_IDS = [
   'veyra.openPendingChanges',
   'veyra.acceptPendingChanges',
   'veyra.rejectPendingChanges',
+  'veyra.acceptPendingChangeFile',
+  'veyra.rejectPendingChangeFile',
   'veyra.createCheckpoint',
   'veyra.listCheckpoints',
   'veyra.rollbackLatestCheckpoint',

@@ -201,6 +201,12 @@ export class VeyraWebviewController {
       case 'reject-change-set':
         await vscode.commands.executeCommand('veyra.rejectPendingChanges', msg.changeSetId);
         break;
+      case 'accept-change-set-file':
+        await vscode.commands.executeCommand('veyra.acceptPendingChangeFile', msg.changeSetId, msg.filePath);
+        break;
+      case 'reject-change-set-file':
+        await vscode.commands.executeCommand('veyra.rejectPendingChangeFile', msg.changeSetId, msg.filePath);
+        break;
       case 'create-checkpoint':
         await vscode.commands.executeCommand('veyra.createCheckpoint', msg.label);
         break;

@@ -2,10 +2,10 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { createHash } from 'node:crypto';
 import { ulid } from './ulid.js';
-import type { FileChange, FileChangeKind } from './shared/protocol.js';
+import type { ChangeSetStatus, FileChange, FileChangeKind } from './shared/protocol.js';
 import type { AgentId } from './types.js';
 
-export type ChangeSetStatus = 'pending' | 'accepted' | 'rejected' | 'stale';
+export type { ChangeSetStatus } from './shared/protocol.js';
 
 export interface ChangeLedgerOptions {
   maxFileBytes: number;
@@ -40,6 +40,7 @@ export interface DispatchChangeSet {
 export interface DispatchChangeSetFile {
   path: string;
   changeKind: FileChangeKind;
+  status?: ChangeSetStatus;
   beforeExists: boolean;
   afterExists: boolean;
   beforeHash: string | null;
@@ -150,6 +151,7 @@ export class ChangeLedger {
       return {
         path: relativePath,
         changeKind: change.changeKind,
+        status: 'pending' as const,
         beforeExists: before.exists,
         afterExists: after.exists,
         beforeHash: before.hash,
@@ -185,7 +187,7 @@ export class ChangeLedger {
   async listPendingChangeSets(): Promise<DispatchChangeSet[]> {
     const store = await this.readStore();
     return store.changeSets
-      .filter((changeSet) => changeSet.status === 'pending')
+      .filter((changeSet) => changeSet.status === 'pending' || changeSet.status === 'stale')
       .sort((a, b) => b.timestamp - a.timestamp || a.id.localeCompare(b.id));
   }
 
@@ -215,18 +217,27 @@ export class ChangeLedger {
   async acceptChangeSet(id: string): Promise<DispatchChangeSet> {
     const store = await this.readStore();
     const changeSet = findChangeSet(store, id);
-    changeSet.status = 'accepted';
+    for (const file of changeSet.files) {
+      if (isUnresolvedFile(file)) {
+        file.status = 'accepted';
+      }
+    }
+    changeSet.status = resolveChangeSetStatus(changeSet);
     await this.writeStore(store);
-    await this.removeChangeSetSnapshots(id);
+    if (!hasUnresolvedFiles(changeSet)) {
+      await this.removeChangeSetSnapshots(id);
+    }
     return changeSet;
   }
 
   async rejectChangeSet(id: string): Promise<RejectChangeSetResult> {
     const store = await this.readStore();
     const changeSet = findChangeSet(store, id);
-    const staleFiles = await this.staleFilesForReject(changeSet);
+    const files = unresolvedFiles(changeSet);
+    const staleFiles = await this.staleFilesForReject(files);
     if (staleFiles.length > 0) {
-      changeSet.status = 'stale';
+      markFiles(changeSet, staleFiles, 'stale');
+      changeSet.status = resolveChangeSetStatus(changeSet);
       await this.writeStore(store);
       return {
         status: 'stale',
@@ -236,18 +247,78 @@ export class ChangeLedger {
     }
 
     const restoredFiles: string[] = [];
-    for (const file of [...changeSet.files].sort((a, b) => a.path.localeCompare(b.path))) {
+    for (const file of [...files].sort((a, b) => a.path.localeCompare(b.path))) {
       await this.restoreFile(file);
+      file.status = 'rejected';
       restoredFiles.push(file.path);
     }
 
-    changeSet.status = 'rejected';
+    changeSet.status = resolveChangeSetStatus(changeSet);
     await this.writeStore(store);
-    await this.removeChangeSetSnapshots(id);
+    if (!hasUnresolvedFiles(changeSet)) {
+      await this.removeChangeSetSnapshots(id);
+    }
     return {
       status: 'rejected',
       staleFiles: [],
       restoredFiles,
+    };
+  }
+
+  async acceptChangeSetFile(id: string, filePath: string): Promise<DispatchChangeSet> {
+    const store = await this.readStore();
+    const changeSet = findChangeSet(store, id);
+    const file = findChangeSetFile(changeSet, normalizeWorkspaceRelativePath(this.workspacePath, filePath));
+    if (file.status === 'rejected') {
+      throw new Error(`Change set ${id} file ${file.path} has already been rejected.`);
+    }
+    file.status = 'accepted';
+    changeSet.status = resolveChangeSetStatus(changeSet);
+    await this.writeStore(store);
+    if (!hasUnresolvedFiles(changeSet)) {
+      await this.removeChangeSetSnapshots(id);
+    }
+    return changeSet;
+  }
+
+  async rejectChangeSetFile(id: string, filePath: string): Promise<RejectChangeSetResult> {
+    const store = await this.readStore();
+    const changeSet = findChangeSet(store, id);
+    const file = findChangeSetFile(changeSet, normalizeWorkspaceRelativePath(this.workspacePath, filePath));
+    if (file.status === 'accepted') {
+      throw new Error(`Change set ${id} file ${file.path} has already been accepted.`);
+    }
+    if (file.status === 'rejected') {
+      return {
+        status: 'rejected',
+        staleFiles: [],
+        restoredFiles: [],
+      };
+    }
+
+    const staleFiles = await this.staleFilesForReject([file]);
+    if (staleFiles.length > 0) {
+      file.status = 'stale';
+      changeSet.status = resolveChangeSetStatus(changeSet);
+      await this.writeStore(store);
+      return {
+        status: 'stale',
+        staleFiles,
+        restoredFiles: [],
+      };
+    }
+
+    await this.restoreFile(file);
+    file.status = 'rejected';
+    changeSet.status = resolveChangeSetStatus(changeSet);
+    await this.writeStore(store);
+    if (!hasUnresolvedFiles(changeSet)) {
+      await this.removeChangeSetSnapshots(id);
+    }
+    return {
+      status: 'rejected',
+      staleFiles: [],
+      restoredFiles: [file.path],
     };
   }
 
@@ -259,9 +330,9 @@ export class ChangeLedger {
     return changeSet;
   }
 
-  private async staleFilesForReject(changeSet: DispatchChangeSet): Promise<string[]> {
+  private async staleFilesForReject(files: DispatchChangeSetFile[]): Promise<string[]> {
     const staleFiles: string[] = [];
-    for (const file of changeSet.files) {
+    for (const file of files) {
       if (!file.canReject) {
         staleFiles.push(file.path);
         continue;
@@ -342,6 +413,49 @@ function findChangeSet(store: ChangeLedgerStore, id: string): DispatchChangeSet 
     throw new Error(`Change set ${id} was not found.`);
   }
   return changeSet;
+}
+
+function findChangeSetFile(changeSet: DispatchChangeSet, filePath: string): DispatchChangeSetFile {
+  const file = changeSet.files.find((entry) => entry.path === filePath);
+  if (!file) {
+    throw new Error(`Change set ${changeSet.id} does not include ${filePath}.`);
+  }
+  return file;
+}
+
+function fileStatus(file: DispatchChangeSetFile): ChangeSetStatus {
+  return file.status ?? 'pending';
+}
+
+function isUnresolvedFile(file: DispatchChangeSetFile): boolean {
+  const status = fileStatus(file);
+  return status === 'pending' || status === 'stale';
+}
+
+function unresolvedFiles(changeSet: DispatchChangeSet): DispatchChangeSetFile[] {
+  return changeSet.files.filter(isUnresolvedFile);
+}
+
+function hasUnresolvedFiles(changeSet: DispatchChangeSet): boolean {
+  return unresolvedFiles(changeSet).length > 0;
+}
+
+function markFiles(changeSet: DispatchChangeSet, paths: string[], status: ChangeSetStatus): void {
+  const pathSet = new Set(paths);
+  for (const file of changeSet.files) {
+    if (pathSet.has(file.path)) {
+      file.status = status;
+    }
+  }
+}
+
+function resolveChangeSetStatus(changeSet: DispatchChangeSet): ChangeSetStatus {
+  const statuses = changeSet.files.map(fileStatus);
+  if (statuses.some((status) => status === 'stale')) return 'stale';
+  if (statuses.some((status) => status === 'pending')) return 'pending';
+  if (statuses.every((status) => status === 'accepted')) return 'accepted';
+  if (statuses.every((status) => status === 'rejected')) return 'rejected';
+  return 'resolved';
 }
 
 function missingBaselineFile(relativePath: string): BaselineFile {

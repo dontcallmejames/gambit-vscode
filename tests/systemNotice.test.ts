@@ -218,10 +218,14 @@ describe('SystemNotice', () => {
     expect(flattenText(vnode)).toContain('src/a.ts');
     expect(flattenText(vnode)).toContain('src/new.ts');
     expect(labels).toContain('Open diff');
+    expect(labels).toContain('Accept file');
+    expect(labels).toContain('Reject file');
     expect(labels).toContain('Accept');
     expect(labels).toContain('Reject');
 
     buttons.find((button) => flattenText(button).trim() === 'Open diff')!.props.onClick();
+    buttons.find((button) => flattenText(button).trim() === 'Accept file')!.props.onClick();
+    buttons.find((button) => flattenText(button).trim() === 'Reject file')!.props.onClick();
     buttons.find((button) => flattenText(button).trim() === 'Accept')!.props.onClick();
     buttons.find((button) => flattenText(button).trim() === 'Reject')!.props.onClick();
 
@@ -238,6 +242,49 @@ describe('SystemNotice', () => {
       kind: 'reject-change-set',
       changeSetId: 'change-set-1',
     });
+    expect(send).toHaveBeenCalledWith({
+      kind: 'accept-change-set-file',
+      changeSetId: 'change-set-1',
+      filePath: 'src/a.ts',
+    });
+    expect(send).toHaveBeenCalledWith({
+      kind: 'reject-change-set-file',
+      changeSetId: 'change-set-1',
+      filePath: 'src/a.ts',
+    });
+  });
+
+  it('keeps stale change-set files actionable', () => {
+    const message: SystemMessage = {
+      id: 's10',
+      role: 'system',
+      kind: 'change-set',
+      text: 'Codex changed 2 files. Review pending changes before continuing.',
+      timestamp: 100,
+      agentId: 'codex',
+      changeSet: {
+        id: 'change-set-1',
+        agentId: 'codex',
+        messageId: 'msg1',
+        timestamp: 100,
+        readOnly: false,
+        status: 'stale',
+        fileCount: 2,
+        files: [
+          { path: 'src/a.ts', changeKind: 'edited', status: 'stale' },
+          { path: 'src/b.ts', changeKind: 'edited', status: 'pending' },
+        ],
+      },
+    };
+
+    const vnode = SystemNotice({ message });
+    const labels = findButtons(vnode).map((button) => flattenText(button).trim());
+
+    expect(flattenText(vnode)).toContain('stale');
+    expect(labels).toContain('Accept file');
+    expect(labels).toContain('Reject file');
+    expect(labels).toContain('Accept');
+    expect(labels).toContain('Reject');
   });
 
   it('renders checkpoint notices with checkpoint metadata', () => {

@@ -642,6 +642,16 @@ export class VeyraSessionService {
     return this.changeLedger.rejectChangeSet(id);
   }
 
+  async acceptChangeSetFile(id: string, filePath: string): Promise<DispatchChangeSetSummary> {
+    if (!this.changeLedger) throw new Error('Diff preview is unavailable.');
+    return changeSetSummary(await this.changeLedger.acceptChangeSetFile(id, filePath));
+  }
+
+  async rejectChangeSetFile(id: string, filePath: string): Promise<RejectChangeSetResult> {
+    if (!this.changeLedger) throw new Error('Diff preview is unavailable.');
+    return this.changeLedger.rejectChangeSetFile(id, filePath);
+  }
+
   async changeSetDiffInputs(id: string, filePath: string): Promise<ChangeSetDiffInputs> {
     if (!this.changeLedger) throw new Error('Diff preview is unavailable.');
     return this.changeLedger.diffInputs(id, filePath);
@@ -1081,6 +1091,9 @@ function changeSetSummary(changeSet: DispatchChangeSet): DispatchChangeSetSummar
   const files = changeSet.files.map((file) => ({
     path: file.path,
     changeKind: file.changeKind,
+    ...(file.status ? { status: file.status } : {}),
+    ...(file.canReject !== undefined ? { canReject: file.canReject } : {}),
+    ...(file.rejectReason ? { rejectReason: file.rejectReason } : {}),
   }));
   return {
     id: changeSet.id,

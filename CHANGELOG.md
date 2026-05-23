@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.11
+
+- Adds per-file pending change controls so individual agent-edited files can be accepted or rejected before resolving the whole change set.
+- Keeps stale pending-change files visible and actionable without overwriting user edits made after an agent edit.
+- Renames the command palette entry to `Veyra: Open View` while keeping the `veyra.openPanel` command id for compatibility.
+
 ## 0.0.10
 
 - Moves the rich Veyra webview into the VS Code Secondary Side Bar alongside agent views such as Codex and Claude.

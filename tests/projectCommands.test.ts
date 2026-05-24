@@ -66,6 +66,29 @@ describe('project command hints', () => {
     expect(block).toContain('[/Project command hints]');
   });
 
+  it('adds post-implement verification suggestions with explicit approval semantics', () => {
+    const block = formatProjectCommandHintsBlock({
+      packageManager: 'npm',
+      hints: [
+        { label: 'test', command: 'npm test', source: 'package.json#scripts.test' },
+        { label: 'verify', command: 'npm run verify', source: 'package.json#scripts.verify' },
+        { label: 'format', command: 'npm run format', source: 'package.json#scripts.format' },
+        { label: 'typecheck', command: 'npm run typecheck', source: 'package.json#scripts.typecheck' },
+      ],
+    }, { includePostImplementVerification: true });
+
+    const postImplementMarker = block.indexOf('[Post-implement verification suggestions]');
+    expect(postImplementMarker).toBeGreaterThan(-1);
+    const postImplementBlock = block.slice(postImplementMarker);
+    expect(postImplementBlock).toContain('After implementation work is complete, suggest one verification command from this list.');
+    expect(postImplementBlock).toContain('Approval semantics: do not run verification commands automatically; ask the user to approve the exact command first.');
+    expect(postImplementBlock.indexOf('- verify: npm run verify (package.json#scripts.verify)'))
+      .toBeLessThan(postImplementBlock.indexOf('- test: npm test (package.json#scripts.test)'));
+    expect(postImplementBlock).toContain('- typecheck: npm run typecheck (package.json#scripts.typecheck)');
+    expect(postImplementBlock).not.toContain('- format: npm run format');
+    expect(postImplementBlock).toContain('[/Post-implement verification suggestions]');
+  });
+
   it('returns no prompt block when there are no command hints', () => {
     expect(formatProjectCommandHintsBlock({ packageManager: 'unknown', hints: [] })).toBe('');
   });

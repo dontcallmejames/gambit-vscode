@@ -74,6 +74,8 @@ describe('veyraWorkflowPrompt', () => {
     expect(prompt).toContain('Verification status');
     expect(prompt).toContain('Remaining risks');
     expect(prompt).toContain('Recommended next action');
+    expect(prompt).toContain('After implementation, use [Post-implement verification suggestions] when present to recommend the most relevant verification command.');
+    expect(prompt).toContain('Do not run verification commands unless the user explicitly approves the exact command.');
     expect(prompt).not.toContain('clarify the approach');
     expect(prompt).toContain('Fix the parser.');
   });

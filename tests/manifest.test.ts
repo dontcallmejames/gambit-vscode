@@ -400,6 +400,8 @@ describe('extension manifest', () => {
 
       expect(normalized).toContain('terminal selections');
       expect(normalized).toContain('project command hints');
+      expect(normalized).toContain('post-implement verification suggestions');
+      expect(normalized).toContain('approve the exact command');
       expect(document).toContain('Do not run');
     }
   });

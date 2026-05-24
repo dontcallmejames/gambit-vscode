@@ -132,6 +132,8 @@ export function veyraWorkflowPrompt(
     'Gemini: review the result for missed cases, edit conflicts, and invisible changes.',
     'Each agent must build on prior replies, preserve shared context, and surface file changes clearly.',
     'Gemini runs last and must end with a Handoff Summary covering What changed, Verification status, Remaining risks, and Recommended next action.',
+    'After implementation, use [Post-implement verification suggestions] when present to recommend the most relevant verification command.',
+    'Do not run verification commands unless the user explicitly approves the exact command.',
     'Do not pause for brainstorming or approval checkpoints unless the next action is unsafe or impossible.',
     templateBlock,
     prompt,

@@ -333,7 +333,9 @@ export class VeyraSessionService {
     const workspaceContextBlock = workspaceContextResult.block.trim().length > 0
       ? workspaceContextResult.block
       : formatWorkspaceContextDiagnosticsBlock(workspaceContextResult);
-    const projectCommandBlock = await this.retrieveProjectCommandHints();
+    const projectCommandBlock = await this.retrieveProjectCommandHints({
+      includePostImplementVerification: isImplementationWorkflowPrompt(request.text),
+    });
     const embedResult = embedFiles(filePaths, this.workspacePath, { maxLines: this.fileEmbedMaxLines });
     const userMentions = userMentionsForRequest(request.text, request.forcedTarget);
     const attachedFiles = dedupeAttachedFiles([
@@ -712,10 +714,12 @@ export class VeyraSessionService {
     }
   }
 
-  private async retrieveProjectCommandHints(): Promise<string> {
+  private async retrieveProjectCommandHints(
+    options: { includePostImplementVerification?: boolean } = {},
+  ): Promise<string> {
     if (!this.projectCommandProvider) return '';
     try {
-      return formatProjectCommandHintsBlock(await this.projectCommandProvider.retrieve());
+      return formatProjectCommandHintsBlock(await this.projectCommandProvider.retrieve(), options);
     } catch {
       return '';
     }
@@ -1010,6 +1014,10 @@ function emptyWorkspaceContextResult(
 
 function workspaceContextFallbackText(request: VeyraDispatchRequest): string {
   return request.source === 'panel' ? request.text : '';
+}
+
+function isImplementationWorkflowPrompt(text: string): boolean {
+  return /(^|\n)Workflow:\s*implement(\n|$)/i.test(text);
 }
 
 function formatWorkspaceContextDiagnosticsBlock(result: WorkspaceContextResult): string {

@@ -178,7 +178,54 @@ describe('VeyraSessionService', () => {
     expect(codexPrompt).toContain('[Project command hints]');
     expect(codexPrompt).toContain('- test: npm test (package.json#scripts.test)');
     expect(codexPrompt).toContain('Do not run these commands unless the user explicitly asks or approves.');
+    expect(codexPrompt).not.toContain('[Post-implement verification suggestions]');
     expect(codexPrompt).toContain('diagnose the failing tests');
+  });
+
+  it('adds post-implement verification suggestions only for implementation workflows', async () => {
+    const prompts = new Map<AgentId, string>();
+    const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-service-'));
+    const projectCommandProvider = fakeProjectCommandProvider({
+      packageManager: 'npm',
+      hints: [
+        { label: 'test', command: 'npm test', source: 'package.json#scripts.test' },
+        { label: 'verify', command: 'npm run verify', source: 'package.json#scripts.verify' },
+      ],
+    });
+    const agent = (id: AgentId): Agent => ({
+      id,
+      status: async () => 'ready',
+      cancel: async () => {},
+      async *send(prompt: string) {
+        prompts.set(id, prompt);
+        yield { type: 'done' } as AgentChunk;
+      },
+    });
+    const service = new VeyraSessionService(
+      workspacePath,
+      {
+        claude: agent('claude'),
+        codex: agent('codex'),
+        gemini: agent('gemini'),
+      },
+      { hangSeconds: 0, projectCommandProvider: projectCommandProvider as ProjectCommandProvider },
+    );
+
+    await service.dispatch(
+      {
+        text: ['@all', 'Workflow: implement', 'Fix the parser bug.'].join('\n\n'),
+        source: 'panel',
+        cwd: workspacePath,
+      },
+      () => {},
+    );
+
+    const codexPrompt = prompts.get('codex') ?? '';
+    expect(projectCommandProvider.retrieve).toHaveBeenCalledTimes(1);
+    expect(codexPrompt).toContain('[Project command hints]');
+    expect(codexPrompt).toContain('[Post-implement verification suggestions]');
+    expect(codexPrompt).toContain('- verify: npm run verify (package.json#scripts.verify)');
+    expect(codexPrompt).toContain('Approval semantics: do not run verification commands automatically; ask the user to approve the exact command first.');
   });
 
   it('continues dispatching when project command hint retrieval fails', async () => {

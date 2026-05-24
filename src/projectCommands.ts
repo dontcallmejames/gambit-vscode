@@ -14,6 +14,10 @@ export interface ProjectCommandHintsResult {
   hints: ProjectCommandHint[];
 }
 
+export interface ProjectCommandHintFormatOptions {
+  includePostImplementVerification?: boolean;
+}
+
 const SCRIPT_PRIORITY = [
   'test',
   'verify',
@@ -58,15 +62,52 @@ export async function detectProjectCommandHints(workspacePath: string): Promise<
   return { packageManager, hints };
 }
 
-export function formatProjectCommandHintsBlock(result: ProjectCommandHintsResult): string {
+export function formatProjectCommandHintsBlock(
+  result: ProjectCommandHintsResult,
+  options: ProjectCommandHintFormatOptions = {},
+): string {
   if (result.hints.length === 0) return '';
-  return [
+  const blocks = [[
     '[Project command hints]',
     `Detected package manager: ${result.packageManager}`,
     'Suggested commands only. Do not run these commands unless the user explicitly asks or approves.',
     ...result.hints.map((hint) => `- ${hint.label}: ${hint.command} (${hint.source})`),
     '[/Project command hints]',
+  ].join('\n')];
+
+  if (options.includePostImplementVerification) {
+    const verificationBlock = formatPostImplementVerificationSuggestionsBlock(result);
+    if (verificationBlock) blocks.push(verificationBlock);
+  }
+
+  return blocks.join('\n\n');
+}
+
+function formatPostImplementVerificationSuggestionsBlock(result: ProjectCommandHintsResult): string {
+  const suggestions = postImplementVerificationHints(result.hints);
+  if (suggestions.length === 0) return '';
+  return [
+    '[Post-implement verification suggestions]',
+    'After implementation work is complete, suggest one verification command from this list.',
+    'Approval semantics: do not run verification commands automatically; ask the user to approve the exact command first.',
+    'Treat user-provided terminal output as the verification evidence.',
+    ...suggestions.map((hint) => `- ${hint.label}: ${hint.command} (${hint.source})`),
+    '[/Post-implement verification suggestions]',
   ].join('\n');
+}
+
+function postImplementVerificationHints(hints: ProjectCommandHint[]): ProjectCommandHint[] {
+  const byLabel = new Map(hints.map((hint) => [hint.label, hint]));
+  return [
+    'verify',
+    'test',
+    'typecheck',
+    'lint',
+    'build',
+    'check',
+  ]
+    .map((label) => byLabel.get(label))
+    .filter((hint): hint is ProjectCommandHint => Boolean(hint));
 }
 
 async function readPackageJson(workspacePath: string): Promise<Record<string, unknown> | null> {

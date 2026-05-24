@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import type { VeyraDispatchEvent, VeyraForcedTarget, VeyraSessionService } from './veyraService.js';
 import type { AgentId } from './types.js';
 import { veyraWorkflowPrompt, type VeyraWorkflowCommand } from './workflowPrompts.js';
+import { readWorkflowPromptOptions } from './workflowSettings.js';
 import { parseWorkspaceContextMention } from './workspaceContext.js';
 
 export interface VeyraLanguageModelInfo extends vscode.LanguageModelChatInformation {
@@ -187,7 +188,7 @@ class VeyraLanguageModelProvider implements vscode.LanguageModelChatProvider<Vey
     });
 
     const routedText = selectedModel.workflowCommand
-      ? veyraWorkflowPrompt(selectedModel.workflowCommand, prompt)
+      ? veyraWorkflowPrompt(selectedModel.workflowCommand, prompt, readWorkflowPromptOptions())
       : prompt;
     const readOnly = selectedModel.workflowCommand === 'review' ||
       selectedModel.workflowCommand === 'debate' ||

@@ -1,6 +1,80 @@
 export type VeyraWorkflowCommand = 'review' | 'debate' | 'consensus' | 'implement';
+export type VeyraWorkflowTemplate =
+  | 'none'
+  | 'architecture-review'
+  | 'security-review'
+  | 'test-improvement'
+  | 'refactor-plan'
+  | 'implementation-with-review';
 
-export function veyraWorkflowPrompt(command: VeyraWorkflowCommand, prompt: string): string {
+export interface VeyraWorkflowPromptOptions {
+  template?: VeyraWorkflowTemplate | string;
+}
+
+export const VEYRA_WORKFLOW_TEMPLATE_IDS: readonly VeyraWorkflowTemplate[] = [
+  'none',
+  'architecture-review',
+  'security-review',
+  'test-improvement',
+  'refactor-plan',
+  'implementation-with-review',
+];
+
+type ActiveWorkflowTemplate = Exclude<VeyraWorkflowTemplate, 'none'>;
+
+const WORKFLOW_TEMPLATE_GUIDANCE: Record<ActiveWorkflowTemplate, {
+  label: string;
+  guidance: readonly string[];
+}> = {
+  'architecture-review': {
+    label: 'architecture review',
+    guidance: [
+      'Focus on module boundaries, data flow, API contracts, migration risk, and long-term maintainability.',
+      'Separate architectural blockers from localized implementation concerns.',
+    ],
+  },
+  'security-review': {
+    label: 'security review',
+    guidance: [
+      'Focus on authentication, authorization, secrets, dependency risk, input validation, and data exposure.',
+      'Classify security concerns as Blocking issues or Advisory risks.',
+    ],
+  },
+  'test-improvement': {
+    label: 'test improvement',
+    guidance: [
+      'Focus on missing behavioral coverage, brittle tests, useful fixtures, regression gates, and fast targeted verification.',
+      'Prefer tests that prove user-visible behavior over implementation details.',
+    ],
+  },
+  'refactor-plan': {
+    label: 'refactor plan',
+    guidance: [
+      'Focus on the smallest safe sequence, compatibility boundaries, rollback points, and tests before moves.',
+      'Avoid broad rewrites unless the current structure blocks the requested change.',
+    ],
+  },
+  'implementation-with-review': {
+    label: 'implementation with review',
+    guidance: [
+      'Make the smallest implementation change, add or update focused tests, then have the final agent review the resulting diff and verification evidence.',
+      'Keep review feedback grounded in changed files, failing or passing commands, and remaining risks.',
+    ],
+  },
+};
+
+export function normalizeWorkflowTemplate(value: unknown): VeyraWorkflowTemplate {
+  return typeof value === 'string' && VEYRA_WORKFLOW_TEMPLATE_IDS.includes(value as VeyraWorkflowTemplate)
+    ? value as VeyraWorkflowTemplate
+    : 'none';
+}
+
+export function veyraWorkflowPrompt(
+  command: VeyraWorkflowCommand,
+  prompt: string,
+  options: VeyraWorkflowPromptOptions = {},
+): string {
+  const templateBlock = workflowTemplateBlock(options.template);
   if (command === 'review') {
     return [
       '@all',
@@ -12,8 +86,9 @@ export function veyraWorkflowPrompt(command: VeyraWorkflowCommand, prompt: strin
       'Read-only workflow: Do not create, edit, rename, or delete files.',
       'Each agent should organize findings under these headings: Blocking issues, Advisory risks, Missing tests, Follow-up suggestions.',
       'Gemini runs last. After its own review, Gemini must add a Veyra Synthesis section with Recommendation, Blocking issues, Missing tests, and Next action.',
+      templateBlock,
       prompt,
-    ].join('\n\n');
+    ].filter(Boolean).join('\n\n');
   }
 
   if (command === 'debate') {
@@ -27,8 +102,9 @@ export function veyraWorkflowPrompt(command: VeyraWorkflowCommand, prompt: strin
       'Read-only workflow: Do not create, edit, rename, or delete files.',
       'Each agent should use these headings: Recommendation, Tradeoffs, Concerns with prior replies, Next action.',
       'Gemini runs last. After its own position, Gemini must add a Veyra Synthesis section with Recommended approach, Why, Risks, and Next action.',
+      templateBlock,
       prompt,
-    ].join('\n\n');
+    ].filter(Boolean).join('\n\n');
   }
 
   if (command === 'consensus') {
@@ -42,8 +118,9 @@ export function veyraWorkflowPrompt(command: VeyraWorkflowCommand, prompt: strin
       'Read-only workflow: Do not create, edit, rename, or delete files.',
       'Each agent should use these headings: Position, Evidence, Risks, Next action.',
       'Gemini runs last. After its own position, Gemini must add a Consensus Recommendation section with Decision, Rationale, Tradeoffs, Risks, and Next action.',
+      templateBlock,
       prompt,
-    ].join('\n\n');
+    ].filter(Boolean).join('\n\n');
   }
 
   return [
@@ -56,6 +133,19 @@ export function veyraWorkflowPrompt(command: VeyraWorkflowCommand, prompt: strin
     'Each agent must build on prior replies, preserve shared context, and surface file changes clearly.',
     'Gemini runs last and must end with a Handoff Summary covering What changed, Verification status, Remaining risks, and Recommended next action.',
     'Do not pause for brainstorming or approval checkpoints unless the next action is unsafe or impossible.',
+    templateBlock,
     prompt,
-  ].join('\n\n');
+  ].filter(Boolean).join('\n\n');
+}
+
+function workflowTemplateBlock(value: unknown): string | null {
+  const template = normalizeWorkflowTemplate(value);
+  if (template === 'none') return null;
+  const entry = WORKFLOW_TEMPLATE_GUIDANCE[template];
+  return [
+    '[Veyra workflow template]',
+    `Workflow template: ${entry.label}`,
+    ...entry.guidance,
+    '[/Veyra workflow template]',
+  ].join('\n');
 }

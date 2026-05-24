@@ -5,6 +5,7 @@ const vscodeMocks = vi.hoisted(() => {
   return {
     participantHandlers,
     toolCallRenderStyle: 'compact' as 'verbose' | 'compact' | 'hidden',
+    workflowTemplate: 'none',
     createChatParticipant: vi.fn((id: string, handler: (...args: unknown[]) => unknown) => {
       participantHandlers.set(id, handler);
       return { dispose: vi.fn() };
@@ -12,6 +13,7 @@ const vscodeMocks = vi.hoisted(() => {
     reset() {
       participantHandlers.clear();
       this.toolCallRenderStyle = 'compact';
+      this.workflowTemplate = 'none';
       this.createChatParticipant.mockClear();
     },
   };
@@ -36,9 +38,11 @@ vi.mock('vscode', () => ({
   },
   workspace: {
     getConfiguration: vi.fn(() => ({
-      get: vi.fn((key: string, dflt: unknown) =>
-        key === 'toolCallRenderStyle' ? vscodeMocks.toolCallRenderStyle : dflt
-      ),
+      get: vi.fn((key: string, dflt: unknown) => {
+        if (key === 'toolCallRenderStyle') return vscodeMocks.toolCallRenderStyle;
+        if (key === 'workflow.template') return vscodeMocks.workflowTemplate;
+        return dflt;
+      }),
     })),
   },
 }));
@@ -572,6 +576,37 @@ describe('native chat workflow prompts', () => {
       expect.objectContaining({
         readOnly: true,
         text: expect.stringContaining('Workflow: review'),
+      }),
+      expect.any(Function),
+    );
+  });
+
+  it('adds the configured workflow template to native workflow prompts', async () => {
+    vscodeMocks.workflowTemplate = 'security-review';
+    const context = { subscriptions: [] as Array<{ dispose(): void }> };
+    const service = {
+      dispatch: vi.fn(async () => {}),
+      cancelAll: vi.fn(),
+    };
+
+    registerNativeChatParticipants(
+      context as any,
+      () => ({ service, workspacePath: '/workspace' } as any),
+    );
+
+    const handler = vscodeMocks.participantHandlers.get('veyra.veyra');
+    expect(handler).toBeTypeOf('function');
+    await handler!(
+      { prompt: 'check auth flow', command: 'review', references: [], toolReferences: [] },
+      {},
+      { markdown: vi.fn(), progress: vi.fn(), reference: vi.fn() },
+      cancellationToken(),
+    );
+
+    expect(service.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        readOnly: true,
+        text: expect.stringContaining('Workflow template: security review'),
       }),
       expect.any(Function),
     );

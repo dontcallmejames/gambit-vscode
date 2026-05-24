@@ -325,6 +325,34 @@
           "maximum": 200,
           "description": "Number of recent user+agent messages included in cross-agent context."
         },
+        "veyra.workflow.template": {
+          "type": "string",
+          "enum": [
+            "none",
+            "architecture-review",
+            "security-review",
+            "test-improvement",
+            "refactor-plan",
+            "implementation-with-review"
+          ],
+          "default": "none",
+          "description": "Optional workflow template guidance added to Veyra review, debate, consensus, and implement prompts."
+        },
+        "veyra.agentRoles.claude": {
+          "type": "string",
+          "default": "",
+          "description": "Optional workspace role guidance appended to Claude's Veyra agent-role preamble."
+        },
+        "veyra.agentRoles.codex": {
+          "type": "string",
+          "default": "",
+          "description": "Optional workspace role guidance appended to Codex's Veyra agent-role preamble."
+        },
+        "veyra.agentRoles.gemini": {
+          "type": "string",
+          "default": "",
+          "description": "Optional workspace role guidance appended to Gemini's Veyra agent-role preamble."
+        },
         "veyra.fileBadges.enabled": {
           "type": "boolean",
           "default": true,

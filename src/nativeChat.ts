@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import type { VeyraDispatchEvent, VeyraForcedTarget, VeyraSessionService } from './veyraService.js';
 import type { AgentId } from './types.js';
 import { veyraWorkflowPrompt, type VeyraWorkflowCommand } from './workflowPrompts.js';
+import { readWorkflowPromptOptions } from './workflowSettings.js';
 import { parseWorkspaceContextMention } from './workspaceContext.js';
 import { localVeyraResponseForPrompt } from './localVeyraPrompt.js';
 
@@ -112,7 +113,7 @@ export function nativeChatPromptForRequest(
     }
     return withWorkspaceContextQuery({
       forcedTarget: 'veyra',
-      text: veyraWorkflowPrompt('review', prompt),
+      text: veyraWorkflowPrompt('review', prompt, readWorkflowPromptOptions()),
       readOnly: true,
     }, workspaceContextQuery);
   }
@@ -127,7 +128,7 @@ export function nativeChatPromptForRequest(
     }
     return withWorkspaceContextQuery({
       forcedTarget: 'veyra',
-      text: veyraWorkflowPrompt('debate', prompt),
+      text: veyraWorkflowPrompt('debate', prompt, readWorkflowPromptOptions()),
       readOnly: true,
     }, workspaceContextQuery);
   }
@@ -142,7 +143,7 @@ export function nativeChatPromptForRequest(
     }
     return withWorkspaceContextQuery({
       forcedTarget: 'veyra',
-      text: veyraWorkflowPrompt('consensus', prompt),
+      text: veyraWorkflowPrompt('consensus', prompt, readWorkflowPromptOptions()),
       readOnly: true,
     }, workspaceContextQuery);
   }
@@ -156,7 +157,7 @@ export function nativeChatPromptForRequest(
     }
     return withWorkspaceContextQuery({
       forcedTarget: 'veyra',
-      text: veyraWorkflowPrompt('implement', prompt),
+      text: veyraWorkflowPrompt('implement', prompt, readWorkflowPromptOptions()),
     }, workspaceContextQuery);
   }
 

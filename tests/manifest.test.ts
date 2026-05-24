@@ -366,6 +366,31 @@ describe('extension manifest', () => {
     expect(readme).toContain('Handoff Summary');
   });
 
+  it('contributes workflow template and workspace role customization settings', () => {
+    const properties = manifest.contributes.configuration.properties;
+    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+
+    expect(properties['veyra.workflow.template']).toMatchObject({
+      type: 'string',
+      default: 'none',
+      enum: [
+        'none',
+        'architecture-review',
+        'security-review',
+        'test-improvement',
+        'refactor-plan',
+        'implementation-with-review',
+      ],
+    });
+    expect(properties['veyra.agentRoles.claude']).toMatchObject({ type: 'string', default: '' });
+    expect(properties['veyra.agentRoles.codex']).toMatchObject({ type: 'string', default: '' });
+    expect(properties['veyra.agentRoles.gemini']).toMatchObject({ type: 'string', default: '' });
+    expect(readme).toContain('veyra.workflow.template');
+    expect(readme).toContain('security-review');
+    expect(readme).toContain('veyra.agentRoles.claude');
+    expect(readme).toContain('workspace role customization');
+  });
+
   it('documents terminal awareness guardrails', () => {
     const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
     const smokeChecklist = readFileSync(join(process.cwd(), 'docs', 'vscode-smoke-test.md'), 'utf8');

@@ -717,6 +717,44 @@ describe('VeyraSessionService', () => {
     }
   });
 
+  it('adds workspace role customization only to the matching agent preamble', async () => {
+    const prompts = new Map<AgentId, string>();
+    const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-service-'));
+    const agent = (id: AgentId): Agent => ({
+      id,
+      status: async () => 'ready',
+      cancel: async () => {},
+      async *send(prompt: string) {
+        prompts.set(id, prompt);
+        yield { type: 'done' } as AgentChunk;
+      },
+    });
+    const service = new VeyraSessionService(
+      workspacePath,
+      {
+        claude: agent('claude'),
+        codex: agent('codex'),
+        gemini: agent('gemini'),
+      },
+      {
+        hangSeconds: 0,
+        agentRoleOverrides: {
+          codex: 'Prioritize TypeScript ergonomics, narrow tests, and regression risk.',
+        },
+      },
+    );
+
+    await service.dispatch(
+      { text: '@all coordinate this', source: 'panel', cwd: workspacePath },
+      () => {},
+    );
+
+    expect(prompts.get('codex')).toContain('[Workspace role customization]');
+    expect(prompts.get('codex')).toContain('Prioritize TypeScript ergonomics, narrow tests, and regression risk.');
+    expect(prompts.get('claude')).not.toContain('[Workspace role customization]');
+    expect(prompts.get('gemini')).not.toContain('Prioritize TypeScript ergonomics');
+  });
+
   it('forwards readOnly dispatches to every targeted agent send call', async () => {
     const optionsByAgent = new Map<AgentId, unknown>();
     const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-service-'));

@@ -77,4 +77,36 @@ describe('veyraWorkflowPrompt', () => {
     expect(prompt).not.toContain('clarify the approach');
     expect(prompt).toContain('Fix the parser.');
   });
+
+  it('keeps workflow template guidance opt-in by default', () => {
+    const prompt = veyraWorkflowPrompt('review', 'Check the auth flow.');
+
+    expect(prompt).not.toContain('[Veyra workflow template]');
+    expect(prompt).not.toContain('Workflow template: security review');
+  });
+
+  it('adds selected workflow template guidance without changing the base workflow', () => {
+    const prompt = veyraWorkflowPrompt('review', 'Check the auth flow.', {
+      template: 'security-review',
+    });
+
+    expect(prompt).toContain('Workflow: review');
+    expect(prompt).toContain('Read-only workflow: Do not create, edit, rename, or delete files.');
+    expect(prompt).toContain('[Veyra workflow template]');
+    expect(prompt).toContain('Workflow template: security review');
+    expect(prompt).toContain('Focus on authentication, authorization, secrets, dependency risk, input validation, and data exposure.');
+    expect(prompt).toContain('Classify security concerns as Blocking issues or Advisory risks.');
+    expect(prompt).toContain('Check the auth flow.');
+  });
+
+  it('adds implementation-with-review template guidance to write-capable workflows', () => {
+    const prompt = veyraWorkflowPrompt('implement', 'Add parser coverage.', {
+      template: 'implementation-with-review',
+    });
+
+    expect(prompt).toContain('Workflow: implement');
+    expect(prompt).toContain('Workflow template: implementation with review');
+    expect(prompt).toContain('Make the smallest implementation change, add or update focused tests, then have the final agent review the resulting diff and verification evidence.');
+    expect(prompt).toContain('Add parser coverage.');
+  });
 });

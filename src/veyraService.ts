@@ -13,6 +13,7 @@ import { parseFileMentions, embedFiles } from './fileMentions.js';
 import { DEFAULT_AUTONOMY_POLICY, composePrompt } from './composePrompt.js';
 import { parseWorkspaceContextMention, type WorkspaceContextProvider, type WorkspaceContextResult } from './workspaceContext.js';
 import { formatProjectCommandHintsBlock, type ProjectCommandProvider } from './projectCommands.js';
+import type { AgentRoleOverrides } from './workflowSettings.js';
 import {
   type ChangeLedger,
   type ChangeLedgerBaseline,
@@ -78,6 +79,7 @@ export interface VeyraSessionOptions {
   projectCommandProvider?: ProjectCommandProvider;
   changeLedger?: ChangeLedger;
   checkpointLedger?: CheckpointLedger;
+  agentRoleOverrides?: AgentRoleOverrides;
 }
 
 export interface WorkspaceChangeTracker {
@@ -139,6 +141,7 @@ export class VeyraSessionService {
   private projectCommandProvider?: ProjectCommandProvider;
   private changeLedger?: ChangeLedger;
   private checkpointLedger?: CheckpointLedger;
+  private agentRoleOverrides?: AgentRoleOverrides;
   private loadPromise: Promise<Session> | null = null;
   private dispatchQueue: Promise<void> = Promise.resolve();
   private cancelGeneration = 0;
@@ -165,6 +168,7 @@ export class VeyraSessionService {
     this.projectCommandProvider = options.projectCommandProvider;
     this.changeLedger = options.changeLedger;
     this.checkpointLedger = options.checkpointLedger;
+    this.agentRoleOverrides = options.agentRoleOverrides;
     this.sentinel = new SentinelWriter(workspacePath, {
       enabled: this.commitSignatureEnabled,
     });
@@ -197,7 +201,7 @@ export class VeyraSessionService {
 
   updateOptions(options: Pick<
     VeyraSessionOptions,
-    'hangSeconds' | 'fileEmbedMaxLines' | 'sharedContextWindow' | 'commitSignatureEnabled' | 'badgeController' | 'workspaceContextProvider' | 'projectCommandProvider' | 'changeLedger' | 'checkpointLedger'
+    'hangSeconds' | 'fileEmbedMaxLines' | 'sharedContextWindow' | 'commitSignatureEnabled' | 'badgeController' | 'workspaceContextProvider' | 'projectCommandProvider' | 'changeLedger' | 'checkpointLedger' | 'agentRoleOverrides'
   >): void {
     if (options.hangSeconds !== undefined) {
       this.hangSeconds = options.hangSeconds;
@@ -231,6 +235,9 @@ export class VeyraSessionService {
     }
     if ('checkpointLedger' in options) {
       this.checkpointLedger = options.checkpointLedger;
+    }
+    if ('agentRoleOverrides' in options) {
+      this.agentRoleOverrides = options.agentRoleOverrides;
     }
   }
 
@@ -399,19 +406,19 @@ export class VeyraSessionService {
       const editAwareness = buildEditAwareness(session, _targetId);
       const rules = readWorkspaceRules(this.workspacePath);
       return [
-        agentRolePreamble(_targetId),
+        agentRolePreamble(_targetId, this.agentRoleOverrides),
         composePrompt({
-        rules,
-        autonomyPolicy: request.readOnly
-          ? [READ_ONLY_WORKFLOW_POLICY, DEFAULT_AUTONOMY_POLICY].join('\n\n')
-          : DEFAULT_AUTONOMY_POLICY,
-        sharedContext,
-        editAwareness,
-        workspaceContext: workspaceContextBlock,
-        projectCommands: projectCommandBlock,
-        fileBlocks: embedResult.embedded,
-        attachmentErrors: embedResult.errors,
-        userText: baseText,
+          rules,
+          autonomyPolicy: request.readOnly
+            ? [READ_ONLY_WORKFLOW_POLICY, DEFAULT_AUTONOMY_POLICY].join('\n\n')
+            : DEFAULT_AUTONOMY_POLICY,
+          sharedContext,
+          editAwareness,
+          workspaceContext: workspaceContextBlock,
+          projectCommands: projectCommandBlock,
+          fileBlocks: embedResult.embedded,
+          attachmentErrors: embedResult.errors,
+          userText: baseText,
         }),
       ].join('\n\n');
     };
@@ -948,17 +955,23 @@ function agentLabel(agentId: AgentId): string {
   return 'Gemini';
 }
 
-function agentRolePreamble(agentId: AgentId): string {
+function agentRolePreamble(agentId: AgentId, overrides?: AgentRoleOverrides): string {
   const label = agentLabel(agentId);
   const strengths: Record<AgentId, string> = {
     claude: 'architecture, requirements fit, and long-term correctness',
     codex: 'concrete implementation, tests, and regression risk',
     gemini: 'edge cases, alternate interpretations, and adversarial review',
   };
+  const override = overrides?.[agentId]?.trim();
   return [
     '[Veyra agent role]',
     `You are ${label} in this Veyra dispatch.`,
     `Use your strengths: ${strengths[agentId]}.`,
+    ...(override ? [
+      '[Workspace role customization]',
+      override,
+      '[/Workspace role customization]',
+    ] : []),
     'Use your available model and CLI capabilities that fit this workflow.',
     'Follow any read-only or edit-permitted instructions in this prompt.',
     'Respect prior agents in [Conversation so far] and coordinate without overwriting their work.',

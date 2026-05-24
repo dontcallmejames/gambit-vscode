@@ -10,6 +10,7 @@ import { WorkspaceContextProvider, type WorkspaceContextOptions } from './worksp
 import { ProjectCommandProvider } from './projectCommands.js';
 import { ChangeLedger, type ChangeLedgerOptions } from './changeLedger.js';
 import { CheckpointLedger, type CheckpointLedgerOptions } from './checkpointLedger.js';
+import { readAgentRoleOverrides } from './workflowSettings.js';
 import type { FacilitatorDecision, FacilitatorFn } from './facilitator.js';
 import type { AgentRegistry } from './messageRouter.js';
 import type { Agent, SendOptions } from './agents/types.js';
@@ -238,6 +239,7 @@ export function readVeyraSessionOptions(
     fileEmbedMaxLines: config.get<number>('fileEmbedMaxLines', 500),
     sharedContextWindow: config.get<number>('sharedContextWindow', 25),
     commitSignatureEnabled: config.get<boolean>('commitSignature.enabled', true),
+    agentRoleOverrides: readAgentRoleOverrides(),
     badgeController,
     getEditedPathForAgent,
   };

@@ -23,6 +23,7 @@ The working rule is: agents can work together without losing context, stomping e
 - Workspace change detection for files modified during an agent turn even when the underlying CLI does not report a write tool.
 - Cross-agent edit conflict notices when a later agent touches a file already edited by another agent in the session.
 - Terminal selections and project command hints are included as prompt context for safer build, test, and debug follow-up.
+- `Veyra: Diagnose Terminal Output` routes copied or pasted terminal output into a read-only Veyra diagnosis prompt.
 
 ## Requirements
 
@@ -90,18 +91,36 @@ Open VS Code Chat and mention a participant:
 ```
 
 When no direct agent is chosen, `@veyra` asks the facilitator to route the work based on agent availability, prompt content, and recent shared context.
-The `/review`, `/debate`, and `/consensus` workflows are read-only: Veyra tells agents not to edit files and suppresses automatic edit approval for those dispatches. `/review` steers Claude toward architecture/correctness, Codex toward implementation/test risk, and Gemini toward edge cases and invisible-change risk. `/debate` uses the same split to compare approaches. `/consensus` asks Claude to identify constraints, Codex to identify implementation cost and risk, and Gemini to compare the positions into one decision. `/implement` remains the serial workflow intended for code and test changes.
-Workflow prompts tell agents to use their available model and CLI capabilities while still following read-only or edit-permitted instructions. Broad actionable implementation requests should proceed from reasonable assumptions instead of becoming brainstorming or approval checkpoints; agents should stop only for unsafe or impossible next actions.
-Workflow output is structured for follow-up work. `/review` asks agents to classify findings as Blocking issues, Advisory risks, Missing tests, and Follow-up suggestions, then Gemini ends with a `Veyra Synthesis` section. `/debate` asks each agent for a recommendation and tradeoffs, then Gemini ends with a `Veyra Synthesis` section that names the Recommended approach and next action. `/consensus` asks each agent for Position, Evidence, Risks, and Next action, then Gemini ends with a `Consensus Recommendation` covering Decision, Rationale, Tradeoffs, Risks, and Next action. `/implement` asks Gemini to finish with a `Handoff Summary` covering what changed, verification status, remaining risks, and the recommended next action.
-Set `veyra.workflow.template` when a workspace wants an extra reusable lens on those workflow prompts. The first local templates are `architecture-review`, `security-review`, `test-improvement`, `refactor-plan`, and `implementation-with-review`; the default `none` keeps the built-in workflow prompt shape unchanged.
-Use `veyra.agentRoles.claude`, `veyra.agentRoles.codex`, and `veyra.agentRoles.gemini` for workspace role customization. Non-empty values are appended to that agent's Veyra role preamble only, so a team can tune responsibilities locally without changing built-in defaults for other workspaces.
 
-Use `@codebase` when you want Veyra to retrieve relevant workspace files without naming them explicitly. The first version uses local lexical search over workspace files and project metadata; it does not upload or build a cloud index.
+### Workflow Modes
 
-Terminal selections from VS Code Chat are passed to agents as labelled terminal context. Veyra also detects project command hints from local package metadata, such as `npm test`, `npm run typecheck`, or `npm run build`, and includes those suggestions in prompts. For `/implement`, Veyra adds post-implement verification suggestions so agents can recommend a likely follow-up command after edits. Do not run those commands unless the user explicitly asks or approves; command hints are context, not hidden execution. Agents must ask the user to approve the exact command before running verification.
+- `/review`, `/debate`, and `/consensus` are read-only. Veyra tells agents not to edit files and suppresses automatic edit approval for those dispatches.
+- `/review` asks each agent for findings, including `Blocking issues`, missing tests, and follow-up suggestions, then Gemini ends with a `Veyra Synthesis`.
+- `/debate` compares approaches and ends with a `Recommended approach`.
+- `/consensus` turns competing positions into a concrete decision.
+- `/implement` is the write-capable workflow: Claude frames the approach, Codex changes code and tests, then Gemini reviews the result and ends with a `Handoff Summary`.
 
-Run `Veyra: Check agent status` from the command palette to verify whether Claude, Codex, and Gemini are installed and authenticated before starting an autonomous workflow. If Codex or Gemini is missing, inaccessible, or misconfigured, the status warning offers CLI path configuration directly. On Windows, `Veyra: Configure Codex/Gemini CLI paths` can detect native CLI executables, PATH npm shims, or npm global CLI bundles and save the needed `veyra.codexCliPath` / `veyra.geminiCliPath` workspace settings. If a stale PATH shim points at a missing derived JS bundle, Veyra skips it and falls back to `npm root -g`; if detection cannot inspect the package tree, the command offers manual JS bundle, native executable, or npm shim path entry.
-If a backend reports `Node.js missing`, install Node.js so the `node` command is on PATH, or point Codex/Gemini at native executable paths instead of JS bundle paths.
+Workflow prompts tell agents to use their available model and CLI capabilities while still following read-only or edit-permitted instructions. Broad implementation requests should proceed from reasonable assumptions instead of becoming brainstorming or approval checkpoints; agents should stop only for unsafe or impossible next actions.
+
+### Context And Tuning
+
+- Use `@codebase` when you want Veyra to retrieve relevant workspace files without naming them explicitly. The first version uses local lexical search over workspace files and project metadata; it does not upload or build a cloud index.
+- Set `veyra.workflow.template` when a workspace wants an extra reusable lens such as `architecture-review`, `security-review`, `test-improvement`, `refactor-plan`, or `implementation-with-review`.
+- Use `veyra.agentRoles.claude`, `veyra.agentRoles.codex`, and `veyra.agentRoles.gemini` for workspace role customization. Non-empty values are appended to that agent's Veyra role preamble only.
+
+### Terminal And Verification Context
+
+- Terminal selections from VS Code Chat are passed to agents as labelled terminal context.
+- Run `Veyra: Diagnose Terminal Output` to diagnose copied or pasted terminal output in the docked Veyra view. VS Code does not expose arbitrary terminal scrollback to extensions, so Veyra does not read terminal scrollback directly.
+- Veyra detects project command hints from local package metadata, such as `npm test`, `npm run typecheck`, or `npm run build`.
+- For `/implement`, Veyra adds post-implement verification suggestions so agents can recommend a likely follow-up command after edits.
+- Do not run suggested commands unless the user explicitly asks or approves. Agents must ask the user to approve the exact command before running verification.
+
+### Setup Checks
+
+Run `Veyra: Check agent status` before starting an autonomous workflow. If Codex or Gemini is missing, inaccessible, or misconfigured, the status warning offers CLI path configuration directly.
+
+On Windows, `Veyra: Configure Codex/Gemini CLI paths` can detect native CLI executables, PATH npm shims, or npm global CLI bundles and save the needed `veyra.codexCliPath` / `veyra.geminiCliPath` workspace settings. If a backend reports `Node.js missing`, install Node.js so the `node` command is on PATH, or point Codex/Gemini at native executable paths instead of JS bundle paths.
 
 ## Using Veyra As A Language Model
 

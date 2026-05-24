@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => {
     invalidateWorkspaceContext: vi.fn(),
     listPendingChangeSets: vi.fn(),
     changeSetDiffInputs: vi.fn(),
+    dispatch: vi.fn(),
     acceptChangeSet: vi.fn(),
     rejectChangeSet: vi.fn(),
     acceptChangeSetFile: vi.fn(),
@@ -22,7 +23,11 @@ const mocks = vi.hoisted(() => {
   };
   const smokeAgents = { id: 'smoke-agents' };
   const fileDecorationProviderDisposable = { dispose: vi.fn() };
-  const webviewControllerInstances: Array<{ attach: ReturnType<typeof vi.fn>; dispose: ReturnType<typeof vi.fn> }> = [];
+  const webviewControllerInstances: Array<{
+    attach: ReturnType<typeof vi.fn>;
+    dispatchExternalMessage: ReturnType<typeof vi.fn>;
+    dispose: ReturnType<typeof vi.fn>;
+  }> = [];
   return {
     commandCallbacks,
     workspaceFolders: [...defaultWorkspaceFolders] as typeof defaultWorkspaceFolders | undefined,
@@ -41,6 +46,7 @@ const mocks = vi.hoisted(() => {
       'veyra.copyDiagnosticReport',
     ]),
     clipboardWriteText: vi.fn().mockResolvedValue(undefined),
+    clipboardReadText: vi.fn().mockResolvedValue(''),
     webviewViewProviders,
     registerWebviewViewProvider: vi.fn((viewId: string, provider: unknown, options: unknown) => {
       webviewViewProviders.set(viewId, { provider, options });
@@ -97,6 +103,8 @@ const mocks = vi.hoisted(() => {
       ]);
       this.clipboardWriteText.mockClear();
       this.clipboardWriteText.mockResolvedValue(undefined);
+      this.clipboardReadText.mockClear();
+      this.clipboardReadText.mockResolvedValue('');
       this.registerWebviewViewProvider.mockClear();
       this.registerFileDecorationProvider.mockClear();
       this.fileDecorationProviderDisposable.dispose.mockClear();
@@ -123,6 +131,8 @@ const mocks = vi.hoisted(() => {
         afterPath: '/workspace/src/a.ts',
         title: 'Veyra diff: src/a.ts',
       });
+      this.service.dispatch.mockReset();
+      this.service.dispatch.mockResolvedValue(undefined);
       this.service.acceptChangeSet.mockReset();
       this.service.acceptChangeSet.mockResolvedValue({
         id: 'change-set-1',
@@ -245,6 +255,7 @@ vi.mock('vscode', () => ({
   },
   env: {
     clipboard: {
+      readText: mocks.clipboardReadText,
       writeText: mocks.clipboardWriteText,
     },
   },
@@ -261,6 +272,7 @@ vi.mock('../src/veyraWebviewController.js', () => ({
   VeyraWebviewController: vi.fn(function VeyraWebviewController() {
     const instance = {
       attach: vi.fn().mockResolvedValue(undefined),
+      dispatchExternalMessage: vi.fn().mockResolvedValue(undefined),
       dispose: vi.fn(),
     };
     mocks.webviewControllerInstances.push(instance);
@@ -353,6 +365,7 @@ describe('activate', () => {
       'veyra.showSetupGuide',
       'veyra.showLiveValidationGuide',
       'veyra.configureCliPaths',
+      'veyra.diagnoseTerminalOutput',
       'veyra.installCommitHook',
       'veyra.uninstallCommitHook',
       'veyra.showCommitHookSnippet',
@@ -446,6 +459,84 @@ describe('activate', () => {
     expect(mocks.clipboardWriteText).toHaveBeenCalledWith(expect.stringContaining('Codex: unauthenticated'));
     expect(mocks.showInformationMessage).toHaveBeenCalledWith('Copied Veyra diagnostic report to clipboard.');
     expect(report).toContain('Veyra Diagnostic Report');
+  });
+
+  it('dispatches copied terminal output into Veyra as a read-only diagnosis', async () => {
+    mocks.clipboardReadText.mockResolvedValue('npm test\nTS2304: Cannot find name Parser');
+    activate(context() as any);
+
+    const diagnoseTerminalOutput = mocks.commandCallbacks.get('veyra.diagnoseTerminalOutput');
+    expect(diagnoseTerminalOutput).toBeTypeOf('function');
+    await diagnoseTerminalOutput!();
+
+    expect(mocks.clipboardReadText).toHaveBeenCalledTimes(1);
+    expect(mocks.showInputBox).not.toHaveBeenCalled();
+    expect(mocks.executeCommand).toHaveBeenCalledWith('workbench.view.extension.veyra');
+    expect(mocks.service.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: 'panel',
+        cwd: '/workspace',
+        readOnly: true,
+        text: expect.stringContaining('[Terminal context]'),
+      }),
+      expect.any(Function),
+    );
+    const request = mocks.service.dispatch.mock.calls[0]?.[0] as { text: string };
+    expect(request.text).toContain('TS2304: Cannot find name Parser');
+    expect(request.text).toContain('Do not run commands unless the user explicitly approves the exact command.');
+  });
+
+  it('routes terminal diagnosis through the attached docked view when available', async () => {
+    mocks.clipboardReadText.mockResolvedValue('npm run build\nerror TS2304');
+    activate(context() as any);
+    const provider = mocks.webviewViewProviders.get('veyra.chatView')?.provider as VeyraViewProvider;
+    expect(provider).toBeTruthy();
+    await provider.resolveWebviewView(fakeWebviewView() as any);
+
+    const diagnoseTerminalOutput = mocks.commandCallbacks.get('veyra.diagnoseTerminalOutput');
+    expect(diagnoseTerminalOutput).toBeTypeOf('function');
+    await diagnoseTerminalOutput!();
+
+    expect(mocks.executeCommand).toHaveBeenCalledWith('workbench.view.extension.veyra');
+    expect(mocks.webviewControllerInstances[0].dispatchExternalMessage).toHaveBeenCalledWith(
+      expect.stringContaining('error TS2304'),
+    );
+    expect(mocks.service.dispatch).not.toHaveBeenCalled();
+  });
+
+  it('prompts for pasted terminal output when the clipboard is empty', async () => {
+    mocks.clipboardReadText.mockResolvedValue('   ');
+    mocks.showInputBox.mockResolvedValue('bun test failed with exit code 1');
+    activate(context() as any);
+
+    const diagnoseTerminalOutput = mocks.commandCallbacks.get('veyra.diagnoseTerminalOutput');
+    expect(diagnoseTerminalOutput).toBeTypeOf('function');
+    await diagnoseTerminalOutput!();
+
+    expect(mocks.showInputBox).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Diagnose terminal output',
+      prompt: expect.stringContaining('Paste terminal output'),
+    }));
+    expect(mocks.service.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: expect.stringContaining('bun test failed with exit code 1'),
+        readOnly: true,
+      }),
+      expect.any(Function),
+    );
+  });
+
+  it('does not dispatch terminal diagnosis when no output is provided', async () => {
+    mocks.clipboardReadText.mockResolvedValue('');
+    mocks.showInputBox.mockResolvedValue('   ');
+    activate(context() as any);
+
+    const diagnoseTerminalOutput = mocks.commandCallbacks.get('veyra.diagnoseTerminalOutput');
+    expect(diagnoseTerminalOutput).toBeTypeOf('function');
+    await diagnoseTerminalOutput!();
+
+    expect(mocks.service.dispatch).not.toHaveBeenCalled();
+    expect(mocks.showInformationMessage).toHaveBeenCalledWith('No terminal output provided.');
   });
 
   it('keeps the panel command usable when native chat registration fails', async () => {

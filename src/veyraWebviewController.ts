@@ -56,6 +56,10 @@ export class VeyraWebviewController {
     this.host = undefined;
   }
 
+  async dispatchExternalMessage(text: string): Promise<void> {
+    await this.dispatchUserMessage(text);
+  }
+
   private track<T extends vscode.Disposable>(disposable: T): T {
     if (this.disposed) {
       disposable.dispose();

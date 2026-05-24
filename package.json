@@ -60,6 +60,7 @@
     "onCommand:veyra.showSetupGuide",
     "onCommand:veyra.showLiveValidationGuide",
     "onCommand:veyra.configureCliPaths",
+    "onCommand:veyra.diagnoseTerminalOutput",
     "onCommand:veyra.installCommitHook",
     "onCommand:veyra.uninstallCommitHook",
     "onCommand:veyra.showCommitHookSnippet",
@@ -122,6 +123,10 @@
       {
         "command": "veyra.configureCliPaths",
         "title": "Veyra: Configure Codex/Gemini CLI paths"
+      },
+      {
+        "command": "veyra.diagnoseTerminalOutput",
+        "title": "Veyra: Diagnose Terminal Output"
       },
       {
         "command": "veyra.installCommitHook",

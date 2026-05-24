@@ -405,6 +405,7 @@ describe('extension manifest', () => {
   it('documents terminal awareness guardrails', () => {
     const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
     const smokeChecklist = readFileSync(join(process.cwd(), 'docs', 'vscode-smoke-test.md'), 'utf8');
+    const commands = new Map(manifest.contributes.commands.map((command) => [command.command, command.title]));
 
     for (const document of [readme, smokeChecklist]) {
       const normalized = document.toLowerCase();
@@ -415,6 +416,11 @@ describe('extension manifest', () => {
       expect(normalized).toContain('approve the exact command');
       expect(document).toContain('Do not run');
     }
+    expect(commands.get('veyra.diagnoseTerminalOutput')).toBe('Veyra: Diagnose Terminal Output');
+    expect(manifest.activationEvents).toContain('onCommand:veyra.diagnoseTerminalOutput');
+    expect(readme).toContain('Veyra: Diagnose Terminal Output');
+    expect(readme).toContain('copied or pasted terminal output');
+    expect(readme).toContain('does not read terminal scrollback directly');
   });
 
   it('contributes checkpoint commands and settings', () => {
@@ -489,6 +495,7 @@ describe('extension manifest', () => {
       'veyra.showSetupGuide',
       'veyra.showLiveValidationGuide',
       'veyra.configureCliPaths',
+      'veyra.diagnoseTerminalOutput',
       'veyra.installCommitHook',
       'veyra.uninstallCommitHook',
       'veyra.showCommitHookSnippet',
@@ -506,6 +513,7 @@ describe('extension manifest', () => {
     expect(manifest.activationEvents).toContain('onCommand:veyra.showSetupGuide');
     expect(manifest.activationEvents).toContain('onCommand:veyra.showLiveValidationGuide');
     expect(manifest.activationEvents).toContain('onCommand:veyra.configureCliPaths');
+    expect(manifest.activationEvents).toContain('onCommand:veyra.diagnoseTerminalOutput');
   });
 
   it('activates and contributes every native chat participant', () => {

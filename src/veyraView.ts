@@ -62,6 +62,12 @@ export class VeyraViewProvider implements vscode.WebviewViewProvider, vscode.Dis
     this.controller = undefined;
   }
 
+  async dispatchExternalMessage(text: string): Promise<boolean> {
+    if (!this.controller) return false;
+    await this.controller.dispatchExternalMessage(text);
+    return true;
+  }
+
   private noWorkspaceHtml(): string {
     return [
       '<!doctype html>',

@@ -11,6 +11,7 @@ import { detectCliBundlePaths } from './cliPathDetection.js';
 import { cliPathMisconfiguration, normalizeCliPathOverride } from './cliPathValidation.js';
 import { registerDiffPreviewCommands } from './diffPreviewCommands.js';
 import { registerCheckpointCommands } from './checkpointCommands.js';
+import { registerTerminalAwarenessCommands } from './terminalAwareness.js';
 import { revealVeyraView, VeyraViewProvider, VEYRA_VIEW_ID } from './veyraView.js';
 import {
   DIAGNOSTIC_COMMAND_IDS,
@@ -252,6 +253,12 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('veyra.configureCliPaths', async () => {
       await configureCliPaths();
     }),
+    registerTerminalAwarenessCommands(
+      vscode,
+      ensureNativeRegistration,
+      revealVeyraView,
+      (text) => viewProvider.dispatchExternalMessage(text),
+    ),
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (
         e.affectsConfiguration('veyra')

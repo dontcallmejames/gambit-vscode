@@ -120,6 +120,57 @@ describe('webview state reducer', () => {
     }));
   });
 
+  it('change-set-updated refreshes an existing change-set notice', () => {
+    let state = reduce(initialState(), {
+      kind: 'system-message',
+      message: {
+        id: 's2',
+        role: 'system',
+        kind: 'change-set',
+        text: 'Codex changed 1 file. Review pending changes before continuing.',
+        timestamp: 1,
+        agentId: 'codex',
+        changeSet: {
+          id: 'change-set-1',
+          agentId: 'codex',
+          messageId: 'msg1',
+          timestamp: 1,
+          readOnly: false,
+          status: 'pending',
+          fileCount: 1,
+          files: [{ path: 'src/a.ts', changeKind: 'edited' }],
+        },
+      },
+    });
+
+    state = reduce(state, {
+      kind: 'change-set-updated',
+      text: 'Accepted Veyra pending changes for 1 file.',
+      changeSet: {
+        id: 'change-set-1',
+        agentId: 'codex',
+        messageId: 'msg1',
+        timestamp: 1,
+        readOnly: false,
+        status: 'accepted',
+        fileCount: 1,
+        files: [{ path: 'src/a.ts', changeKind: 'edited', status: 'accepted' }],
+      },
+    });
+
+    expect(state.session.messages).toHaveLength(1);
+    expect(state.session.messages[0]).toMatchObject({
+      role: 'system',
+      kind: 'change-set',
+      text: 'Accepted Veyra pending changes for 1 file.',
+      changeSet: {
+        id: 'change-set-1',
+        status: 'accepted',
+        files: [{ path: 'src/a.ts', changeKind: 'edited', status: 'accepted' }],
+      },
+    });
+  });
+
   it('floor-changed updates floorHolder', () => {
     const state = reduce(initialState(), { kind: 'floor-changed', holder: 'codex' });
     expect(state.floorHolder).toBe('codex');

@@ -6,12 +6,14 @@ import { cspNonce } from './cspNonce.js';
 import { checkClaude, checkCodex, checkGemini, clearStatusCache } from './statusChecks.js';
 import { refreshVeyraSessionOptions } from './veyraRuntime.js';
 import type {
-  FromExtension, FromWebview, Settings, SystemMessage,
+  DispatchChangeSetSummary, FromExtension, FromWebview, Settings, SystemMessage,
 } from './shared/protocol.js';
 import type { AgentId, AgentStatus } from './types.js';
 import type { FileBadgesController } from './fileBadges.js';
 import type { VeyraDispatchEvent, VeyraSessionService } from './veyraService.js';
 import { localVeyraResponseForPrompt } from './localVeyraPrompt.js';
+import { veyraWorkflowPrompt, type VeyraWorkflowCommand } from './workflowPrompts.js';
+import { readWorkflowPromptOptions } from './workflowSettings.js';
 
 export interface VeyraWebviewControllerOptions {
   context: vscode.ExtensionContext;
@@ -197,15 +199,19 @@ export class VeyraWebviewController {
         break;
       case 'accept-change-set':
         await vscode.commands.executeCommand('veyra.acceptPendingChanges', msg.changeSetId);
+        await this.refreshChangeSetNotice(msg.changeSetId);
         break;
       case 'reject-change-set':
         await vscode.commands.executeCommand('veyra.rejectPendingChanges', msg.changeSetId);
+        await this.refreshChangeSetNotice(msg.changeSetId);
         break;
       case 'accept-change-set-file':
         await vscode.commands.executeCommand('veyra.acceptPendingChangeFile', msg.changeSetId, msg.filePath);
+        await this.refreshChangeSetNotice(msg.changeSetId);
         break;
       case 'reject-change-set-file':
         await vscode.commands.executeCommand('veyra.rejectPendingChangeFile', msg.changeSetId, msg.filePath);
+        await this.refreshChangeSetNotice(msg.changeSetId);
         break;
       case 'create-checkpoint':
         await vscode.commands.executeCommand('veyra.createCheckpoint', msg.label);
@@ -232,6 +238,17 @@ export class VeyraWebviewController {
         break;
       }
     }
+  }
+
+  private async refreshChangeSetNotice(changeSetId: string): Promise<void> {
+    const changeSet = await this.options.service.getChangeSet(changeSetId);
+    if (!changeSet) return;
+
+    this.send({
+      kind: 'change-set-updated',
+      changeSet,
+      text: formatChangeSetUpdateText(changeSet),
+    });
   }
 
   private resolveOpenWorkspaceFilePath(filePath: string): string | null {
@@ -276,11 +293,13 @@ export class VeyraWebviewController {
       this.startOnboardingPrompts();
     }
 
+    const routedPrompt = panelWorkflowPromptForText(text);
     await this.options.service.dispatch(
       {
-        text,
+        text: routedPrompt.text,
         source: 'panel',
         cwd: this.options.workspacePath,
+        ...(routedPrompt.readOnly === true ? { readOnly: true } : {}),
       },
       (event) => this.handleDispatchEvent(event),
     );
@@ -419,6 +438,45 @@ export class VeyraWebviewController {
       .replace(/{{WEBVIEW_JS_URI}}/g, jsUri.toString());
     return html;
   }
+}
+
+function formatChangeSetUpdateText(changeSet: DispatchChangeSetSummary): string {
+  if (changeSet.status === 'accepted') {
+    return `Accepted Veyra pending changes for ${formatFileCount(changeSet.fileCount)}.`;
+  }
+  if (changeSet.status === 'rejected') {
+    return `Rejected Veyra pending changes for ${formatFileCount(changeSet.fileCount)}.`;
+  }
+  if (changeSet.status === 'stale') {
+    return `Veyra pending changes need attention for ${formatFileCount(changeSet.fileCount)}.`;
+  }
+  if (changeSet.status === 'resolved') {
+    return `Resolved Veyra pending changes for ${formatFileCount(changeSet.fileCount)}.`;
+  }
+  return `Updated Veyra pending changes for ${formatFileCount(changeSet.fileCount)}.`;
+}
+
+function formatFileCount(fileCount: number): string {
+  return `${fileCount} ${fileCount === 1 ? 'file' : 'files'}`;
+}
+
+function panelWorkflowPromptForText(text: string): { text: string; readOnly?: boolean } {
+  const workflow = parsePanelWorkflowCommand(text);
+  if (!workflow) return { text };
+
+  return {
+    text: veyraWorkflowPrompt(workflow.command, workflow.prompt, readWorkflowPromptOptions()),
+    ...(workflow.command === 'implement' ? {} : { readOnly: true }),
+  };
+}
+
+function parsePanelWorkflowCommand(text: string): { command: VeyraWorkflowCommand; prompt: string } | null {
+  const match = text.match(/^\s*(?:@veyra\s+)?\/(review|debate|consensus|implement)(?:\s+([\s\S]*?))?\s*$/i);
+  if (!match) return null;
+  return {
+    command: match[1].toLowerCase() as VeyraWorkflowCommand,
+    prompt: match[2]?.trim() ?? '',
+  };
 }
 
 export function fileBadgesEnabled(): boolean {

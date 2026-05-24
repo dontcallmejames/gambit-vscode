@@ -394,7 +394,7 @@ export class VeyraSessionService {
         emitSystem({
           id: ulid(),
           role: 'system',
-          kind: 'error',
+          kind: 'warning',
           text: `${activeAgentForHang} hasn't responded for ${this.hangSeconds}s - keep waiting or cancel?`,
           timestamp: Date.now(),
         });

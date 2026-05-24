@@ -447,31 +447,51 @@ function renderNativeChatEvent(
     if (event.message.kind === 'change-set' && event.message.changeSet) {
       response.markdown(`\n\n${event.message.text}`);
       if (event.message.changeSet.status === 'pending' || event.message.changeSet.status === 'stale') {
-        emitNativeChatButton(response, {
-          command: 'veyra.openPendingChanges',
-          title: 'Open pending changes',
-          arguments: [event.message.changeSet.id],
-        });
-        emitNativeChatButton(response, {
-          command: 'veyra.acceptPendingChanges',
-          title: 'Accept pending changes',
-          arguments: [event.message.changeSet.id],
-        });
-        emitNativeChatButton(response, {
-          command: 'veyra.rejectPendingChanges',
-          title: 'Reject pending changes',
-          arguments: [event.message.changeSet.id],
-        });
-        emitNativeChatButton(response, {
-          command: 'veyra.acceptPendingChangeFile',
-          title: 'Accept one file',
-          arguments: [event.message.changeSet.id],
-        });
-        emitNativeChatButton(response, {
-          command: 'veyra.rejectPendingChangeFile',
-          title: 'Reject one file',
-          arguments: [event.message.changeSet.id],
-        });
+        const actionableFiles = event.message.changeSet.files.filter(isActionableChangeSetFile);
+        if (actionableFiles.length === 1) {
+          const file = actionableFiles[0];
+          emitNativeChatButton(response, {
+            command: 'veyra.openPendingChanges',
+            title: `Open ${file.path}`,
+            arguments: [event.message.changeSet.id, file.path],
+          });
+          emitNativeChatButton(response, {
+            command: 'veyra.acceptPendingChangeFile',
+            title: `Accept ${file.path}`,
+            arguments: [event.message.changeSet.id, file.path],
+          });
+          emitNativeChatButton(response, {
+            command: 'veyra.rejectPendingChangeFile',
+            title: `Reject ${file.path}`,
+            arguments: [event.message.changeSet.id, file.path],
+          });
+        } else {
+          emitNativeChatButton(response, {
+            command: 'veyra.openPendingChanges',
+            title: 'Open pending changes',
+            arguments: [event.message.changeSet.id],
+          });
+          emitNativeChatButton(response, {
+            command: 'veyra.acceptPendingChanges',
+            title: 'Accept pending changes',
+            arguments: [event.message.changeSet.id],
+          });
+          emitNativeChatButton(response, {
+            command: 'veyra.rejectPendingChanges',
+            title: 'Reject pending changes',
+            arguments: [event.message.changeSet.id],
+          });
+          emitNativeChatButton(response, {
+            command: 'veyra.acceptPendingChangeFile',
+            title: 'Accept one file',
+            arguments: [event.message.changeSet.id],
+          });
+          emitNativeChatButton(response, {
+            command: 'veyra.rejectPendingChangeFile',
+            title: 'Reject one file',
+            arguments: [event.message.changeSet.id],
+          });
+        }
       }
       return { sawText: true, sawError: false };
     }
@@ -490,6 +510,10 @@ function renderNativeChatEvent(
       response.reference(editedFileUri(workspacePath, event.message.filePath));
       response.markdown(`\n\n> ${event.message.text.replace(/\r?\n/g, '\n> ')}`);
       return { sawText: false, sawError: Boolean(event.message.agentId) };
+    }
+    if (event.message.kind === 'warning') {
+      response.markdown(`\n\n> ${event.message.text.replace(/\r?\n/g, '\n> ')}`);
+      return { sawText: true, sawError: false };
     }
     response.markdown(`\n\n> ${event.message.text.replace(/\r?\n/g, '\n> ')}`);
     return { sawText: false, sawError: true };
@@ -552,6 +576,10 @@ function emitNativeChatButton(response: vscode.ChatResponseStream, command: vsco
   if (typeof button === 'function') {
     button.call(response, command);
   }
+}
+
+function isActionableChangeSetFile(file: { status?: string }): boolean {
+  return !file.status || file.status === 'pending' || file.status === 'stale';
 }
 
 function createNativeChatSmokeResponseCollector(): { response: vscode.ChatResponseStream; text(): string } {

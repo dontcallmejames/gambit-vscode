@@ -25,6 +25,7 @@ export function SystemNotice({
     );
   }
   const classes = ['system-notice'];
+  if (message.kind === 'warning') classes.push('warning');
   if (message.kind === 'error') classes.push('error');
   if (message.kind === 'edit-conflict') classes.push('edit-conflict');
   if (message.kind === 'file-edited') classes.push('file-edited');

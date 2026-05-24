@@ -50,14 +50,15 @@ describe('extension manifest', () => {
     expect(rawManifest).not.toMatch(/[^\x00-\x7F]/);
   });
 
-  it('declares Marketplace preview listing metadata and assets', () => {
+  it('declares Marketplace stable listing metadata and assets', () => {
     const manifestRecord = manifest as Record<string, unknown>;
     const icon = readFileSync(join(process.cwd(), 'resources', 'icon.png'));
 
     expect(manifest.name).toBe('veyra-vscode');
     expect(manifest.displayName).toBe('Veyra');
     expect(manifestRecord.private).toBeUndefined();
-    expect(manifest.preview).toBe(true);
+    expect(manifest.version).toBe('1.0.0');
+    expect(manifest.preview).toBe(false);
     expect(manifest.license).toBe('SEE LICENSE IN LICENSE.txt');
     expect(manifest.repository).toEqual({
       type: 'git',
@@ -87,6 +88,16 @@ describe('extension manifest', () => {
     expect(icon.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
     expect(icon.readUInt32BE(16)).toBe(128);
     expect(icon.readUInt32BE(20)).toBe(128);
+  });
+
+  it('documents the v1.0 release contents in the changelog', () => {
+    const changelog = readFileSync(join(process.cwd(), 'CHANGELOG.md'), 'utf8');
+
+    expect(changelog).toContain('## 1.0.0');
+    expect(changelog).toContain('workflow templates');
+    expect(changelog).toContain('workspace role customization');
+    expect(changelog).toContain('post-implement verification suggestions');
+    expect(changelog).toContain('v1.0 stabilization');
   });
 
   it('cross-links the repository README and the Marketplace overview', () => {

@@ -103,6 +103,11 @@ body {
   border-color: var(--error-border);
   color: var(--error-color);
 }
+.system-notice.warning {
+  background: rgba(255, 184, 74, 0.08);
+  border-color: rgba(255, 184, 74, 0.45);
+  color: #ffce85;
+}
 .system-notice.edit-conflict {
   background: rgba(255, 184, 74, 0.08);
   border-color: rgba(255, 184, 74, 0.45);

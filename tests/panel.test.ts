@@ -305,6 +305,44 @@ describe('VeyraWebviewController', () => {
     );
   });
 
+  it('refreshes webview change-set notices after resolving a pending file', async () => {
+    const acceptedChangeSet = {
+      id: 'change-set-1',
+      agentId: 'codex',
+      messageId: 'msg1',
+      timestamp: 1,
+      readOnly: false,
+      status: 'accepted',
+      fileCount: 1,
+      files: [{ path: 'src/a.ts', changeKind: 'edited', status: 'accepted' }],
+    };
+    const service = {
+      loadSession: vi.fn().mockResolvedValue({ version: 1, messages: [] }),
+      onFloorChange: vi.fn(() => vi.fn()),
+      onStatusChange: vi.fn(() => vi.fn()),
+      onWriteError: vi.fn(() => vi.fn()),
+      notifyStatusChange: vi.fn(),
+      getChangeSet: vi.fn().mockResolvedValue(acceptedChangeSet),
+      flush: vi.fn().mockResolvedValue(undefined),
+    };
+    await attachController({ service: service as any });
+    const onDidReceive = (vscode as any).__test.onDidReceive.handler;
+
+    await onDidReceive({ kind: 'accept-change-set-file', changeSetId: 'change-set-1', filePath: 'src/a.ts' });
+
+    expect((vscode as any).commands.executeCommand).toHaveBeenCalledWith(
+      'veyra.acceptPendingChangeFile',
+      'change-set-1',
+      'src/a.ts',
+    );
+    expect(service.getChangeSet).toHaveBeenCalledWith('change-set-1');
+    expect((vscode as any).__test.messages).toContainEqual({
+      kind: 'change-set-updated',
+      text: 'Accepted Veyra pending changes for 1 file.',
+      changeSet: acceptedChangeSet,
+    });
+  });
+
   it('checkpoint actions from webview invoke checkpoint commands', async () => {
     await attachController();
     const onDidReceive = (vscode as any).__test.onDidReceive.handler;
@@ -477,6 +515,62 @@ describe('VeyraWebviewController', () => {
 
     resolvePrompt('Not now');
     await sendPromise;
+  });
+
+  it('turns panel /implement into the same all-agent workflow as native chat', async () => {
+    const service = {
+      loadSession: vi.fn().mockResolvedValue({ messages: [] }),
+      onFloorChange: vi.fn(() => vi.fn()),
+      onStatusChange: vi.fn(() => vi.fn()),
+      onWriteError: vi.fn(() => vi.fn()),
+      isFirstSession: vi.fn(() => false),
+      dispatch: vi.fn().mockResolvedValue(undefined),
+      cancelAll: vi.fn().mockResolvedValue(undefined),
+      notifyStatusChange: vi.fn(),
+      flush: vi.fn().mockResolvedValue(undefined),
+    };
+
+    await attachController({ service: service as any });
+    const onDidReceive = (vscode as any).__test.onDidReceive.handler;
+
+    await onDidReceive({ kind: 'send', text: '@veyra /implement make a tiny test-only change' });
+
+    const dispatched = service.dispatch.mock.calls[0][0].text;
+    expect(dispatched).toContain('@all');
+    expect(dispatched).toContain('Workflow: implement');
+    expect(dispatched).toContain('Claude: state the approach');
+    expect(dispatched).toContain('Codex: implement the smallest safe code change and tests.');
+    expect(dispatched).toContain('Gemini: review the result');
+    expect(dispatched).toContain('make a tiny test-only change');
+    expect(service.dispatch.mock.calls[0][0]).not.toHaveProperty('readOnly');
+  });
+
+  it('turns panel /review into a read-only all-agent workflow', async () => {
+    const service = {
+      loadSession: vi.fn().mockResolvedValue({ messages: [] }),
+      onFloorChange: vi.fn(() => vi.fn()),
+      onStatusChange: vi.fn(() => vi.fn()),
+      onWriteError: vi.fn(() => vi.fn()),
+      isFirstSession: vi.fn(() => false),
+      dispatch: vi.fn().mockResolvedValue(undefined),
+      cancelAll: vi.fn().mockResolvedValue(undefined),
+      notifyStatusChange: vi.fn(),
+      flush: vi.fn().mockResolvedValue(undefined),
+    };
+
+    await attachController({ service: service as any });
+    const onDidReceive = (vscode as any).__test.onDidReceive.handler;
+
+    await onDidReceive({ kind: 'send', text: '/review check the parser tests' });
+
+    expect(service.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: expect.stringContaining('Workflow: review'),
+        readOnly: true,
+      }),
+      expect.any(Function),
+    );
+    expect(service.dispatch.mock.calls[0][0].text).toContain('Read-only workflow');
   });
 
   it('answers first-session panel heartbeats locally without dispatching or prompting onboarding', async () => {

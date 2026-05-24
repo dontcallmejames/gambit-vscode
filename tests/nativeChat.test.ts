@@ -829,6 +829,50 @@ describe('native chat workflow prompts', () => {
     expect(result).not.toHaveProperty('errorDetails');
   });
 
+  it('does not fail the whole native chat result for slow-agent hang warnings', async () => {
+    const context = { subscriptions: [] as Array<{ dispose(): void }> };
+    const service = {
+      dispatch: vi.fn(async (_request, emit) => {
+        await emit({
+          kind: 'system-message',
+          message: {
+            id: 'sys1',
+            role: 'system',
+            kind: 'warning',
+            text: "gemini hasn't responded for 60s - keep waiting or cancel?",
+            timestamp: 1,
+            agentId: 'gemini',
+          },
+        });
+        await emit({
+          kind: 'chunk',
+          agentId: 'gemini',
+          chunk: { type: 'text', text: 'Gemini eventually completed the review.' },
+          timestamp: 2,
+        });
+      }),
+      cancelAll: vi.fn(),
+    };
+
+    registerNativeChatParticipants(
+      context as any,
+      () => ({ service, workspacePath: '/workspace' } as any),
+    );
+
+    const handler = vscodeMocks.participantHandlers.get('veyra.veyra');
+    const response = { markdown: vi.fn(), progress: vi.fn(), reference: vi.fn() };
+    const result = await handler!(
+      { prompt: 'implement this', command: 'implement', references: [], toolReferences: [] },
+      {},
+      response,
+      cancellationToken(),
+    );
+
+    expect(response.markdown).toHaveBeenCalledWith(expect.stringContaining("gemini hasn't responded"));
+    expect(response.markdown).toHaveBeenCalledWith('Gemini eventually completed the review.');
+    expect(result).not.toHaveProperty('errorDetails');
+  });
+
   it('offers the setup guide from native chat routing-needed messages', async () => {
     const context = { subscriptions: [] as Array<{ dispose(): void }> };
     const service = {
@@ -1039,6 +1083,68 @@ describe('native chat workflow prompts', () => {
       command: 'veyra.rejectPendingChangeFile',
       title: 'Reject one file',
       arguments: ['change-set-1'],
+    });
+  });
+
+  it('uses direct file-specific buttons for one-file native chat change-set notices', async () => {
+    const context = { subscriptions: [] as Array<{ dispose(): void }> };
+    const service = {
+      dispatch: vi.fn(async (_request, emit) => {
+        await emit({
+          kind: 'system-message',
+          message: {
+            id: 'sys1',
+            role: 'system',
+            kind: 'change-set',
+            text: 'Codex changed 1 file. Review pending changes before continuing.',
+            timestamp: 1,
+            agentId: 'codex',
+            changeSet: {
+              id: 'change-set-1',
+              agentId: 'codex',
+              messageId: 'msg1',
+              timestamp: 1,
+              readOnly: false,
+              status: 'pending',
+              fileCount: 1,
+              files: [
+                { path: 'parser.test.ts', changeKind: 'edited' },
+              ],
+            },
+          },
+        });
+      }),
+      cancelAll: vi.fn(),
+    };
+
+    registerNativeChatParticipants(
+      context as any,
+      () => ({ service, workspacePath: '/workspace' } as any),
+    );
+
+    const handler = vscodeMocks.participantHandlers.get('veyra.veyra');
+    const response = { markdown: vi.fn(), progress: vi.fn(), reference: vi.fn(), button: vi.fn() };
+    await handler!(
+      { prompt: 'implement this', command: undefined },
+      {},
+      response,
+      cancellationToken(),
+    );
+
+    expect(response.button).toHaveBeenCalledWith({
+      command: 'veyra.openPendingChanges',
+      title: 'Open parser.test.ts',
+      arguments: ['change-set-1', 'parser.test.ts'],
+    });
+    expect(response.button).toHaveBeenCalledWith({
+      command: 'veyra.acceptPendingChangeFile',
+      title: 'Accept parser.test.ts',
+      arguments: ['change-set-1', 'parser.test.ts'],
+    });
+    expect(response.button).toHaveBeenCalledWith({
+      command: 'veyra.rejectPendingChangeFile',
+      title: 'Reject parser.test.ts',
+      arguments: ['change-set-1', 'parser.test.ts'],
     });
   });
 

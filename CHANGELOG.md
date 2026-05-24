@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.0
+
+- Promotes Veyra from Marketplace preview metadata to the v1.0 stable release package.
+- Adds workflow templates and workspace role customization for Claude, Codex, and Gemini prompts.
+- Adds post-implement verification suggestions with explicit user approval semantics before any command can run.
+- Treats slow-agent hang notices as warnings so delayed Gemini responses do not mark an otherwise completed workflow as failed.
+- Uses direct file-specific native chat buttons for one-file pending change sets.
+- Refreshes docked-view pending change notices after accept/reject actions so resolved file actions disappear immediately.
+- Routes docked-view `/review`, `/debate`, `/consensus`, and `/implement` commands through the same all-agent workflow prompts as native Chat.
+- Includes the v1.0 stabilization pass over release metadata, changelog, package verification, smoke docs, and completion-audit guidance.
+
 ## 0.0.11
 
 - Adds per-file pending change controls so individual agent-edited files can be accepted or rejected before resolving the whole change set.

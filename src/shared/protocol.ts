@@ -93,7 +93,7 @@ export type AgentMessage = {
 export type SystemMessage = {
   id: string;
   role: 'system';
-  kind: 'routing-needed' | 'local-response' | 'error' | 'facilitator-decision' | 'edit-conflict' | 'file-edited' | 'change-set' | 'checkpoint';
+  kind: 'routing-needed' | 'local-response' | 'warning' | 'error' | 'facilitator-decision' | 'edit-conflict' | 'file-edited' | 'change-set' | 'checkpoint';
   text: string;
   timestamp: number;
   agentId?: AgentId;     // present when a system notice is associated with a specific agent
@@ -141,6 +141,7 @@ export type FromExtension =
   | { kind: 'message-chunk'; id: string; chunk: AgentChunk }
   | { kind: 'message-finalized'; message: AgentMessage }
   | { kind: 'system-message'; message: SystemMessage }
+  | { kind: 'change-set-updated'; changeSet: DispatchChangeSetSummary; text: string }
   | { kind: 'floor-changed'; holder: AgentId | null }
   | { kind: 'status-changed'; agentId: AgentId; status: AgentStatus }
   | { kind: 'settings-changed'; settings: Settings }

@@ -802,6 +802,65 @@ describe('VeyraSessionService', () => {
     expect(prompts.get('gemini')).not.toContain('Prioritize TypeScript ergonomics');
   });
 
+  it('emits slow-agent hang notices as warnings while the agent continues', async () => {
+    vi.useFakeTimers();
+    try {
+      const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-service-'));
+      let finishGemini!: () => void;
+      const geminiCanFinish = new Promise<void>((resolve) => {
+        finishGemini = resolve;
+      });
+      let dispatchStarted!: () => void;
+      const dispatchStartedPromise = new Promise<void>((resolve) => {
+        dispatchStarted = resolve;
+      });
+      const service = new VeyraSessionService(
+        workspacePath,
+        {
+          claude: agentNoop('claude'),
+          codex: agentNoop('codex'),
+          gemini: {
+            id: 'gemini',
+            status: async () => 'ready',
+            cancel: async () => {},
+            async *send() {
+              await geminiCanFinish;
+              yield { type: 'text', text: 'Gemini finished after waiting.' } as AgentChunk;
+              yield { type: 'done' } as AgentChunk;
+            },
+          },
+        },
+        { hangSeconds: 1 },
+      );
+
+      const events: any[] = [];
+      const dispatch = service.dispatch(
+        { text: '@gemini review slowly', source: 'native-chat', cwd: workspacePath },
+        (event) => {
+          events.push(event);
+          if (event.kind === 'dispatch-start') dispatchStarted();
+        },
+      );
+      await dispatchStartedPromise;
+
+      await vi.advanceTimersByTimeAsync(1000);
+
+      const warning = events.find((event) =>
+        event.kind === 'system-message' &&
+        event.message.text.includes("hasn't responded")
+      );
+      expect(warning?.message.kind).toBe('warning');
+
+      finishGemini();
+      await dispatch;
+
+      const finalized = events.find((event) => event.kind === 'dispatch-end');
+      expect(finalized?.message.status).toBe('complete');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('forwards readOnly dispatches to every targeted agent send call', async () => {
     const optionsByAgent = new Map<AgentId, unknown>();
     const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-service-'));

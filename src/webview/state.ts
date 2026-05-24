@@ -83,6 +83,21 @@ export function reduce(state: WebviewState, event: FromExtension): WebviewState 
         },
       };
 
+    case 'change-set-updated':
+      return {
+        ...state,
+        session: {
+          ...state.session,
+          messages: state.session.messages.map((message) => (
+            message.role === 'system'
+            && message.kind === 'change-set'
+            && message.changeSet?.id === event.changeSet.id
+              ? { ...message, text: event.text, changeSet: event.changeSet }
+              : message
+          )),
+        },
+      };
+
     case 'floor-changed':
       return { ...state, floorHolder: event.holder };
 

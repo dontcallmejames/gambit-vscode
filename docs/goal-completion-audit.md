@@ -1,8 +1,18 @@
 # Veyra Goal Completion Audit
 
-Last updated: 2026-05-11
+Last updated: 2026-05-24
 
 This audit tracks the active goal: make Veyra a VS Code extension where Claude, Codex, and Gemini can collaborate without losing context, stomping each other's edits, or making invisible changes.
+
+## v1.0 Release Readiness
+
+Veyra is now prepared as the `1.0.0` stable release package. The release pass promotes the Marketplace metadata out of preview mode, records the workflow-template and post-implement verification-suggestion slices in the changelog, and keeps the packaged completion audit, smoke checklist, README, package allowlist, and VSIX generation path aligned with the v1.0 spine.
+
+The v1.0 definition from `docs/superpowers/specs/2026-05-11-veyra-v1-roadmap-design.md` is capability based: workspace context, visible change review, rollback, clearer multi-agent workflows, and maintained native chat, Language Model provider, docked view, file badge, edit-conflict, commit attribution, packaging, smoke, and live-readiness gates. Current package metadata and verification gates now track that definition directly.
+
+The 2026-05-24 paid live validation pass found final native-chat and docked-view polish blockers in `/implement`: a slow Gemini hang notice could mark the completed chat result as failed, one-file pending change actions were rendered as generic buttons with no in-chat indication of the exact file target, and the docked view did not visibly refresh a pending notice after accept/reject. Hang detection now emits a warning system notice, native chat treats warnings as nonfatal, one-file change sets emit direct `Open`, `Accept`, and `Reject` buttons for the changed path, and the docked view refreshes the change-set snapshot after accept/reject so resolved file actions disappear.
+
+The same live pass also showed that typing `@veyra /implement ...` in the docked panel routed through the single-agent facilitator instead of the slash workflow engine, so Claude answered as the planning role and the serial Codex/Gemini stages never started. The docked panel now parses `/review`, `/debate`, `/consensus`, and `/implement` with an optional leading `@veyra`, then reuses the native Chat workflow prompt builder and read-only flags so panel slash workflows reach the expected all-agent path.
 
 ## Prompt-to-Artifact Checklist
 

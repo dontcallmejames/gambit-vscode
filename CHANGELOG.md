@@ -1,9 +1,10 @@
 # Changelog
 
-## Unreleased
+## 1.0.1
 
 - Adds `Veyra: Diagnose Terminal Output` for routing copied or pasted terminal output into a read-only Veyra diagnosis prompt.
 - Keeps terminal diagnosis explicit: Veyra does not read terminal scrollback directly and still requires user approval before any suggested command can run.
+- Improves the README and Marketplace overview by making the native chat workflow section easier to scan.
 
 ## 1.0.0
 

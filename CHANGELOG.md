@@ -2,7 +2,10 @@
 
 ## Unreleased
 
+## 1.0.10 - 2026-05-25
+
 - Adds Trust Center v0.1 to the docked Veyra view, deriving pending changes, checkpoints, edit conflicts, file edits, approved verification status, and Git/CI context from the existing session stream while reusing the same diff, accept/reject, checkpoint, verification, Git, CI, and diagnostics actions as inline notices.
+- Refreshes the packaged Marketplace icon with the new Veyra multi-agent sigil artwork.
 
 ## 1.0.9 - 2026-05-25
 

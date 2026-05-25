@@ -22,6 +22,8 @@ The 2026-05-25 1.0.7 Presentation Layer pass adds a compact Mission Control time
 
 The 2026-05-25 Structured Workflow Artifact Cards pass adds dense expandable cards for known Veyra output sections in the docked view. It detects sections such as Veyra Synthesis, Recommendation, Blocking issues, Advisory risks, Missing tests, Follow-up suggestions, Next action, and Handoff Summary on the webview side, renders each section through the existing safe Markdown renderer, and leaves malformed or unknown prose as normal Markdown.
 
+The 2026-05-25 Trust Center v0.1 pass adds a persistent trust surface above the docked-view transcript. It derives pending changes, available checkpoints, file edits, edit conflicts, approved verification status, and explicit Git/CI context from the existing webview session stream, then routes open diff, accept/reject, per-file decisions, checkpoint creation, rollback, verification, Git summary, CI/PR review, and diagnostic-copy actions through the same webview command paths used by inline notices. The inline notices remain in the transcript and stay the authoritative per-event evidence.
+
 ## Prompt-to-Artifact Checklist
 
 | Prompt requirement | Concrete artifact evidence | Verification gate | Status |

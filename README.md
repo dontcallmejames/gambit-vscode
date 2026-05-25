@@ -20,6 +20,7 @@ The working rule is: agents can work together without losing context, stomping e
 - A docked Veyra view for the full orchestration UI with statuses, checkpoints, and pending changes.
 - A compact Presentation Layer with a Mission Control timeline that shows Claude, Codex, and Gemini as queued, active, complete, failed, cancelled, and waiting stages.
 - Structured Workflow Artifact Cards for known Veyra sections such as `Veyra Synthesis`, `Recommendation`, blocking issues, missing tests, follow-ups, next actions, and `Handoff Summary`.
+- A Trust Center in the docked view that keeps pending changes, checkpoints, edit conflicts, file edits, approved verification status, and Git/CI context visible without replacing the inline notices.
 - Composer autocomplete in the docked Veyra view for agents, slash workflows, and common Veyra commands.
 - Shared context and file mention support across the Veyra view, native chat, and language model requests.
 - File edit visibility through streamed edit events, file decoration badges, session summaries, and commit attribution.
@@ -196,6 +197,16 @@ Install the commit hook from the command palette with `Veyra: Install commit hoo
 When an agent edits files, Veyra records a pending change set. Use `Veyra: Open Pending Changes` to inspect the files in VS Code's diff editor, `Veyra: Accept Pending Changes` to mark the whole change set as kept, or `Veyra: Reject Pending Changes` to restore the whole pre-dispatch file state. Use `Veyra: Accept Pending Change File` or `Veyra: Reject Pending Change File` when you want to resolve individual files first.
 
 Reject refuses to overwrite files that changed after the agent edit. In that case, inspect the file manually before continuing.
+
+### Trust Center
+
+The docked Veyra view includes a compact Trust Center above the transcript. It derives from the same session messages as the inline notices, so it does not create a second source of truth.
+
+- Pending changes show the same open diff, accept, reject, and per-file actions as the inline change-set notice.
+- Checkpoints expose manual checkpoint creation and latest-checkpoint rollback.
+- Verification status is shown only after an explicitly approved Veyra verification command reports an exit status.
+- Git and CI/PR context appears only when you run the explicit Veyra Git or CI/PR review commands.
+- File edits and edit conflicts remain visible and open the related workspace file.
 
 ### Checkpoints And Rollback
 

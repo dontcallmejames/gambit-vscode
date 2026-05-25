@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Adds Trust Center v0.1 to the docked Veyra view, deriving pending changes, checkpoints, edit conflicts, file edits, approved verification status, and Git/CI context from the existing session stream while reusing the same diff, accept/reject, checkpoint, verification, Git, CI, and diagnostics actions as inline notices.
+
 ## 1.0.9 - 2026-05-25
 
 - Adds Structured Workflow Artifact Cards v0.1 in the docked Veyra view, rendering known workflow sections such as Veyra Synthesis, Recommendation, Blocking issues, Missing tests, Next action, and Handoff Summary as dense expandable cards while preserving safe Markdown fallback.

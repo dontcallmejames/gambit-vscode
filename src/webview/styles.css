@@ -375,6 +375,72 @@ body {
 }
 .tool-card.compact:not(.expanded) .tool-card-body { display: none; }
 .tool-card.hidden { display: none; }
+.tool-activity-summary {
+  margin-top: 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(0,0,0,0.18);
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 11px;
+  white-space: normal;
+}
+.tool-activity-head {
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px 8px;
+  padding: 5px 8px;
+  cursor: pointer;
+  user-select: none;
+}
+.tool-activity-title {
+  font-weight: 700;
+}
+.tool-activity-count,
+.tool-activity-latest {
+  color: var(--vscode-descriptionForeground, inherit);
+}
+.tool-activity-kinds {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.tool-activity-chip {
+  padding: 1px 5px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.04);
+}
+.tool-activity-latest {
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tool-activity-detail {
+  max-height: 220px;
+  overflow: auto;
+  border-top: 1px solid var(--border);
+  padding: 4px 8px 6px;
+}
+.tool-activity-event {
+  display: grid;
+  grid-template-columns: minmax(72px, max-content) minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+  padding: 3px 0;
+}
+.tool-activity-event-name {
+  color: var(--vscode-descriptionForeground, inherit);
+}
+.tool-activity-event code {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .composer {
   border-top: 1px solid var(--border);

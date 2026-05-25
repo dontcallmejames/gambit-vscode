@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 1.0.8 - 2026-05-25
+
+- Collapses compact provider tool activity into one expandable summary so busy agents no longer fill the transcript with repeated command cards, while keeping verbose raw tool cards available for debugging.
+
 ## 1.0.7 - 2026-05-25
 
 - Adds a compact Presentation Layer Mission Control timeline to the docked Veyra view, showing Claude, Codex, and Gemini workflow stages plus current floor, recent tool, pending-change, checkpoint, and approved-verification indicators.

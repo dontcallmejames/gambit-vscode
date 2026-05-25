@@ -204,7 +204,7 @@ Rollback refuses when automatic checkpoint files changed after the agent dispatc
 
 ## Settings
 
-- `veyra.toolCallRenderStyle`: `verbose`, `compact`, or `hidden` for raw tool call/result details in the Veyra view, native chat, and Language Model provider. File edit references still stay visible.
+- `veyra.toolCallRenderStyle`: `verbose`, `compact`, or `hidden` for tool call/result details in the Veyra view, native chat, and Language Model provider. Compact mode groups noisy provider activity into one expandable summary; file edit references still stay visible.
 - `veyra.hangDetectionSeconds`: seconds without output before a waiting notice appears.
 - `veyra.watchdogMinutes`: maximum time an agent may hold the dispatch floor.
 - `veyra.fileEmbedMaxLines`: max lines embedded for `@file` mentions.

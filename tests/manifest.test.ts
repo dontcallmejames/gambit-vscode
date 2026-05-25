@@ -57,7 +57,7 @@ describe('extension manifest', () => {
     expect(manifest.name).toBe('veyra-vscode');
     expect(manifest.displayName).toBe('Veyra');
     expect(manifestRecord.private).toBeUndefined();
-    expect(manifest.version).toBe('1.0.12');
+    expect(manifest.version).toBe('1.0.13');
     expect(manifest.preview).toBe(false);
     expect(manifest.license).toBe('SEE LICENSE IN LICENSE.txt');
     expect(manifest.repository).toEqual({

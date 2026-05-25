@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.13 - 2026-05-25
+
 - Adds Browser Testing Awareness v0.1 with `Veyra: Review Browser/Test Output`, a local-first browser/frontend test review prompt for pasted Playwright, Cypress, Vitest UI, console, network, screenshot-note, URL-note, and reproduction evidence. It produces browser/test artifact-card headings while preserving explicit approval semantics: no hidden browser launch, network scraping, test reruns, file edits, Git operations, or command execution.
 
 ## 1.0.12 - 2026-05-25

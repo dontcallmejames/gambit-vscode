@@ -357,6 +357,27 @@ describe('VeyraWebviewController', () => {
     expect((vscode as any).commands.executeCommand).toHaveBeenCalledWith('veyra.rollbackLatestCheckpoint');
   });
 
+  it('runs whitelisted command-discovery actions from the webview composer', async () => {
+    await attachController();
+    const onDidReceive = (vscode as any).__test.onDidReceive.handler;
+
+    await onDidReceive({ kind: 'run-command', command: 'veyra.runVerificationCommand' });
+    await onDidReceive({ kind: 'run-command', command: 'veyra.summarizeGitStatus' });
+
+    expect((vscode as any).commands.executeCommand).toHaveBeenCalledWith('veyra.runVerificationCommand');
+    expect((vscode as any).commands.executeCommand).toHaveBeenCalledWith('veyra.summarizeGitStatus');
+  });
+
+  it('refuses unknown command-discovery actions from the webview composer', async () => {
+    await attachController();
+    const onDidReceive = (vscode as any).__test.onDidReceive.handler;
+
+    await onDidReceive({ kind: 'run-command', command: 'workbench.action.closeWindow' });
+
+    expect((vscode as any).commands.executeCommand).not.toHaveBeenCalledWith('workbench.action.closeWindow');
+    expect((vscode as any).window.showWarningMessage).toHaveBeenCalledWith('Unsupported Veyra command action.');
+  });
+
   it('open-external from webview opens https URLs', async () => {
     await attachController();
     const onDidReceive = (vscode as any).__test.onDidReceive.handler;

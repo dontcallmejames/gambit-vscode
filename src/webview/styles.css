@@ -271,11 +271,32 @@ body {
   border-radius: 6px;
   font-size: 12px;
   min-width: 200px;
+  max-width: min(420px, calc(100% - 16px));
+  max-height: 240px;
+  overflow-y: auto;
   margin-bottom: 4px;
   z-index: 10;
 }
-.mention-item { padding: 6px 10px; cursor: pointer; }
+.mention-item {
+  display: grid;
+  grid-template-columns: minmax(92px, auto) minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+  padding: 6px 10px;
+  cursor: pointer;
+}
 .mention-item.active { background: var(--vscode-list-activeSelectionBackground); }
+.mention-token {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.mention-desc {
+  opacity: 0.68;
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .pulse-dot {
   width: 8px; height: 8px; border-radius: 50%;

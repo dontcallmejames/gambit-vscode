@@ -18,6 +18,7 @@ The working rule is: agents can work together without losing context, stomping e
   - `/implement` runs a serial all-agent implementation pass: Claude frames approach/risk, Codex changes code/tests, then Gemini reviews.
 - A VS Code Language Model provider named `Veyra`, with local models for the orchestrator and each direct agent.
 - A docked Veyra view for the full orchestration UI with statuses, checkpoints, and pending changes.
+- Composer autocomplete in the docked Veyra view for agents, slash workflows, and common Veyra commands.
 - Shared context and file mention support across the Veyra view, native chat, and language model requests.
 - File edit visibility through streamed edit events, file decoration badges, session summaries, and commit attribution.
 - Workspace change detection for files modified during an agent turn even when the underlying CLI does not report a write tool.
@@ -92,6 +93,12 @@ Open VS Code Chat and mention a participant:
 ```
 
 When no direct agent is chosen, `@veyra` asks the facilitator to route the work based on agent availability, prompt content, and recent shared context.
+
+### Composer Discovery
+
+Type `@` in the docked Veyra composer to mention Claude, Codex, Gemini, or all agents.
+
+Type `/` in the docked Veyra composer to discover workflow shortcuts and common command-palette actions, including `/review`, `/debate`, `/consensus`, `/implement`, `Veyra: Open Pending Changes`, `Veyra: Run Verification Command`, `Veyra: Summarize Git Status`, `Veyra: Create Checkpoint`, `Veyra: Roll Back Latest Checkpoint`, `Veyra: Check agent status`, and `Veyra: Copy Diagnostic Report`.
 
 ### Workflow Modes
 

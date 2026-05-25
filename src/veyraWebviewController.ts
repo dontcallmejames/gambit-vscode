@@ -6,7 +6,7 @@ import { cspNonce } from './cspNonce.js';
 import { checkClaude, checkCodex, checkGemini, clearStatusCache } from './statusChecks.js';
 import { refreshVeyraSessionOptions } from './veyraRuntime.js';
 import type {
-  DispatchChangeSetSummary, FromExtension, FromWebview, Settings, SystemMessage,
+  DispatchChangeSetSummary, FromExtension, FromWebview, Settings, SystemMessage, VeyraCommandActionId,
 } from './shared/protocol.js';
 import type { AgentId, AgentStatus } from './types.js';
 import type { FileBadgesController } from './fileBadges.js';
@@ -14,6 +14,16 @@ import type { VeyraDispatchEvent, VeyraSessionService } from './veyraService.js'
 import { localVeyraResponseForPrompt } from './localVeyraPrompt.js';
 import { veyraWorkflowPrompt, type VeyraWorkflowCommand } from './workflowPrompts.js';
 import { readWorkflowPromptOptions } from './workflowSettings.js';
+
+const WEBVIEW_COMMAND_ACTIONS = new Set<VeyraCommandActionId>([
+  'veyra.openPendingChanges',
+  'veyra.runVerificationCommand',
+  'veyra.summarizeGitStatus',
+  'veyra.createCheckpoint',
+  'veyra.rollbackLatestCheckpoint',
+  'veyra.checkStatus',
+  'veyra.copyDiagnosticReport',
+]);
 
 export interface VeyraWebviewControllerOptions {
   context: vscode.ExtensionContext;
@@ -188,6 +198,13 @@ export class VeyraWebviewController {
           this.send({ kind: 'status-changed', agentId: id, status: fresh[id] });
           this.options.service.notifyStatusChange(id, fresh[id]);
         }
+        break;
+      case 'run-command':
+        if (!isSupportedWebviewCommandAction(msg.command)) {
+          vscode.window.showWarningMessage('Unsupported Veyra command action.');
+          break;
+        }
+        await vscode.commands.executeCommand(msg.command);
         break;
       case 'show-live-validation-guide':
         await vscode.commands.executeCommand('veyra.showLiveValidationGuide');
@@ -442,6 +459,10 @@ export class VeyraWebviewController {
       .replace(/{{WEBVIEW_JS_URI}}/g, jsUri.toString());
     return html;
   }
+}
+
+function isSupportedWebviewCommandAction(command: string): command is VeyraCommandActionId {
+  return WEBVIEW_COMMAND_ACTIONS.has(command as VeyraCommandActionId);
 }
 
 function formatChangeSetUpdateText(changeSet: DispatchChangeSetSummary): string {

@@ -56,6 +56,15 @@ export type RollbackCheckpointResult = {
   restoredFiles: string[];
 };
 
+export type VeyraCommandActionId =
+  | 'veyra.openPendingChanges'
+  | 'veyra.runVerificationCommand'
+  | 'veyra.summarizeGitStatus'
+  | 'veyra.createCheckpoint'
+  | 'veyra.rollbackLatestCheckpoint'
+  | 'veyra.checkStatus'
+  | 'veyra.copyDiagnosticReport';
+
 // === Persisted message types ===
 
 export type ToolEvent =
@@ -152,6 +161,7 @@ export type FromWebview =
   | { kind: 'send'; text: string }
   | { kind: 'cancel' }
   | { kind: 'reload-status' }
+  | { kind: 'run-command'; command: VeyraCommandActionId | string }
   | { kind: 'configure-cli-paths' }
   | { kind: 'show-setup-guide' }
   | { kind: 'show-live-validation-guide' }

@@ -3,7 +3,13 @@ import { useState, useRef, useEffect, useMemo } from 'preact/hooks';
 import type { AgentId, AgentStatus } from '../../types.js';
 import type { FromWebview } from '../../shared/protocol.js';
 import { HealthStrip } from './HealthStrip.js';
-import { MentionAutocomplete, MENTION_ITEMS } from './MentionAutocomplete.js';
+import {
+  MentionAutocomplete,
+  applyAutocompletePick,
+  autocompleteItemsForToken,
+  currentAutocompleteToken,
+  type AutocompleteItem,
+} from './MentionAutocomplete.js';
 
 interface Props {
   send: (msg: FromWebview) => void;
@@ -69,17 +75,22 @@ function looksLikeScopedPackage(token: string): boolean {
   return parts.length >= 2 && PACKAGE_SCOPES.has(parts[0].toLowerCase());
 }
 
+function shouldOpenAutocomplete(token: string): boolean {
+  return token.startsWith('/')
+    || (token.startsWith('@') && !token.includes('/') && !token.includes('.'));
+}
+
 export function Composer({ send, floorHolder, status, veyraMdPresent }: Props) {
   const [text, setText] = useState('');
-  const [autocomplete, setAutocomplete] = useState<{ open: boolean; filter: string; activeIndex: number }>({
-    open: false, filter: '', activeIndex: 0,
+  const [autocomplete, setAutocomplete] = useState<{ open: boolean; token: string; activeIndex: number }>({
+    open: false, token: '', activeIndex: 0,
   });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    const lastToken = text.split(/\s+/).at(-1) ?? '';
-    if (lastToken.startsWith('@') && lastToken.length >= 1 && !lastToken.includes('/') && !lastToken.includes('.')) {
-      setAutocomplete((a) => ({ ...a, open: true, filter: lastToken, activeIndex: 0 }));
+    const token = currentAutocompleteToken(text);
+    if (token && shouldOpenAutocomplete(token) && autocompleteItemsForToken(token).length > 0) {
+      setAutocomplete((a) => ({ ...a, open: true, token, activeIndex: 0 }));
     } else if (autocomplete.open) {
       setAutocomplete((a) => ({ ...a, open: false }));
     }
@@ -93,24 +104,23 @@ export function Composer({ send, floorHolder, status, veyraMdPresent }: Props) {
     setText('');
   };
 
-  const pickMention = (token: string) => {
-    const tokens = text.split(/\s+/);
-    tokens.pop();
-    tokens.push(token + ' ');
-    setText(tokens.join(' '));
+  const pickAutocomplete = (item: AutocompleteItem) => {
+    const result = applyAutocompletePick(text, item);
+    setText(result.text);
     setAutocomplete((a) => ({ ...a, open: false }));
+    if (result.command) {
+      send({ kind: 'run-command', command: result.command });
+    }
     textareaRef.current?.focus();
   };
 
-  const filtered = MENTION_ITEMS.filter((i) =>
-    i.token.toLowerCase().includes(autocomplete.filter.toLowerCase())
-  );
+  const filtered = autocompleteItemsForToken(autocomplete.token);
 
   const handleKeyDown = (e: KeyboardEvent) => {
     if (autocomplete.open && filtered.length > 0) {
       if (e.key === 'ArrowDown') { e.preventDefault(); setAutocomplete((a) => ({ ...a, activeIndex: (a.activeIndex + 1) % filtered.length })); return; }
       if (e.key === 'ArrowUp') { e.preventDefault(); setAutocomplete((a) => ({ ...a, activeIndex: (a.activeIndex - 1 + filtered.length) % filtered.length })); return; }
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); pickMention(filtered[autocomplete.activeIndex].token); return; }
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); pickAutocomplete(filtered[autocomplete.activeIndex]); return; }
       if (e.key === 'Escape') { e.preventDefault(); setAutocomplete((a) => ({ ...a, open: false })); return; }
     }
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -124,12 +134,12 @@ export function Composer({ send, floorHolder, status, veyraMdPresent }: Props) {
   return (
     <div class="composer">
       {autocomplete.open && (
-        <MentionAutocomplete filter={autocomplete.filter} activeIndex={autocomplete.activeIndex} onPick={pickMention} />
+        <MentionAutocomplete filter={autocomplete.token} activeIndex={autocomplete.activeIndex} onPick={pickAutocomplete} />
       )}
       <textarea
         ref={textareaRef}
         value={text}
-        placeholder="Type @ to mention an agent or @path/to/file to attach..."
+        placeholder="Type @ for agents, / for commands, or @path/to/file..."
         onInput={(e) => setText((e.target as HTMLTextAreaElement).value)}
         onKeyDown={handleKeyDown}
       />

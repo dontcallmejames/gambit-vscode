@@ -11,6 +11,7 @@ vi.mock('preact/hooks', () => ({
 }));
 
 import { Composer } from '../src/webview/components/Composer.js';
+import { MentionAutocomplete } from '../src/webview/components/MentionAutocomplete.js';
 import { useState } from 'preact/hooks';
 
 const mockedUseState = useState as unknown as ReturnType<typeof vi.fn>;
@@ -39,7 +40,7 @@ describe('Composer', () => {
     expect(text).toContain('Attached: src/main.ts');
     expect(text).not.toContain('ðŸ');
     expect(text).not.toContain('â');
-    expect(textarea?.props.placeholder).toBe('Type @ to mention an agent or @path/to/file to attach...');
+    expect(textarea?.props.placeholder).toBe('Type @ for agents, / for commands, or @path/to/file...');
   });
 
   it('does not show scoped npm package mentions as attached files', () => {
@@ -118,6 +119,25 @@ describe('Composer', () => {
     expect(text).toContain('Attached: src/auth.ts');
     expect(text).not.toContain('example.com');
   });
+
+  it('passes slash command tokens into autocomplete suggestions in the composer', () => {
+    mockedUseState
+      .mockReturnValueOnce(['/run', vi.fn()])
+      .mockReturnValueOnce([{ open: true, token: '/run', activeIndex: 0 }, vi.fn()])
+      .mockImplementation((initial: unknown) => [initial, vi.fn()]);
+
+    const vnode = Composer({
+      send: vi.fn(),
+      floorHolder: null,
+      status: { claude: 'ready', codex: 'ready', gemini: 'ready' },
+      veyraMdPresent: true,
+    });
+
+    const autocomplete = findNode(vnode, MentionAutocomplete);
+
+    expect(autocomplete?.props.filter).toBe('/run');
+    expect(autocomplete?.props.activeIndex).toBe(0);
+  });
 });
 
 function collectText(vnode: any): string {
@@ -127,7 +147,7 @@ function collectText(vnode: any): string {
   return collectText(vnode.props?.children);
 }
 
-function findNode(vnode: any, type: string): any | undefined {
+function findNode(vnode: any, type: unknown): any | undefined {
   if (vnode === null || vnode === undefined || typeof vnode !== 'object') return undefined;
   if (vnode.type === type) return vnode;
   const children = vnode.props?.children;

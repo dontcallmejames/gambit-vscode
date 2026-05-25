@@ -454,6 +454,18 @@ describe('extension manifest', () => {
     expect(readme).toContain('Veyra: Summarize Git Status');
   });
 
+  it('documents docked composer command discovery', () => {
+    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+
+    expect(readme).toContain('Type `/` in the docked Veyra composer');
+    expect(readme).toContain('/review');
+    expect(readme).toContain('Veyra: Open Pending Changes');
+    expect(readme).toContain('Veyra: Run Verification Command');
+    expect(readme).toContain('Veyra: Summarize Git Status');
+    expect(readme).toContain('Veyra: Roll Back Latest Checkpoint');
+    expect(readme).toContain('Veyra: Copy Diagnostic Report');
+  });
+
   it('contributes checkpoint commands and settings', () => {
     const properties = manifest.contributes.configuration.properties;
     const commands = new Map(manifest.contributes.commands.map((command) => [command.command, command.title]));

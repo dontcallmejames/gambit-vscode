@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const vscodeMocks = vi.hoisted(() => ({
   registerLanguageModelChatProvider: vi.fn((_vendor: string, _provider: unknown) => ({ dispose: vi.fn() })),
   toolCallRenderStyle: 'compact' as 'verbose' | 'compact' | 'hidden',
+  workflowTemplate: 'none',
 }));
 
 vi.mock('vscode', () => ({
@@ -22,7 +23,11 @@ vi.mock('vscode', () => ({
   workspace: {
     getConfiguration: vi.fn(() => ({
       get: vi.fn((key: string, dflt: unknown) =>
-        key === 'toolCallRenderStyle' ? vscodeMocks.toolCallRenderStyle : dflt
+        key === 'toolCallRenderStyle'
+          ? vscodeMocks.toolCallRenderStyle
+          : key === 'workflow.template'
+            ? vscodeMocks.workflowTemplate
+            : dflt
       ),
     })),
   },
@@ -39,6 +44,7 @@ describe('Veyra language model provider helpers', () => {
   beforeEach(() => {
     vscodeMocks.registerLanguageModelChatProvider.mockClear();
     vscodeMocks.toolCallRenderStyle = 'compact';
+    vscodeMocks.workflowTemplate = 'none';
   });
 
   it('exposes one orchestrator model, workflow models, and one direct model per agent', () => {
@@ -495,6 +501,46 @@ describe('Veyra language model provider helpers', () => {
     expect(dispatched).toContain('Workflow: review');
     expect(dispatched).toContain('Read-only workflow');
     expect(dispatched).toContain('Check this change.');
+  });
+
+  it('adds the configured workflow template to language model workflow prompts', async () => {
+    vscodeMocks.workflowTemplate = 'refactor-plan';
+    const context = { subscriptions: [] as Array<{ dispose(): void }> };
+    const service = {
+      dispatch: vi.fn(async (_request: unknown, _emit: unknown) => {}),
+      cancelAll: vi.fn(),
+    };
+
+    registerVeyraLanguageModelProvider(
+      context as any,
+      () => ({ service, workspacePath: '/workspace' } as any),
+    );
+
+    const provider = vscodeMocks.registerLanguageModelChatProvider.mock.calls[0]?.[1] as {
+      provideLanguageModelChatResponse(
+        model: unknown,
+        messages: unknown[],
+        options: unknown,
+        progress: { report(value: unknown): void },
+        token: unknown,
+      ): Promise<void>;
+    };
+
+    await provider.provideLanguageModelChatResponse(
+      resolveVeyraLanguageModel('veyra-consensus'),
+      [{ role: 1, name: undefined, content: [{ value: 'Choose the safest extraction path.' }] }],
+      {},
+      { report: vi.fn() },
+      cancellationToken(),
+    );
+
+    expect(service.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        readOnly: true,
+        text: expect.stringContaining('Workflow template: refactor plan'),
+      }),
+      expect.any(Function),
+    );
   });
 
   it('dispatches the consensus language model as a read-only all-agent workflow', async () => {

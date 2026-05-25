@@ -3,6 +3,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { VeyraSessionService, toRoutedInput } from '../src/veyraService.js';
+import { veyraWorkflowPrompt, type VeyraWorkflowCommand } from '../src/workflowPrompts.js';
 import type { Agent } from '../src/agents/types.js';
 import type { AgentChunk, AgentId } from '../src/types.js';
 import type { ChangeLedger } from '../src/changeLedger.js';
@@ -800,6 +801,65 @@ describe('VeyraSessionService', () => {
     expect(prompts.get('codex')).toContain('Prioritize TypeScript ergonomics, narrow tests, and regression risk.');
     expect(prompts.get('claude')).not.toContain('[Workspace role customization]');
     expect(prompts.get('gemini')).not.toContain('Prioritize TypeScript ergonomics');
+  });
+
+  it('includes workflow templates and workspace roles in every workflow agent prompt', async () => {
+    for (const command of ['review', 'debate', 'consensus', 'implement'] as VeyraWorkflowCommand[]) {
+      const prompts = new Map<AgentId, string>();
+      const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), `veyra-service-${command}-`));
+      const agent = (id: AgentId): Agent => ({
+        id,
+        status: async () => 'ready',
+        cancel: async () => {},
+        async *send(prompt: string) {
+          prompts.set(id, prompt);
+          yield { type: 'done' } as AgentChunk;
+        },
+      });
+      const service = new VeyraSessionService(
+        workspacePath,
+        {
+          claude: agent('claude'),
+          codex: agent('codex'),
+          gemini: agent('gemini'),
+        },
+        {
+          hangSeconds: 0,
+          agentRoleOverrides: {
+            claude: 'Guard public API compatibility.',
+            codex: 'Prefer minimal TypeScript diffs with tests.',
+            gemini: 'Probe edge cases and hidden assumptions.',
+          },
+        },
+      );
+
+      try {
+        await service.dispatch(
+          {
+            text: veyraWorkflowPrompt(command, `Handle ${command}.`, { template: 'security-review' }),
+            source: 'panel',
+            cwd: workspacePath,
+            forcedTarget: 'veyra',
+            readOnly: command === 'implement' ? undefined : true,
+          },
+          () => {},
+        );
+
+        expect([...prompts.keys()].sort()).toEqual(['claude', 'codex', 'gemini']);
+        for (const prompt of prompts.values()) {
+          expect(prompt).toContain(`Workflow: ${command}`);
+          expect(prompt).toContain('Workflow template: security review');
+          if (command !== 'implement') {
+            expect(prompt).toContain('Do not create, edit, rename, delete, or move files.');
+          }
+        }
+        expect(prompts.get('claude')).toContain('Guard public API compatibility.');
+        expect(prompts.get('codex')).toContain('Prefer minimal TypeScript diffs with tests.');
+        expect(prompts.get('gemini')).toContain('Probe edge cases and hidden assumptions.');
+      } finally {
+        fs.rmSync(workspacePath, { recursive: true, force: true });
+      }
+    }
   });
 
   it('emits slow-agent hang notices as warnings while the agent continues', async () => {

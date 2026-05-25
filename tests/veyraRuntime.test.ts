@@ -1,15 +1,21 @@
 import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const claudeSdkMocks = vi.hoisted(() => ({
   query: vi.fn(),
 }));
 
+const vscodeMocks = vi.hoisted(() => ({
+  values: new Map<string, unknown>(),
+}));
+
 vi.mock('vscode', () => ({
   workspace: {
     getConfiguration: vi.fn(() => ({
-      get: vi.fn((_key: string, dflt: unknown) => dflt),
+      get: vi.fn((key: string, dflt: unknown) =>
+        vscodeMocks.values.has(key) ? vscodeMocks.values.get(key) : dflt
+      ),
     })),
   },
 }));
@@ -21,6 +27,7 @@ vi.mock('@anthropic-ai/claude-agent-sdk', () => ({
 import {
   createVeyraSessionService,
   createSmokeAgents,
+  readVeyraSessionOptions,
   refreshVeyraSessionOptions,
   shouldUseSmokeAgents,
 } from '../src/veyraRuntime.js';
@@ -32,6 +39,10 @@ function makeSmokeWorkspace(prefix: string): string {
 }
 
 describe('Veyra runtime smoke agents', () => {
+  beforeEach(() => {
+    vscodeMocks.values.clear();
+  });
+
   it('enables smoke agents only for the Extension Host smoke sentinel', () => {
     expect(shouldUseSmokeAgents({ VSCODE_VEYRA_SMOKE: '1' })).toBe(true);
     expect(shouldUseSmokeAgents({ VSCODE_VEYRA_SMOKE: 'true' })).toBe(false);
@@ -177,6 +188,18 @@ describe('Veyra runtime smoke agents', () => {
         rollbackLatestCheckpoint: expect.any(Function),
       }),
     }));
+  });
+
+  it('reads workspace agent role customizations into session options', () => {
+    vscodeMocks.values.set('agentRoles.claude', 'Guard public API compatibility.');
+    vscodeMocks.values.set('agentRoles.codex', 'Prefer minimal TypeScript diffs with tests.');
+    vscodeMocks.values.set('agentRoles.gemini', 'Probe edge cases and hidden assumptions.');
+
+    expect(readVeyraSessionOptions().agentRoleOverrides).toEqual({
+      claude: 'Guard public API compatibility.',
+      codex: 'Prefer minimal TypeScript diffs with tests.',
+      gemini: 'Probe edge cases and hidden assumptions.',
+    });
   });
 
   it('does not surface codebase context smoke marker for diagnostics-only workspace context', async () => {

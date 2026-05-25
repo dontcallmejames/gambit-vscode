@@ -594,6 +594,36 @@ describe('VeyraWebviewController', () => {
     expect(service.dispatch.mock.calls[0][0].text).toContain('Read-only workflow');
   });
 
+  it('adds the configured workflow template to docked view workflow prompts', async () => {
+    (vscode as any).workspace.getConfiguration = vi.fn(() => ({
+      get: (key: string, dflt: unknown) => key === 'workflow.template' ? 'test-improvement' : dflt,
+    }));
+    const service = {
+      loadSession: vi.fn().mockResolvedValue({ messages: [] }),
+      onFloorChange: vi.fn(() => vi.fn()),
+      onStatusChange: vi.fn(() => vi.fn()),
+      onWriteError: vi.fn(() => vi.fn()),
+      isFirstSession: vi.fn(() => false),
+      dispatch: vi.fn().mockResolvedValue(undefined),
+      cancelAll: vi.fn().mockResolvedValue(undefined),
+      notifyStatusChange: vi.fn(),
+      flush: vi.fn().mockResolvedValue(undefined),
+    };
+
+    await attachController({ service: service as any });
+    const onDidReceive = (vscode as any).__test.onDidReceive.handler;
+
+    await onDidReceive({ kind: 'send', text: '/review improve parser coverage' });
+
+    expect(service.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        readOnly: true,
+        text: expect.stringContaining('Workflow template: test improvement'),
+      }),
+      expect.any(Function),
+    );
+  });
+
   it('answers first-session panel heartbeats locally without dispatching or prompting onboarding', async () => {
     const service = {
       loadSession: vi.fn().mockResolvedValue({ messages: [] }),

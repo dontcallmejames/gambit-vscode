@@ -117,6 +117,17 @@ Workflow prompts tell agents to use their available model and CLI capabilities w
 - Set `veyra.workflow.template` when a workspace wants an extra reusable lens such as `architecture-review`, `security-review`, `test-improvement`, `refactor-plan`, or `implementation-with-review`.
 - Use `veyra.agentRoles.claude`, `veyra.agentRoles.codex`, and `veyra.agentRoles.gemini` for workspace role customization. Non-empty values are appended to that agent's Veyra role preamble only.
 
+Example workspace settings:
+
+```json
+{
+  "veyra.workflow.template": "security-review",
+  "veyra.agentRoles.claude": "Focus on architecture boundaries and product risk.",
+  "veyra.agentRoles.codex": "Focus on TypeScript implementation details and regression tests.",
+  "veyra.agentRoles.gemini": "Focus on edge cases, abuse paths, and assumptions the first two agents may miss."
+}
+```
+
 ### Terminal And Verification Context
 
 - Terminal selections from VS Code Chat are passed to agents as labelled terminal context.

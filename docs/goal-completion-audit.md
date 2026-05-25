@@ -18,6 +18,8 @@ The 2026-05-25 Google-provider transition pass keeps the user-facing `@gemini` a
 
 The 2026-05-25 1.0.6 output polish and provider transparency pass renders agent Markdown safely in the docked Veyra view while keeping tool-call cards, file-edit notices, checkpoints, and pending-change actions as structured UI. Diagnostic reports now include provider transparency for Claude CLI, Codex CLI, and Antigravity CLI or legacy Gemini fallback, including CLI/provider versions where safely available and explicit local CLI/provider default model wording instead of hardcoded model promises.
 
+The 2026-05-25 1.0.7 Presentation Layer pass adds a compact Mission Control timeline at the top of the docked Veyra view. It derives Claude, Codex, and Gemini stages from existing webview/session events, shows queued, active, complete, failed, cancelled, and waiting states, and surfaces current floor, recent tool activity, pending file count, available checkpoint count, and approved verification status without adding a second orchestration source of truth.
+
 ## Prompt-to-Artifact Checklist
 
 | Prompt requirement | Concrete artifact evidence | Verification gate | Status |

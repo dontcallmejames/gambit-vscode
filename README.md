@@ -18,6 +18,7 @@ The working rule is: agents can work together without losing context, stomping e
   - `/implement` runs a serial all-agent implementation pass: Claude frames approach/risk, Codex changes code/tests, then Gemini reviews.
 - A VS Code Language Model provider named `Veyra`, with local models for the orchestrator and each direct agent.
 - A docked Veyra view for the full orchestration UI with statuses, checkpoints, and pending changes.
+- A compact Presentation Layer with a Mission Control timeline that shows Claude, Codex, and Gemini as queued, active, complete, failed, cancelled, and waiting stages.
 - Composer autocomplete in the docked Veyra view for agents, slash workflows, and common Veyra commands.
 - Shared context and file mention support across the Veyra view, native chat, and language model requests.
 - File edit visibility through streamed edit events, file decoration badges, session summaries, and commit attribution.

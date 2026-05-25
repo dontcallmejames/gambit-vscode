@@ -18,14 +18,110 @@ body {
   height: 100vh;
 }
 
-.floor-bar {
-  padding: 6px 12px;
-  font-size: 12px;
+.mission-control {
+  padding: 8px 10px;
   border-bottom: 1px solid var(--border);
-  background: rgba(255,255,255,0.02);
+  background: var(--vscode-sideBar-background, rgba(255,255,255,0.02));
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 11px;
+}
+.mission-control-head {
+  display: flex;
+  justify-content: space-between;
   gap: 8px;
+  align-items: baseline;
+}
+.mission-control-kicker {
+  opacity: 0.65;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  margin-right: 6px;
+}
+.mission-control-label {
+  font-weight: 700;
+}
+.mission-control-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  opacity: 0.72;
+}
+.mission-control-stages {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.mission-stage {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 6px;
+  align-items: center;
+  padding: 5px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--vscode-editorWidget-background, rgba(255,255,255,0.04));
+}
+.mission-stage-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--vscode-descriptionForeground, rgba(255,255,255,0.45));
+}
+.mission-stage-label,
+.mission-stage-state {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mission-stage-label {
+  font-weight: 600;
+}
+.mission-stage-state {
+  grid-column: 2;
+  opacity: 0.72;
+}
+.mission-stage-active {
+  border-color: var(--vscode-focusBorder, var(--ok-color));
+}
+.mission-stage-active .mission-stage-dot {
+  background: var(--ok-color);
+  animation: pulse 1.6s infinite;
+}
+.mission-stage-complete .mission-stage-dot {
+  background: var(--ok-color);
+}
+.mission-stage-failed .mission-stage-dot,
+.mission-stage-cancelled .mission-stage-dot {
+  background: var(--error-color);
+}
+.mission-stage-queued .mission-stage-dot {
+  background: var(--vscode-progressBar-background, #4daafc);
+}
+.mission-stage-claude {
+  box-shadow: inset 2px 0 0 var(--vscode-veyra-claudeColor, #d97757);
+}
+.mission-stage-codex {
+  box-shadow: inset 2px 0 0 var(--vscode-veyra-codexColor, #10a37f);
+}
+.mission-stage-gemini {
+  box-shadow: inset 2px 0 0 var(--vscode-veyra-geminiColor, #4a8df0);
+}
+.mission-control-indicators {
+  min-height: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mission-control-indicators span {
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.04);
+  color: var(--vscode-descriptionForeground, inherit);
 }
 
 .message-list {

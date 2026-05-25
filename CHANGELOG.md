@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 1.0.7 - 2026-05-25
+
+- Adds a compact Presentation Layer Mission Control timeline to the docked Veyra view, showing Claude, Codex, and Gemini workflow stages plus current floor, recent tool, pending-change, checkpoint, and approved-verification indicators.
+
 ## 1.0.6 - 2026-05-25
 
 - Migrates Claude routing and direct Claude dispatch to the local Claude CLI runtime and removes the Anthropic Agent SDK dependency.

@@ -57,7 +57,7 @@ describe('extension manifest', () => {
     expect(manifest.name).toBe('veyra-vscode');
     expect(manifest.displayName).toBe('Veyra');
     expect(manifestRecord.private).toBeUndefined();
-    expect(manifest.version).toBe('1.0.5');
+    expect(manifest.version).toBe('1.0.6');
     expect(manifest.preview).toBe(false);
     expect(manifest.license).toBe('SEE LICENSE IN LICENSE.txt');
     expect(manifest.repository).toEqual({
@@ -490,6 +490,24 @@ describe('extension manifest', () => {
     expect(readme).toContain('Veyra: Review CI/PR Output');
     expect(readme).toContain('Veyra: Roll Back Latest Checkpoint');
     expect(readme).toContain('Veyra: Copy Diagnostic Report');
+  });
+
+  it('documents safe Markdown rendering and provider transparency', () => {
+    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const changelog = readFileSync(join(process.cwd(), 'CHANGELOG.md'), 'utf8');
+    const audit = readFileSync(join(process.cwd(), 'docs', 'goal-completion-audit.md'), 'utf8');
+    const roadmap = readFileSync(join(process.cwd(), 'docs', 'superpowers', 'specs', '2026-05-11-veyra-v1-roadmap-design.md'), 'utf8');
+
+    for (const document of [readme, changelog, audit, roadmap]) {
+      expect(document).toContain('Markdown');
+      expect(document).toContain('provider transparency');
+      expect(document).toContain('Claude CLI');
+      expect(document).toContain('Codex CLI');
+      expect(document).toContain('Antigravity CLI');
+    }
+    expect(readme).toContain('Veyra renders agent Markdown safely');
+    expect(readme).toContain('Veyra does not hardcode vendor model promises');
+    expect(readme).toContain('CLI/provider versions');
   });
 
   it('contributes checkpoint commands and settings', () => {

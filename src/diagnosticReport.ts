@@ -1,4 +1,5 @@
 import type { AgentStatus } from './types.js';
+import type { ProviderDiagnostics } from './providerDiagnostics.js';
 
 export const DIAGNOSTIC_COMMAND_IDS = [
   'veyra.openPanel',
@@ -43,6 +44,7 @@ export type DiagnosticReportInput = {
     folderSchemes: string[];
   };
   agents: Record<'claude' | 'codex' | 'gemini', DiagnosticAgentStatus>;
+  providers?: ProviderDiagnostics;
   commands: Record<string, boolean>;
   nativeChatRegistrations: string[];
   optionalSurfaceFailures: OptionalSurfaceFailure[];
@@ -63,6 +65,15 @@ export function formatDiagnosticReport(input: DiagnosticReportInput): string {
   const optionalSurfaceFailures = input.optionalSurfaceFailures.length > 0
     ? input.optionalSurfaceFailures.map((failure) => `${failure.label} - ${failure.message}`).join('; ')
     : 'none reported';
+  const providerLines = input.providers
+    ? [
+        '',
+        '## Provider Transparency',
+        formatProviderLine(input.providers.claude),
+        formatProviderLine(input.providers.codex),
+        formatProviderLine(input.providers.gemini),
+      ]
+    : [];
 
   return [
     '# Veyra Diagnostic Report',
@@ -82,6 +93,7 @@ export function formatDiagnosticReport(input: DiagnosticReportInput): string {
     `- Claude: ${formatStatus(input.agents.claude)}`,
     `- Codex: ${formatStatus(input.agents.codex)}`,
     `- Gemini: ${formatStatus(input.agents.gemini)}`,
+    ...providerLines,
     '',
     '## Commands',
     ...commandLines,
@@ -95,6 +107,10 @@ export function formatDiagnosticReport(input: DiagnosticReportInput): string {
     '- If a command is missing, run Developer: Reload Window, then retry the Veyra command.',
     '',
   ].join('\n');
+}
+
+function formatProviderLine(provider: ProviderDiagnostics[keyof ProviderDiagnostics]): string {
+  return `- ${provider.provider}: ${provider.runtime} via ${provider.command}; version ${provider.version}; model: ${provider.model}`;
 }
 
 function formatStatus(status: DiagnosticAgentStatus): string {

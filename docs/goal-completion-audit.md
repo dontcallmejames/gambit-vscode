@@ -16,6 +16,8 @@ The same live pass also showed that typing `@veyra /implement ...` in the docked
 
 The 2026-05-25 Google-provider transition pass keeps the user-facing `@gemini` agent while preferring Antigravity CLI (`agy`) for new consumer Google-provider setups. Veyra now accepts `VEYRA_ANTIGRAVITY_CLI_PATH` / `veyra.antigravityCliPath`, detects `agy.exe` on Windows PATH and the standard `%LOCALAPPDATA%\agy\bin\agy.exe` install, treats Antigravity `--print` output as plain assistant text, and falls back to legacy Gemini CLI stream-json when Antigravity is not available. Readiness, setup guidance, smoke docs, live-validation docs, and CLI-path diagnostics now mention Antigravity first while preserving `VEYRA_GEMINI_CLI_PATH` / `veyra.geminiCliPath` for existing/API-key Gemini CLI users.
 
+The 2026-05-25 1.0.6 output polish and provider transparency pass renders agent Markdown safely in the docked Veyra view while keeping tool-call cards, file-edit notices, checkpoints, and pending-change actions as structured UI. Diagnostic reports now include provider transparency for Claude CLI, Codex CLI, and Antigravity CLI or legacy Gemini fallback, including CLI/provider versions where safely available and explicit local CLI/provider default model wording instead of hardcoded model promises.
+
 ## Prompt-to-Artifact Checklist
 
 | Prompt requirement | Concrete artifact evidence | Verification gate | Status |

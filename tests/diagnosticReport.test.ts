@@ -24,6 +24,29 @@ describe('diagnostic report', () => {
         codex: 'unauthenticated',
         gemini: 'not-installed',
       },
+      providers: {
+        claude: {
+          provider: 'Claude',
+          runtime: 'Claude CLI',
+          command: 'claude',
+          version: '1.2.3',
+          model: 'local CLI/provider default; not selected by Veyra',
+        },
+        codex: {
+          provider: 'Codex',
+          runtime: 'Codex CLI',
+          command: 'codex',
+          version: '0.42.0',
+          model: 'local CLI/provider default; not selected by Veyra',
+        },
+        gemini: {
+          provider: 'Gemini',
+          runtime: 'Antigravity CLI',
+          command: 'agy',
+          version: '1.0.2',
+          model: 'local CLI/provider default; not selected by Veyra',
+        },
+      },
       commands: {
         'veyra.openPanel': true,
         'veyra.copyDiagnosticReport': true,
@@ -46,6 +69,10 @@ describe('diagnostic report', () => {
     expect(report).toContain('Claude: ready');
     expect(report).toContain('Codex: unauthenticated');
     expect(report).toContain('Gemini: not installed');
+    expect(report).toContain('## Provider Transparency');
+    expect(report).toContain('Claude: Claude CLI via claude; version 1.2.3; model: local CLI/provider default; not selected by Veyra');
+    expect(report).toContain('Codex: Codex CLI via codex; version 0.42.0; model: local CLI/provider default; not selected by Veyra');
+    expect(report).toContain('Gemini: Antigravity CLI via agy; version 1.0.2; model: local CLI/provider default; not selected by Veyra');
     expect(report).toContain('veyra.openPanel: registered');
     expect(report).toContain('veyra.copyDiagnosticReport: registered');
     expect(report).toContain('veyra.internalMissing: missing');

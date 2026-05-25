@@ -2,7 +2,11 @@
 
 ## Unreleased
 
+## 1.0.6 - 2026-05-25
+
 - Migrates Claude routing and direct Claude dispatch to the local Claude CLI runtime and removes the Anthropic Agent SDK dependency.
+- Renders agent Markdown safely in the docked Veyra view while keeping tool-call cards, file-edit notices, checkpoints, and pending-change actions structured.
+- Adds provider transparency to diagnostics for Claude CLI, Codex CLI, and the Google provider path through Antigravity CLI or legacy Gemini fallback, including CLI/provider versions where safely available without hardcoded model promises.
 
 ## 1.0.5 - 2026-05-25
 

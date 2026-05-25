@@ -2,7 +2,7 @@
   "name": "veyra-vscode",
   "displayName": "Veyra",
   "description": "Veyra coordinates Claude, Codex, and Gemini through VS Code Chat and the Language Model provider.",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "publisher": "dontcallmejames",
   "preview": false,
   "license": "SEE LICENSE IN LICENSE.txt",
@@ -247,7 +247,11 @@
       "properties": {
         "veyra.toolCallRenderStyle": {
           "type": "string",
-          "enum": ["verbose", "compact", "hidden"],
+          "enum": [
+            "verbose",
+            "compact",
+            "hidden"
+          ],
           "default": "compact",
           "description": "How tool calls (file reads, edits, terminal commands) are displayed in the chat."
         },
@@ -392,7 +396,10 @@
         },
         "veyra.writeApproval": {
           "type": "string",
-          "enum": ["auto-edit", "ask"],
+          "enum": [
+            "auto-edit",
+            "ask"
+          ],
           "default": "auto-edit",
           "description": "How agent file-edit requests are handled. 'auto-edit' grants write access automatically; 'ask' will defer to each CLI's interactive prompt (which currently means writes silently fail in non-interactive mode - switch back to 'auto-edit' if edits stop working)."
         }
@@ -449,6 +456,7 @@
     "manual:extension-host-check": "node scripts/print-extension-host-check.mjs"
   },
   "devDependencies": {
+    "@types/markdown-it": "^14.1.2",
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.118.0",
     "esbuild": "^0.24.0",
@@ -456,6 +464,7 @@
     "vitest": "^2.1.0"
   },
   "dependencies": {
+    "markdown-it": "^14.2.0",
     "preact": "^10.29.1"
   }
 }

@@ -20,6 +20,7 @@ import {
   type DiagnosticAgentStatus,
   type OptionalSurfaceFailure,
 } from './diagnosticReport.js';
+import { collectProviderDiagnostics, type GoogleRuntimeSelection } from './providerDiagnostics.js';
 import type { NativeChatRegistration } from './nativeChat.js';
 import type { AgentStatus } from './types.js';
 import type { DetectedCliBundlePath } from './cliPathDetection.js';
@@ -402,10 +403,22 @@ async function collectDiagnosticReport(
       folderSchemes: [...new Set(workspaceFolders.map((folder) => folder.uri.scheme ?? 'unknown'))],
     },
     agents: { claude, codex, gemini },
+    providers: collectProviderDiagnostics({ googleRuntime: configuredGoogleRuntime() }),
     commands: Object.fromEntries(DIAGNOSTIC_COMMAND_IDS.map((command) => [command, commandSet.has(command)])),
     nativeChatRegistrations,
     optionalSurfaceFailures,
   });
+}
+
+function configuredGoogleRuntime(): GoogleRuntimeSelection | undefined {
+  const config = vscode.workspace.getConfiguration('veyra');
+  const antigravity = process.env.VEYRA_ANTIGRAVITY_CLI_PATH?.trim()
+    || config.get<string>('antigravityCliPath', '').trim();
+  if (antigravity) return 'antigravity';
+  const gemini = process.env.VEYRA_GEMINI_CLI_PATH?.trim()
+    || config.get<string>('geminiCliPath', '').trim();
+  if (gemini) return 'legacy-gemini';
+  return undefined;
 }
 
 async function safeStatus(check: () => Promise<AgentStatus>): Promise<DiagnosticAgentStatus> {

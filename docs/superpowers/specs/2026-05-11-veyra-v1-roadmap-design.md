@@ -343,6 +343,8 @@ This should be treated as a trust and comprehension feature, not cosmetic polish
 
 Model transparency belongs in the same milestone because output quality and user trust are linked. Users should not have to guess whether a provider is using a default, a workspace override, or a backend-selected model.
 
+Implementation note: this provider transparency pass renders agent Markdown safely and reports Claude CLI, Codex CLI, and Antigravity CLI or legacy Gemini CLI fallback diagnostics without hardcoded model promises.
+
 ## 12. Milestone 8: Later Parity Candidates
 
 These features are valuable but should be deferred until after the v1.0 spine is useful.

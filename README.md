@@ -23,10 +23,12 @@ The working rule is: agents can work together without losing context, stomping e
 - File edit visibility through streamed edit events, file decoration badges, session summaries, and commit attribution.
 - Workspace change detection for files modified during an agent turn even when the underlying CLI does not report a write tool.
 - Cross-agent edit conflict notices when a later agent touches a file already edited by another agent in the session.
+- Veyra renders agent Markdown safely in the docked view while keeping tool calls, file-edit notices, checkpoints, and pending-change actions as structured controls.
 - Terminal selections and project command hints are included as prompt context for safer build, test, and debug follow-up.
 - `Veyra: Diagnose Terminal Output` routes copied or pasted terminal output into a read-only Veyra diagnosis prompt.
 - `Veyra: Summarize Git Status` routes local branch, remote, dirty-tree, and recent commit context into Veyra for GitHub and CI follow-up.
 - `Veyra: Review CI/PR Output` combines copied CI or PR output with local Git context for a draft PR summary and readiness checklist.
+- Provider transparency in diagnostics shows Claude CLI, Codex CLI, and the Google provider path through Antigravity CLI or legacy Gemini fallback, including CLI/provider versions where Veyra can read them safely.
 
 ## Requirements
 
@@ -152,6 +154,12 @@ Example workspace settings:
 Run `Veyra: Check agent status` before starting an autonomous workflow. If Codex or Gemini is missing, inaccessible, or misconfigured, the status warning offers CLI path configuration directly.
 
 On Windows, `Veyra: Configure Codex/Gemini CLI paths` can detect native CLI executables, PATH npm shims, npm global CLI bundles, and the standard Antigravity install. It saves `veyra.codexCliPath`, `veyra.antigravityCliPath`, and the legacy `veyra.geminiCliPath` workspace settings when available. If a backend reports `Node.js missing`, install Node.js so the `node` command is on PATH, or point Codex/Gemini at native executable paths instead of JS bundle paths.
+
+### Output And Provider Transparency
+
+- Veyra renders agent Markdown safely in the docked view, so headings, lists, code blocks, blockquotes, links, and tables become readable prose while arbitrary HTML remains escaped as text.
+- Veyra does not hardcode vendor model promises. Claude, Codex, and Gemini use local CLI/provider defaults unless a provider exposes reliable backend model metadata or a stable local override setting.
+- `Veyra: Copy Diagnostic Report` includes provider transparency for Claude CLI, Codex CLI, Antigravity CLI or legacy Gemini fallback, and CLI/provider versions where available.
 
 ## Using Veyra As A Language Model
 

@@ -72,6 +72,29 @@ const mocks = vi.hoisted(() => {
     checkCodex: vi.fn().mockResolvedValue('unauthenticated'),
     checkGemini: vi.fn().mockResolvedValue('not-installed'),
     clearStatusCache: vi.fn(),
+    collectProviderDiagnostics: vi.fn(() => ({
+      claude: {
+        provider: 'Claude',
+        runtime: 'Claude CLI',
+        command: 'claude',
+        version: '1.2.3',
+        model: 'local CLI/provider default; not selected by Veyra',
+      },
+      codex: {
+        provider: 'Codex',
+        runtime: 'Codex CLI',
+        command: 'codex',
+        version: '0.42.0',
+        model: 'local CLI/provider default; not selected by Veyra',
+      },
+      gemini: {
+        provider: 'Gemini',
+        runtime: 'Antigravity CLI',
+        command: 'agy',
+        version: '1.0.2',
+        model: 'local CLI/provider default; not selected by Veyra',
+      },
+    })),
     detectCliBundlePaths: vi.fn((): any => ({
       codex: { status: 'missing', path: 'C:\\npm-root\\@openai\\codex\\bin\\codex.js', detail: 'Codex missing' },
       antigravity: { status: 'missing', path: undefined, detail: 'Antigravity CLI not found.' },
@@ -213,6 +236,7 @@ const mocks = vi.hoisted(() => {
       this.checkCodex.mockClear();
       this.checkGemini.mockClear();
       this.clearStatusCache.mockClear();
+      this.collectProviderDiagnostics.mockClear();
       this.detectCliBundlePaths.mockClear();
       this.detectCliBundlePaths.mockReturnValue({
         codex: { status: 'missing', path: 'C:\\npm-root\\@openai\\codex\\bin\\codex.js', detail: 'Codex missing' },
@@ -312,6 +336,10 @@ vi.mock('../src/statusChecks.js', () => ({
   checkCodex: mocks.checkCodex,
   checkGemini: mocks.checkGemini,
   clearStatusCache: mocks.clearStatusCache,
+}));
+
+vi.mock('../src/providerDiagnostics.js', () => ({
+  collectProviderDiagnostics: mocks.collectProviderDiagnostics,
 }));
 
 vi.mock('../src/cliPathDetection.js', () => ({
@@ -462,6 +490,7 @@ describe('activate', () => {
     expect(mocks.clipboardWriteText).toHaveBeenCalledWith(expect.stringContaining('Extension: dontcallmejames.veyra-vscode 0.0.8'));
     expect(mocks.clipboardWriteText).toHaveBeenCalledWith(expect.stringContaining('veyra.openPanel: registered'));
     expect(mocks.clipboardWriteText).toHaveBeenCalledWith(expect.stringContaining('Codex: unauthenticated'));
+    expect(mocks.clipboardWriteText).toHaveBeenCalledWith(expect.stringContaining('Gemini: Antigravity CLI via agy; version 1.0.2'));
     expect(mocks.showInformationMessage).toHaveBeenCalledWith('Copied Veyra diagnostic report to clipboard.');
     expect(report).toContain('Veyra Diagnostic Report');
   });

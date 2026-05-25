@@ -48,6 +48,13 @@ export const COMMAND_DISCOVERY_ITEMS: AutocompleteItem[] = [
   },
   {
     kind: 'command',
+    token: '/browser-test',
+    label: 'Veyra: Review Browser/Test Output',
+    desc: 'review browser logs and screenshots',
+    command: 'veyra.reviewBrowserTestOutput',
+  },
+  {
+    kind: 'command',
     token: '/git-status',
     label: 'Veyra: Summarize Git Status',
     desc: 'summarize local Git state',

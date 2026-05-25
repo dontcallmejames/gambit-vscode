@@ -59,6 +59,7 @@ export type RollbackCheckpointResult = {
 export type VeyraCommandActionId =
   | 'veyra.openPendingChanges'
   | 'veyra.runVerificationCommand'
+  | 'veyra.reviewBrowserTestOutput'
   | 'veyra.summarizeGitStatus'
   | 'veyra.reviewCiWorkflowOutput'
   | 'veyra.preparePrPackageDraft'

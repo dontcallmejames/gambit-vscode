@@ -20,7 +20,7 @@ The working rule is: agents can work together without losing context, stomping e
 - A docked Veyra view for the full orchestration UI with statuses, checkpoints, and pending changes.
 - A compact Presentation Layer with a Mission Control timeline that shows Claude, Codex, and Gemini as queued, active, complete, failed, cancelled, and waiting stages.
 - Structured Workflow Artifact Cards for known Veyra sections such as `Veyra Synthesis`, `Recommendation`, blocking issues, missing tests, follow-ups, next actions, and `Handoff Summary`.
-- A Trust Center in the docked view that keeps pending changes, checkpoints, edit conflicts, file edits, approved verification status, and Git/CI context visible without replacing the inline notices.
+- A Trust Center in the docked view that keeps pending changes, checkpoints, edit conflicts, file edits, approved verification status, Git/CI context, and browser/test context visible without replacing the inline notices.
 - Workflow Replay in the docked view to prepare a fresh composer draft for the latest `/review`, `/debate`, `/consensus`, or `/implement` workflow against the current workspace state.
 - Composer autocomplete in the docked Veyra view for agents, slash workflows, and common Veyra commands.
 - Shared context and file mention support across the Veyra view, native chat, and language model requests.
@@ -30,6 +30,7 @@ The working rule is: agents can work together without losing context, stomping e
 - Veyra renders agent Markdown safely in the docked view while keeping tool calls, file-edit notices, checkpoints, and pending-change actions as structured controls.
 - Terminal selections and project command hints are included as prompt context for safer build, test, and debug follow-up.
 - `Veyra: Diagnose Terminal Output` routes copied or pasted terminal output into a read-only Veyra diagnosis prompt.
+- `Veyra: Review Browser/Test Output` routes copied browser test logs, console errors, network errors, screenshot notes, URL notes, or reproduction notes into a structured read-only review.
 - `Veyra: Summarize Git Status` routes local branch, remote, dirty-tree, and recent commit context into Veyra for GitHub and CI follow-up.
 - `Veyra: Review CI/PR Output` combines copied CI or PR output with local Git context for a draft PR summary and readiness checklist.
 - `Veyra: Prepare PR Package Draft` combines local Git context, pending-change and checkpoint signals, approved verification evidence when recorded, and optional CI/PR output into a structured PR package draft.
@@ -106,7 +107,7 @@ When no direct agent is chosen, `@veyra` asks the facilitator to route the work 
 
 Type `@` in the docked Veyra composer to mention Claude, Codex, Gemini, or all agents.
 
-Type `/` in the docked Veyra composer to discover workflow shortcuts and common command-palette actions, including `/review`, `/debate`, `/consensus`, `/implement`, `Veyra: Open Pending Changes`, `Veyra: Run Verification Command`, `Veyra: Summarize Git Status`, `Veyra: Review CI/PR Output`, `Veyra: Prepare PR Package Draft`, `Veyra: Create Checkpoint`, `Veyra: Roll Back Latest Checkpoint`, `Veyra: Check agent status`, and `Veyra: Copy Diagnostic Report`.
+Type `/` in the docked Veyra composer to discover workflow shortcuts and common command-palette actions, including `/review`, `/debate`, `/consensus`, `/implement`, `Veyra: Open Pending Changes`, `Veyra: Run Verification Command`, `Veyra: Review Browser/Test Output`, `Veyra: Summarize Git Status`, `Veyra: Review CI/PR Output`, `Veyra: Prepare PR Package Draft`, `Veyra: Create Checkpoint`, `Veyra: Roll Back Latest Checkpoint`, `Veyra: Check agent status`, and `Veyra: Copy Diagnostic Report`.
 
 ### Workflow Modes
 
@@ -144,6 +145,13 @@ Example workspace settings:
 - For `/implement`, Veyra adds post-implement verification suggestions so agents can recommend a likely follow-up command after edits.
 - Run `Veyra: Run Verification Command` to choose a detected test, typecheck, lint, build, check, or verify command, approve the exact command, then route the captured output (stdout/stderr as rendered by the terminal) and exit status back into Veyra as terminal context.
 - Do not run suggested commands unless the user explicitly asks or approves. Agents must ask the user to approve the exact command before running verification.
+
+### Browser And Frontend Test Context
+
+- Run `Veyra: Review Browser/Test Output` after copying Playwright, Cypress, Vitest UI, browser console, network, screenshot-note, URL-note, or reproduction output.
+- Veyra treats this as explicit user-provided browser/test evidence plus local project command hints. It does not launch a browser, scrape pages, rerun tests, edit files, or inspect network activity on its own.
+- The review asks agents for `Browser/Test Summary`, `Reproduction Evidence`, `User-Visible Risk`, `Likely Cause`, `Verification Gaps`, and `Suggested Follow-up Commands` so the docked view can render the result as workflow artifact cards.
+- Follow-up commands are suggestions only. Veyra waits for explicit approval before any test, browser, Git, or terminal command can run.
 
 ### GitHub And CI Workflow Context
 
@@ -209,7 +217,7 @@ The docked Veyra view includes a compact Trust Center above the transcript. It d
 - Pending changes show the same open diff, accept, reject, and per-file actions as the inline change-set notice.
 - Checkpoints expose manual checkpoint creation and latest-checkpoint rollback.
 - Verification status is shown only after an explicitly approved Veyra verification command reports an exit status.
-- Git, CI/PR, and PR package context appears only when you run the explicit Veyra Git, CI/PR review, or PR package draft commands.
+- Git, CI/PR, PR package, and browser/test context appears only when you run the explicit Veyra Git, CI/PR review, PR package draft, or browser/test review commands.
 - File edits and edit conflicts remain visible and open the related workspace file.
 
 ### Workflow Replay

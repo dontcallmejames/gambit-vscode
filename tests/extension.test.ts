@@ -397,6 +397,7 @@ describe('activate', () => {
       'veyra.configureCliPaths',
       'veyra.diagnoseTerminalOutput',
       'veyra.runVerificationCommand',
+      'veyra.reviewBrowserTestOutput',
       'veyra.summarizeGitStatus',
       'veyra.reviewCiWorkflowOutput',
       'veyra.preparePrPackageDraft',

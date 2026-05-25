@@ -442,14 +442,17 @@ describe('extension manifest', () => {
     }
     expect(commands.get('veyra.diagnoseTerminalOutput')).toBe('Veyra: Diagnose Terminal Output');
     expect(commands.get('veyra.runVerificationCommand')).toBe('Veyra: Run Verification Command');
+    expect(commands.get('veyra.reviewBrowserTestOutput')).toBe('Veyra: Review Browser/Test Output');
     expect(commands.get('veyra.summarizeGitStatus')).toBe('Veyra: Summarize Git Status');
     expect(commands.get('veyra.reviewCiWorkflowOutput')).toBe('Veyra: Review CI/PR Output');
     expect(manifest.activationEvents).toContain('onCommand:veyra.diagnoseTerminalOutput');
     expect(manifest.activationEvents).toContain('onCommand:veyra.runVerificationCommand');
+    expect(manifest.activationEvents).toContain('onCommand:veyra.reviewBrowserTestOutput');
     expect(manifest.activationEvents).toContain('onCommand:veyra.summarizeGitStatus');
     expect(manifest.activationEvents).toContain('onCommand:veyra.reviewCiWorkflowOutput');
     expect(readme).toContain('Veyra: Diagnose Terminal Output');
     expect(readme).toContain('Veyra: Run Verification Command');
+    expect(readme).toContain('Veyra: Review Browser/Test Output');
     expect(readme).toContain('copied or pasted terminal output');
     expect(readme).toContain('does not read terminal scrollback directly');
   });
@@ -466,6 +469,7 @@ describe('extension manifest', () => {
       expect(normalized).toContain('summarize git status');
       expect(normalized).toContain('review ci/pr output');
       expect(normalized).toContain('prepare pr package draft');
+      expect(normalized).toContain('review browser/test output');
       expect(normalized).toContain('draft pr summary');
       expect(normalized).toContain('changed-file explanation');
       expect(normalized).toContain('pr readiness checklist');
@@ -477,12 +481,15 @@ describe('extension manifest', () => {
     expect(commands.get('veyra.summarizeGitStatus')).toBe('Veyra: Summarize Git Status');
     expect(commands.get('veyra.reviewCiWorkflowOutput')).toBe('Veyra: Review CI/PR Output');
     expect(commands.get('veyra.preparePrPackageDraft')).toBe('Veyra: Prepare PR Package Draft');
+    expect(commands.get('veyra.reviewBrowserTestOutput')).toBe('Veyra: Review Browser/Test Output');
     expect(manifest.activationEvents).toContain('onCommand:veyra.summarizeGitStatus');
     expect(manifest.activationEvents).toContain('onCommand:veyra.reviewCiWorkflowOutput');
     expect(manifest.activationEvents).toContain('onCommand:veyra.preparePrPackageDraft');
+    expect(manifest.activationEvents).toContain('onCommand:veyra.reviewBrowserTestOutput');
     expect(readme).toContain('Veyra: Summarize Git Status');
     expect(readme).toContain('Veyra: Review CI/PR Output');
     expect(readme).toContain('Veyra: Prepare PR Package Draft');
+    expect(readme).toContain('Veyra: Review Browser/Test Output');
   });
 
   it('documents docked composer command discovery', () => {
@@ -492,6 +499,7 @@ describe('extension manifest', () => {
     expect(readme).toContain('/review');
     expect(readme).toContain('Veyra: Open Pending Changes');
     expect(readme).toContain('Veyra: Run Verification Command');
+    expect(readme).toContain('Veyra: Review Browser/Test Output');
     expect(readme).toContain('Veyra: Summarize Git Status');
     expect(readme).toContain('Veyra: Review CI/PR Output');
     expect(readme).toContain('Veyra: Prepare PR Package Draft');
@@ -619,6 +627,7 @@ describe('extension manifest', () => {
       'veyra.configureCliPaths',
       'veyra.diagnoseTerminalOutput',
       'veyra.runVerificationCommand',
+      'veyra.reviewBrowserTestOutput',
       'veyra.summarizeGitStatus',
       'veyra.reviewCiWorkflowOutput',
       'veyra.preparePrPackageDraft',
@@ -641,6 +650,7 @@ describe('extension manifest', () => {
     expect(manifest.activationEvents).toContain('onCommand:veyra.configureCliPaths');
     expect(manifest.activationEvents).toContain('onCommand:veyra.diagnoseTerminalOutput');
     expect(manifest.activationEvents).toContain('onCommand:veyra.runVerificationCommand');
+    expect(manifest.activationEvents).toContain('onCommand:veyra.reviewBrowserTestOutput');
     expect(manifest.activationEvents).toContain('onCommand:veyra.summarizeGitStatus');
     expect(manifest.activationEvents).toContain('onCommand:veyra.reviewCiWorkflowOutput');
     expect(manifest.activationEvents).toContain('onCommand:veyra.preparePrPackageDraft');

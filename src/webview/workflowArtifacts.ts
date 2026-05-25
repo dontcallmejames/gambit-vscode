@@ -12,7 +12,12 @@ export type WorkflowArtifactSectionId =
   | 'risk-checklist'
   | 'verification-evidence'
   | 'unresolved-blockers'
-  | 'suggested-follow-up-commands';
+  | 'suggested-follow-up-commands'
+  | 'browser-test-summary'
+  | 'reproduction-evidence'
+  | 'user-visible-risk'
+  | 'likely-cause'
+  | 'verification-gaps';
 
 export type WorkflowArtifactTone = 'neutral' | 'positive' | 'warning' | 'danger' | 'test' | 'action';
 
@@ -143,6 +148,41 @@ const SECTION_DEFINITIONS: SectionDefinition[] = [
     chip: 'Commands',
     tone: 'action',
     aliases: ['suggested follow-up commands', 'suggested follow up commands', 'follow-up commands', 'follow up commands'],
+  },
+  {
+    id: 'browser-test-summary',
+    title: 'Browser/Test Summary',
+    chip: 'Browser',
+    tone: 'positive',
+    aliases: ['browser/test summary', 'browser test summary', 'browser testing summary'],
+  },
+  {
+    id: 'reproduction-evidence',
+    title: 'Reproduction Evidence',
+    chip: 'Evidence',
+    tone: 'neutral',
+    aliases: ['reproduction evidence', 'repro evidence', 'reproduction'],
+  },
+  {
+    id: 'user-visible-risk',
+    title: 'User-Visible Risk',
+    chip: 'UX Risk',
+    tone: 'warning',
+    aliases: ['user-visible risk', 'user visible risk', 'user-facing risk', 'user facing risk'],
+  },
+  {
+    id: 'likely-cause',
+    title: 'Likely Cause',
+    chip: 'Cause',
+    tone: 'warning',
+    aliases: ['likely cause', 'probable cause'],
+  },
+  {
+    id: 'verification-gaps',
+    title: 'Verification Gaps',
+    chip: 'Gaps',
+    tone: 'test',
+    aliases: ['verification gaps', 'test gaps', 'browser test gaps'],
   },
 ];
 

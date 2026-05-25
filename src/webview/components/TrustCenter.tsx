@@ -22,6 +22,7 @@ export function TrustCenter({ snapshot, send }: TrustCenterProps) {
           {snapshot.gitWorkflowPresent && <span>Git context</span>}
           {snapshot.ciPrWorkflowPresent && <span>CI/PR context</span>}
           {snapshot.prPackageWorkflowPresent && <span>PR package</span>}
+          {snapshot.browserTestingPresent && <span>browser/test context</span>}
           {snapshot.editConflictCount > 0 && <span>{plural(snapshot.editConflictCount, 'edit conflict')}</span>}
         </div>
       </div>
@@ -112,6 +113,7 @@ export function TrustCenter({ snapshot, send }: TrustCenterProps) {
           <p class="trust-muted">Veyra only records verification after an explicit approved run.</p>
           <div class="trust-actions">
             <CommandButton command="veyra.runVerificationCommand" send={send}>Run verification</CommandButton>
+            <CommandButton command="veyra.reviewBrowserTestOutput" send={send}>Review browser/test</CommandButton>
             <CommandButton command="veyra.summarizeGitStatus" send={send}>Summarize Git</CommandButton>
             <CommandButton command="veyra.reviewCiWorkflowOutput" send={send}>Review CI/PR</CommandButton>
             <CommandButton command="veyra.preparePrPackageDraft" send={send}>Prepare PR draft</CommandButton>

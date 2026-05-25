@@ -18,6 +18,7 @@ import { readWorkflowPromptOptions } from './workflowSettings.js';
 const WEBVIEW_COMMAND_ACTIONS = new Set<VeyraCommandActionId>([
   'veyra.openPendingChanges',
   'veyra.runVerificationCommand',
+  'veyra.reviewBrowserTestOutput',
   'veyra.summarizeGitStatus',
   'veyra.reviewCiWorkflowOutput',
   'veyra.preparePrPackageDraft',

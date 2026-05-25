@@ -31,6 +31,7 @@ describe('MentionAutocomplete', () => {
     expect(COMMAND_DISCOVERY_ITEMS.map((item) => item.label)).toEqual([
       'Veyra: Open Pending Changes',
       'Veyra: Run Verification Command',
+      'Veyra: Review Browser/Test Output',
       'Veyra: Summarize Git Status',
       'Veyra: Review CI/PR Output',
       'Veyra: Prepare PR Package Draft',
@@ -48,6 +49,9 @@ describe('MentionAutocomplete', () => {
     ]);
     expect(autocompleteItemsForToken('/git').map((item) => item.label)).toEqual([
       'Veyra: Summarize Git Status',
+    ]);
+    expect(autocompleteItemsForToken('/browser').map((item) => item.label)).toEqual([
+      'Veyra: Review Browser/Test Output',
     ]);
     expect(autocompleteItemsForToken('/ci').map((item) => item.label)).toEqual([
       'Veyra: Review CI/PR Output',

@@ -85,6 +85,8 @@ describe('diagnostic report', () => {
     expect(DIAGNOSTIC_COMMAND_IDS).toContain('veyra.openPanel');
     expect(DIAGNOSTIC_COMMAND_IDS).toContain('veyra.checkStatus');
     expect(DIAGNOSTIC_COMMAND_IDS).toContain('veyra.copyDiagnosticReport');
+    expect(DIAGNOSTIC_COMMAND_IDS).toContain('veyra.runVerificationCommand');
+    expect(DIAGNOSTIC_COMMAND_IDS).toContain('veyra.reviewBrowserTestOutput');
     expect(DIAGNOSTIC_COMMAND_IDS).toContain('veyra.summarizeGitStatus');
     expect(DIAGNOSTIC_COMMAND_IDS).toContain('veyra.reviewCiWorkflowOutput');
     expect(DIAGNOSTIC_COMMAND_IDS).toContain('veyra.preparePrPackageDraft');

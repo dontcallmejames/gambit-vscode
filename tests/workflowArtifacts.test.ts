@@ -96,6 +96,40 @@ describe('workflow artifact parsing', () => {
     ]);
   });
 
+  it('detects browser testing review sections as artifact cards', () => {
+    const result = parseWorkflowArtifactBlocks([
+      '## Browser/Test Summary',
+      'Playwright reproduced the issue.',
+      '',
+      '## Reproduction Evidence',
+      '- Console error and screenshot note attached.',
+      '',
+      '## User-Visible Risk',
+      '- Login button is hidden.',
+      '',
+      '## Likely Cause',
+      '- Responsive layout regression.',
+      '',
+      '## Verification Gaps',
+      '- Mobile viewport not covered.',
+      '',
+      '## Suggested Follow-up Commands',
+      '- `npm run test:e2e`',
+    ].join('\n'));
+
+    const sections = result.blocks.filter((block) => block.kind === 'section');
+
+    expect(result.hasArtifacts).toBe(true);
+    expect(sections.map((section) => section.title)).toEqual([
+      'Browser/Test Summary',
+      'Reproduction Evidence',
+      'User-Visible Risk',
+      'Likely Cause',
+      'Verification Gaps',
+      'Suggested Follow-up Commands',
+    ]);
+  });
+
   it('falls back to plain Markdown when no known artifact sections exist', () => {
     const result = parseWorkflowArtifactBlocks([
       '## Ordinary Review',

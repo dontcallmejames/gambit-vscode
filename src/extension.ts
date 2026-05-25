@@ -13,6 +13,7 @@ import { registerDiffPreviewCommands } from './diffPreviewCommands.js';
 import { registerCheckpointCommands } from './checkpointCommands.js';
 import { registerTerminalAwarenessCommands } from './terminalAwareness.js';
 import { registerGitWorkflowAwarenessCommands } from './gitWorkflowAwareness.js';
+import { registerBrowserTestingAwarenessCommands } from './browserTestingAwareness.js';
 import { revealVeyraView, VeyraViewProvider, VEYRA_VIEW_ID } from './veyraView.js';
 import {
   DIAGNOSTIC_COMMAND_IDS,
@@ -258,6 +259,12 @@ export function activate(context: vscode.ExtensionContext): void {
       await configureCliPaths();
     }),
     registerTerminalAwarenessCommands(
+      vscode,
+      ensureNativeRegistration,
+      revealVeyraView,
+      (text) => viewProvider.dispatchExternalMessage(text),
+    ),
+    registerBrowserTestingAwarenessCommands(
       vscode,
       ensureNativeRegistration,
       revealVeyraView,

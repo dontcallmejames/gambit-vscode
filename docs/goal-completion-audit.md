@@ -28,6 +28,8 @@ The 2026-05-25 Workflow Replay v0.1 pass adds a manual replay preparation surfac
 
 The 2026-05-25 GitHub/PR Workflow Awareness v0.2 pass adds `Veyra: Prepare PR Package Draft`. The command reuses the read-only Git context path, folds in pending-change and checkpoint evidence, includes approved verification evidence when recorded in the workspace session, accepts optional copied or pasted CI/PR output, and asks agents for structured PR Summary, Changed File Explanation, Risk Checklist, Verification Evidence, Unresolved Blockers, and Suggested Follow-up Commands sections. It preserves the local-first guardrails: no hidden network calls, no GitHub API writes, no automatic PR creation, no CI reruns, and no push/pull/merge/rebase/reset/clean actions.
 
+The 2026-05-25 Browser Testing Awareness v0.1 pass adds `Veyra: Review Browser/Test Output`. The command accepts explicit user-provided Playwright, Cypress, Vitest UI, browser console, network, screenshot-note, URL-note, and reproduction text, combines it with local project command hints, and asks agents for Browser/Test Summary, Reproduction Evidence, User-Visible Risk, Likely Cause, Verification Gaps, and Suggested Follow-up Commands sections. It preserves the local-first guardrails: no hidden browser launch, no network scraping, no automatic test reruns, no file edits, no Git operations, and no command execution without separate approval.
+
 ## Prompt-to-Artifact Checklist
 
 | Prompt requirement | Concrete artifact evidence | Verification gate | Status |

@@ -361,11 +361,13 @@ describe('VeyraWebviewController', () => {
     const onDidReceive = (vscode as any).__test.onDidReceive.handler;
 
     await onDidReceive({ kind: 'run-command', command: 'veyra.runVerificationCommand' });
+    await onDidReceive({ kind: 'run-command', command: 'veyra.reviewBrowserTestOutput' });
     await onDidReceive({ kind: 'run-command', command: 'veyra.summarizeGitStatus' });
     await onDidReceive({ kind: 'run-command', command: 'veyra.reviewCiWorkflowOutput' });
     await onDidReceive({ kind: 'run-command', command: 'veyra.preparePrPackageDraft' });
 
     expect((vscode as any).commands.executeCommand).toHaveBeenCalledWith('veyra.runVerificationCommand');
+    expect((vscode as any).commands.executeCommand).toHaveBeenCalledWith('veyra.reviewBrowserTestOutput');
     expect((vscode as any).commands.executeCommand).toHaveBeenCalledWith('veyra.summarizeGitStatus');
     expect((vscode as any).commands.executeCommand).toHaveBeenCalledWith('veyra.reviewCiWorkflowOutput');
     expect((vscode as any).commands.executeCommand).toHaveBeenCalledWith('veyra.preparePrPackageDraft');

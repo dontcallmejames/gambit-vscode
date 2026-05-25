@@ -408,6 +408,8 @@ Useful for daily coding parity, but it is expensive to make good and does not di
 
 Useful for frontend workflows, especially visual debugging, but not core to v1.0 unless Veyra narrows its target market to web app development.
 
+Implementation note: Browser Testing Awareness v0.1 keeps the feature local-first by adding `Veyra: Review Browser/Test Output`. It accepts explicit user-provided Playwright, Cypress, Vitest UI, browser console, network, screenshot-note, URL-note, and reproduction text, combines it with local project command hints, and asks agents for Browser/Test Summary, Reproduction Evidence, User-Visible Risk, Likely Cause, Verification Gaps, and Suggested Follow-up Commands. It forbids hidden browser launches, page scraping, network inspection, automatic test reruns, file edits, Git operations, and command execution unless the user separately approves an exact command.
+
 ### Local model support
 
 Useful for privacy-sensitive teams and cost control. It should come after the adapter and workflow surfaces stabilize.

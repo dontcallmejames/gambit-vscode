@@ -223,7 +223,7 @@ describe('extension manifest', () => {
     expect(audit).not.toContain('verifies `Veyra: Open Panel` reveals and validates the docked Veyra view');
     expect(audit).not.toContain('automated VS Code smoke test already validates docked Veyra view');
     expect(audit).not.toContain('docked Veyra view reveal, active-dispatch');
-    expect(smokeChecklist).toContain('paste JS bundle paths, native executable paths, or npm shim paths');
+    expect(smokeChecklist).toContain('paste JS bundle paths, native executable paths, Antigravity `agy.exe`, or npm shim paths');
     expect(smokeChecklist).toContain('skips stale PATH shims');
     expect(smokeChecklist).toContain('Veyra: Show live validation guide');
     expect(smokeChecklist).toContain('Veyra: Open View');
@@ -247,20 +247,22 @@ describe('extension manifest', () => {
     expect(liveReadme).toContain('In Bash-compatible shells');
     expect(liveReadme).toContain('Remove-Item Env:\\VEYRA_RUN_LIVE -ErrorAction SilentlyContinue');
     expect(liveReadme).toContain('VEYRA_CODEX_CLI_PATH');
+    expect(liveReadme).toContain('VEYRA_ANTIGRAVITY_CLI_PATH');
     expect(liveReadme).toContain('VEYRA_GEMINI_CLI_PATH');
     expect(liveReadme).toContain('veyra.codexCliPath');
+    expect(liveReadme).toContain('veyra.antigravityCliPath');
     expect(liveReadme).toContain('veyra.geminiCliPath');
     expect(liveReadme).toContain('JS bundle paths, native executables, or Windows npm shim paths');
     expect(liveReadme).toContain('resolved to the underlying JS bundle');
     expect(liveReadme).toContain('Node.js');
     expect(liveReadme).toContain('node` command is on PATH');
-    expect(liveReadme).toContain('first uses native `codex.exe` and `gemini.exe` executables on PATH');
+    expect(liveReadme).toContain('first uses native `codex.exe`, `agy.exe`, and `gemini.exe` executables on PATH');
     expect(liveReadme).toContain('then recognized PATH npm shims');
     expect(liveReadme).toContain('missing derived bundle targets are skipped');
     expect(liveReadme).toContain('Native executable paths do not need the JS-bundle Node launcher');
   });
 
-  it('contributes settings for explicit Codex and Gemini CLI bundle paths', () => {
+  it('contributes settings for explicit Codex, Antigravity, and Gemini CLI paths', () => {
     const properties = manifest.contributes.configuration.properties;
 
     expect(properties['veyra.codexCliPath']).toMatchObject({
@@ -282,6 +284,21 @@ describe('extension manifest', () => {
     expect(properties['veyra.codexCliPath'].description).toContain('JS bundle');
     expect(properties['veyra.codexCliPath'].description).toContain('resolved to');
     expect(properties['veyra.codexCliPath'].description).toContain('codex.exe');
+
+    expect(properties['veyra.antigravityCliPath']).toMatchObject({
+      type: 'string',
+      default: '',
+    });
+    const antigravityPattern = new RegExp(properties['veyra.antigravityCliPath'].pattern);
+    expect(antigravityPattern.test('')).toBe(true);
+    expect(antigravityPattern.test('C:\\tools\\agy.exe')).toBe(true);
+    expect(antigravityPattern.test('/usr/local/bin/agy')).toBe(true);
+    expect(antigravityPattern.test('C:\\tools\\not-agy.exe')).toBe(false);
+    expect(properties['veyra.antigravityCliPath'].patternErrorMessage).toContain('agy.exe or agy');
+    expect(properties['veyra.antigravityCliPath'].description).toContain('VEYRA_ANTIGRAVITY_CLI_PATH');
+    expect(properties['veyra.antigravityCliPath'].description).toContain('Antigravity');
+    expect(properties['veyra.antigravityCliPath'].description).toContain('agy.exe');
+
     expect(properties['veyra.geminiCliPath']).toMatchObject({
       type: 'string',
       default: '',

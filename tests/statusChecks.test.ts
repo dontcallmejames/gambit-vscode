@@ -30,6 +30,7 @@ beforeEach(() => {
   Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
   clearStatusCache();
   delete process.env.VEYRA_CODEX_CLI_PATH;
+  delete process.env.VEYRA_ANTIGRAVITY_CLI_PATH;
   delete process.env.VEYRA_GEMINI_CLI_PATH;
   vscodeMocks.configGet.mockReset();
   vscodeMocks.configGet.mockImplementation((_key: string, dflt: unknown) => dflt);
@@ -234,6 +235,48 @@ describe('checkCodex', () => {
 });
 
 describe('checkGemini', () => {
+  it('uses veyra.antigravityCliPath before resolving legacy Gemini and does not require Gemini OAuth files', async () => {
+    vscodeMocks.configGet.mockImplementation((key: string, dflt: unknown) =>
+      key === 'antigravityCliPath' ? 'D:\\tools\\agy\\agy.exe' : dflt
+    );
+    mockedAccessSync.mockImplementation((path: unknown) => {
+      if (String(path) === 'D:\\tools\\agy\\agy.exe') return;
+      const error = new Error(`missing ${String(path)}`) as NodeJS.ErrnoException;
+      error.code = 'ENOENT';
+      throw error;
+    });
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+
+    expect(await checkGemini()).toBe('ready');
+    expect(mockedExecSync).not.toHaveBeenCalledWith('npm root -g', expect.anything());
+    expect(mockedAccessSync).toHaveBeenCalledWith('D:\\tools\\agy\\agy.exe');
+    expect(mockedAccessSync.mock.calls.map((call) => String(call[0])).join('\n')).not.toContain('oauth_creds.json');
+  });
+
+  it('uses VEYRA_ANTIGRAVITY_CLI_PATH before resolving legacy Gemini', async () => {
+    process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\agy\\agy.exe';
+    mockedAccessSync.mockImplementation((path: unknown) => {
+      if (String(path) === 'D:\\tools\\agy\\agy.exe') return;
+      const error = new Error(`missing ${String(path)}`) as NodeJS.ErrnoException;
+      error.code = 'ENOENT';
+      throw error;
+    });
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+
+    expect(await checkGemini()).toBe('ready');
+    expect(mockedExecSync).not.toHaveBeenCalledWith('npm root -g', expect.anything());
+    expect(mockedAccessSync).toHaveBeenCalledWith('D:\\tools\\agy\\agy.exe');
+  });
+
+  it('returns misconfigured for malformed Antigravity CLI path overrides', async () => {
+    process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\not-agy.exe';
+    mockedExistsSync.mockReturnValue(true);
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+
+    expect(await checkGemini()).toBe('misconfigured');
+    expect(mockedExecSync).not.toHaveBeenCalledWith('npm root -g', expect.anything());
+  });
+
   it('uses veyra.geminiCliPath before resolving the Windows npm bundle', async () => {
     vscodeMocks.configGet.mockImplementation((key: string, dflt: unknown) =>
       key === 'geminiCliPath' ? 'D:\\settings\\gemini\\gemini.js' : dflt

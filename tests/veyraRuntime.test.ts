@@ -2,10 +2,6 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const claudeSdkMocks = vi.hoisted(() => ({
-  query: vi.fn(),
-}));
-
 const vscodeMocks = vi.hoisted(() => ({
   values: new Map<string, unknown>(),
 }));
@@ -18,10 +14,6 @@ vi.mock('vscode', () => ({
       ),
     })),
   },
-}));
-
-vi.mock('@anthropic-ai/claude-agent-sdk', () => ({
-  query: claudeSdkMocks.query,
 }));
 
 import {
@@ -251,7 +243,6 @@ describe('Veyra runtime smoke agents', () => {
     const originalSmoke = process.env.VSCODE_VEYRA_SMOKE;
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     process.env.VSCODE_VEYRA_SMOKE = '1';
-    claudeSdkMocks.query.mockClear();
     const tempRoot = join(process.cwd(), '.vscode-test');
     mkdirSync(tempRoot, { recursive: true });
     const workspace = mkdtempSync(join(tempRoot, 'veyra-runtime-smoke-'));
@@ -290,7 +281,6 @@ describe('Veyra runtime smoke agents', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 250));
 
-    expect(claudeSdkMocks.query).not.toHaveBeenCalled();
     expect(chunks).toContain('[smoke:codex] write-capable request reached Veyra provider.');
     expect(visibleEdits).toContain('codex:created:src/veyra-smoke-codex.ts');
     expect(smokeEditFileExists).toBe(true);

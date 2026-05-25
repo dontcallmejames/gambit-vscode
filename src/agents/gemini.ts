@@ -1,14 +1,68 @@
 import { spawn, execSync } from 'node:child_process';
 import { accessSync } from 'node:fs';
 import { join } from 'node:path';
+import { homedir } from 'node:os';
 import type { ChildProcess } from 'node:child_process';
 import type { Agent, SendOptions } from './types.js';
 import type { AgentChunk, AgentStatus } from '../types.js';
 import { checkGemini } from '../statusChecks.js';
 import { findNode } from '../findNode.js';
-import { getGeminiCliPathOverride } from '../cliPathOverrides.js';
+import { getAntigravityCliPathOverride, getGeminiCliPathOverride } from '../cliPathOverrides.js';
 import { cliPathMisconfiguration, normalizeCliPathOverride, windowsNpmShimNames } from '../cliPathValidation.js';
 import * as vscode from 'vscode';
+
+type GoogleCliCommand =
+  | { runtime: 'antigravity'; command: string; args: string[] }
+  | { runtime: 'gemini'; command: string; args: string[] };
+
+function resolveGoogleCommand(prompt: string): GoogleCliCommand {
+  const antigravityCommand = resolveAntigravityCommand();
+  if (!antigravityCommand) return { runtime: 'gemini', ...resolveGeminiCommand() };
+  if (!isAntigravityPromptTooLargeForArgv(prompt)) return antigravityCommand;
+
+  try {
+    return { runtime: 'gemini', ...resolveGeminiCommand() };
+  } catch (err) {
+    throw new Error(
+      `Antigravity CLI --print requires the prompt as a command-line argument, and this ${prompt.length}-character prompt is too large for a safe launch. Configure legacy Gemini CLI fallback with VEYRA_GEMINI_CLI_PATH or veyra.geminiCliPath, or shorten the request. Legacy Gemini fallback was unavailable: ${errorMessage(err)}`,
+    );
+  }
+}
+
+function resolveAntigravityCommand(): GoogleCliCommand | null {
+  const override = getAntigravityCliPathOverride();
+  if (override) {
+    assertCliPathAccessible(
+      'antigravity',
+      override,
+      `Antigravity CLI path override not found at ${override}. Update VEYRA_ANTIGRAVITY_CLI_PATH or veyra.antigravityCliPath, or install Antigravity CLI from https://antigravity.google/cli.`,
+    );
+    return { runtime: 'antigravity', command: override, args: [] };
+  }
+
+  if (process.platform === 'win32') {
+    const nativeCommand = resolveWindowsNativeExecutable('agy');
+    if (nativeCommand) return { runtime: 'antigravity', ...nativeCommand };
+
+    const installPath = resolveWindowsAntigravityInstallPath();
+    if (!installPath) return null;
+    const installStatus = inspectCliPath(installPath);
+    if (installStatus === 'exists') return { runtime: 'antigravity', command: installPath, args: [] };
+    if (installStatus === 'inaccessible') {
+      throw new Error(`Cannot inspect ${installPath}. Check filesystem permissions or rerun outside the current sandbox.`);
+    }
+    return null;
+  }
+
+  if (commandExists('agy')) return { runtime: 'antigravity', command: 'agy', args: [] };
+  const installPath = join(homedir(), '.local', 'bin', 'agy');
+  const installStatus = inspectCliPath(installPath);
+  if (installStatus === 'exists') return { runtime: 'antigravity', command: installPath, args: [] };
+  if (installStatus === 'inaccessible') {
+    throw new Error(`Cannot inspect ${installPath}. Check filesystem permissions or rerun outside the current sandbox.`);
+  }
+  return null;
+}
 
 // Spike A4: invoke `gemini -p '<prompt>' -o stream-json` for non-interactive JSONL.
 //
@@ -22,8 +76,9 @@ function resolveGeminiCommand(): { command: string; args: string[] } {
   const override = getGeminiCliPathOverride();
   if (override) {
     assertCliPathAccessible(
+      'gemini',
       override,
-      `Gemini CLI path override not found at ${override}. Update VEYRA_GEMINI_CLI_PATH or veyra.geminiCliPath, or install it with \`npm install -g @google/gemini-cli\`, then run \`gemini\` once to sign in.`,
+      `Gemini CLI path override not found at ${override}. Update VEYRA_GEMINI_CLI_PATH or veyra.geminiCliPath, configure Antigravity with VEYRA_ANTIGRAVITY_CLI_PATH or veyra.antigravityCliPath, or install legacy Gemini CLI with \`npm install -g @google/gemini-cli\`, then run \`gemini\` once to sign in.`,
     );
     return cliPathCommand(override);
   }
@@ -39,8 +94,9 @@ function resolveGeminiCommand(): { command: string; args: string[] } {
   const npmRoot = execSync('npm root -g', { encoding: 'utf8' }).trim();
   const bundle = join(npmRoot, '@google', 'gemini-cli', 'bundle', 'gemini.js');
   assertCliPathAccessible(
+    'gemini',
     bundle,
-    `Gemini CLI bundle not found at ${bundle}. Install it with \`npm install -g @google/gemini-cli\`, then run \`gemini\` once to sign in.`,
+    `Gemini CLI bundle not found at ${bundle}. Install Antigravity CLI from https://antigravity.google/cli, or install legacy Gemini CLI with \`npm install -g @google/gemini-cli\`, then run \`gemini\` once to sign in.`,
   );
   return { command: findNode(), args: [bundle] };
 }
@@ -92,7 +148,8 @@ function resolveWindowsNativeExecutable(baseName: string): { command: string; ar
     .map((line) => line.trim())
     .find((line) => line.toLowerCase().endsWith(expectedName));
   if (!command) return null;
-  assertCliPathAccessible(command, `${baseName}.exe not found at ${command}.`);
+  const runtime = baseName === 'agy' ? 'antigravity' : 'gemini';
+  assertCliPathAccessible(runtime, command, `${baseName}.exe not found at ${command}.`);
   return { command, args: [] };
 }
 
@@ -103,11 +160,11 @@ function cliPathCommand(cliPath: string): { command: string; args: string[] } {
   return { command: cliPath, args: [] };
 }
 
-function assertCliPathAccessible(filePath: string, missingMessage: string): void {
-  if (isUnsupportedWindowsCommandShim(filePath)) {
+function assertCliPathAccessible(runtime: 'gemini' | 'antigravity', filePath: string, missingMessage: string): void {
+  if (runtime === 'gemini' && isUnsupportedWindowsCommandShim(filePath)) {
     throw new Error('Windows npm command shim overrides are not supported; set VEYRA_GEMINI_CLI_PATH or veyra.geminiCliPath to the Gemini JS bundle or native executable instead.');
   }
-  const misconfiguration = cliPathMisconfiguration('gemini', filePath);
+  const misconfiguration = cliPathMisconfiguration(runtime, filePath);
   if (misconfiguration) {
     throw new Error(misconfiguration);
   }
@@ -139,11 +196,41 @@ function isUnsupportedWindowsCommandShim(filePath: string): boolean {
 
 const GEMINI_BASE_ARGS = ['-o', 'stream-json'];
 const GEMINI_AUTO_EDIT_ARGS = ['--approval-mode', 'auto_edit'];
+const ANTIGRAVITY_PRINT_TIMEOUT_ARGS = ['--print-timeout', '5m0s'];
+const ANTIGRAVITY_AUTO_EDIT_ARGS = ['--dangerously-skip-permissions'];
+const ANTIGRAVITY_WINDOWS_PROMPT_ARG_LIMIT = 24_000;
+const ANTIGRAVITY_UNIX_PROMPT_ARG_LIMIT = 120_000;
 
 function geminiArgs(readOnly = false): string[] {
   const writeApproval = vscode.workspace.getConfiguration('veyra').get<string>('writeApproval', 'auto-edit');
   const extra = !readOnly && writeApproval === 'auto-edit' ? GEMINI_AUTO_EDIT_ARGS : [];
   return [...extra, ...GEMINI_BASE_ARGS];
+}
+
+function resolveWindowsAntigravityInstallPath(): string | null {
+  try {
+    const localAppData = execSync('powershell.exe -NoProfile -Command "[Environment]::GetFolderPath(\'LocalApplicationData\')"', {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    if (!localAppData || !/[\\/]AppData[\\/]Local(?:[\\/]|$)/i.test(localAppData)) return null;
+    return join(localAppData, 'agy', 'bin', 'agy.exe');
+  } catch {
+    return null;
+  }
+}
+
+function antigravityArgs(prompt: string, readOnly = false): string[] {
+  const writeApproval = vscode.workspace.getConfiguration('veyra').get<string>('writeApproval', 'auto-edit');
+  const extra = !readOnly && writeApproval === 'auto-edit' ? ANTIGRAVITY_AUTO_EDIT_ARGS : [];
+  return [...extra, ...ANTIGRAVITY_PRINT_TIMEOUT_ARGS, '--print', prompt];
+}
+
+function isAntigravityPromptTooLargeForArgv(prompt: string): boolean {
+  const limit = process.platform === 'win32'
+    ? ANTIGRAVITY_WINDOWS_PROMPT_ARG_LIMIT
+    : ANTIGRAVITY_UNIX_PROMPT_ARG_LIMIT;
+  return prompt.length > limit;
 }
 
 export class GeminiAgent implements Agent {
@@ -155,9 +242,9 @@ export class GeminiAgent implements Agent {
   }
 
   async *send(prompt: string, opts: SendOptions = {}): AsyncIterable<AgentChunk> {
-    let geminiCommand: { command: string; args: string[] };
+    let googleCommand: GoogleCliCommand;
     try {
-      geminiCommand = resolveGeminiCommand();
+      googleCommand = resolveGoogleCommand(prompt);
     } catch (err) {
       yield { type: 'error', message: `Unable to start Gemini CLI: ${errorMessage(err)}` };
       yield { type: 'done' };
@@ -166,14 +253,18 @@ export class GeminiAgent implements Agent {
 
     let child: ChildProcess;
     try {
+      const runtimeArgs = googleCommand.runtime === 'antigravity'
+        ? antigravityArgs(prompt, opts.readOnly)
+        : geminiArgs(opts.readOnly);
       child = spawn(
-        geminiCommand.command,
-        [...geminiCommand.args, ...geminiArgs(opts.readOnly)],
-        { cwd: opts.cwd, stdio: ['pipe', 'pipe', 'pipe'] }
+        googleCommand.command,
+        [...googleCommand.args, ...runtimeArgs],
+        { cwd: opts.cwd, stdio: [googleCommand.runtime === 'antigravity' ? 'ignore' : 'pipe', 'pipe', 'pipe'] }
       );
-      child.stdin?.end(prompt);
+      if (googleCommand.runtime === 'gemini') child.stdin?.end(prompt);
     } catch (err) {
-      yield { type: 'error', message: `Unable to start Gemini CLI: ${errorMessage(err)}` };
+      const label = googleCommand.runtime === 'antigravity' ? 'Antigravity CLI' : 'Gemini CLI';
+      yield { type: 'error', message: `Unable to start ${label}: ${errorMessage(err)}` };
       yield { type: 'done' };
       return;
     }
@@ -197,6 +288,29 @@ export class GeminiAgent implements Agent {
       child.on('error', (err) => finish(null, errorMessage(err)));
       child.on('close', (code) => finish(code));
     });
+
+    if (googleCommand.runtime === 'antigravity') {
+      try {
+        for await (const data of child.stdout!) {
+          const text = String(data);
+          if (text) yield { type: 'text', text };
+        }
+      } catch (err) {
+        yield { type: 'error', message: errorMessage(err) };
+      } finally {
+        opts.signal?.removeEventListener('abort', onAbort);
+      }
+
+      const { code, stderr, processError } = await exitPromise;
+      if (processError) {
+        yield { type: 'error', message: `Antigravity process error: ${processError}` };
+      } else if (code !== 0) {
+        yield { type: 'error', message: `Antigravity exited with exit code ${code}${stderr ? `: ${stderr.trim()}` : ''}` };
+      }
+      yield { type: 'done' };
+      this.active = null;
+      return;
+    }
 
     let buffer = '';
     let sawDone = false;
@@ -320,6 +434,15 @@ function* parseGeminiEvent(
 function errorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
   return String(err);
+}
+
+function commandExists(command: string): boolean {
+  try {
+    execSync(`which ${command}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 const GEMINI_WRITE_TOOLS = new Set(['write_file', 'replace']);

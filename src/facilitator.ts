@@ -1,5 +1,5 @@
 import type { AgentId, AgentStatus } from './types.js';
-import { findNode } from './findNode.js';
+import { runClaudeCli } from './claudeCli.js';
 
 const ROUTING_ERROR = 'Routing unavailable; please prefix with @claude / @codex / @gemini / @all or run Veyra: Check agent status.';
 const NO_AGENTS_ERROR = 'No agents currently authenticated; run Veyra: Check agent status or Veyra: Show setup guide.';
@@ -14,11 +14,6 @@ export type FacilitatorFn = (
   availability: Record<AgentId, AgentStatus>,
   sharedContext?: string,
 ) => Promise<FacilitatorDecision>;
-
-type ClaudeSdkQuery = (request: {
-  prompt: string;
-  options?: { systemPrompt?: string };
-}) => AsyncIterable<unknown>;
 
 const PROFILES: Record<AgentId, string> = {
   claude: 'code reasoning, refactors, code review, planning, design discussion',
@@ -83,33 +78,17 @@ export const chooseFacilitatorAgent: FacilitatorFn = async (
   const systemPrompt = systemPromptParts.join('\n');
 
   let responseText = '';
-  const origExecPath = process.execPath;
-  const overrideExecPath = process.versions.electron !== undefined;
   try {
-    if (overrideExecPath) {
-      process.execPath = findNode();
-    }
-    const query = await loadClaudeSdkQuery();
-    const stream = query({
-      prompt: userMessage,
-      options: { systemPrompt },
-    });
-    for await (const event of stream as AsyncIterable<unknown>) {
-      const e = event as { type?: string; message?: { content?: Array<Record<string, unknown>> } };
-      if (e.type === 'assistant') {
-        for (const item of e.message?.content ?? []) {
-          if (item.type === 'text' && typeof item.text === 'string') {
-            responseText += item.text as string;
-          }
-        }
+    const prompt = `${systemPrompt}\n\nUser message:\n${userMessage}`;
+    for await (const chunk of runClaudeCli(prompt, { permissionMode: 'default' })) {
+      if (chunk.type === 'text') {
+        responseText += chunk.text;
+      } else if (chunk.type === 'error') {
+        return fallbackDecision(userMessage, availability);
       }
     }
   } catch {
     return fallbackDecision(userMessage, availability);
-  } finally {
-    if (overrideExecPath) {
-      process.execPath = origExecPath;
-    }
   }
 
   const cleaned = responseText
@@ -165,9 +144,4 @@ function fallbackDecision(
   }
 
   return { error: ROUTING_ERROR };
-}
-
-async function loadClaudeSdkQuery(): Promise<ClaudeSdkQuery> {
-  const sdk = await import('@anthropic-ai/claude-agent-sdk') as { query: ClaudeSdkQuery };
-  return sdk.query;
 }

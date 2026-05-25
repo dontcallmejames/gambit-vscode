@@ -16,7 +16,7 @@ async function readinessModule() {
       cwd: string;
       fileExists(filePath: string): boolean;
       readFile(filePath: string, encoding: 'utf8'): string;
-    }): { codex?: string; gemini?: string };
+    }): { codex?: string; antigravity?: string; gemini?: string };
     evaluateLiveReadiness(input: {
       commandAvailable(command: string): boolean;
       commandPath?(command: string): string | null;
@@ -25,9 +25,10 @@ async function readinessModule() {
       homeDir: string;
       npmRoot: string | null;
       platform: NodeJS.Platform;
-      cliOverrides?: { codex?: string; gemini?: string };
+      cliOverrides?: { codex?: string; antigravity?: string; gemini?: string };
       cliOverrideSources?: {
         codex?: { source: string; path: string };
+        antigravity?: { source: string; path: string };
         gemini?: { source: string; path: string };
       };
     }): {
@@ -49,7 +50,7 @@ async function readinessModule() {
       checks: Array<{ name: string; status: 'ready' | 'not-installed' | 'unauthenticated' | 'inaccessible' | 'misconfigured'; detail: string }>;
       diagnostics?: string[];
     }, env?: Record<string, string | undefined>): string;
-    cliPathMisconfiguration(runtime: 'codex' | 'gemini', filePath: string): string | null;
+    cliPathMisconfiguration(runtime: 'codex' | 'antigravity' | 'gemini', filePath: string): string | null;
   };
 }
 
@@ -230,6 +231,35 @@ describe('live readiness verifier', () => {
       ['Claude Code', 'ready'],
       ['Codex CLI', 'ready'],
       ['Gemini CLI', 'ready'],
+    ]);
+  });
+
+  it('uses explicit Antigravity CLI path overrides for the Gemini agent without requiring legacy Gemini OAuth files', async () => {
+    const { evaluateLiveReadiness } = await readinessModule();
+    const result = evaluateLiveReadiness({
+      platform: 'win32',
+      homeDir: 'C:/Users/tester',
+      npmRoot: null,
+      cliOverrides: {
+        codex: 'D:/tools/codex/bin/codex.js',
+        antigravity: 'D:/tools/agy/agy.exe',
+      },
+      commandAvailable: (command) => command === 'code' || command === 'node' || command === 'claude',
+      fileExists: (filePath) => [
+        'C:/Users/tester/.claude/.credentials.json',
+        'D:/tools/codex/bin/codex.js',
+        'C:/Users/tester/.codex/auth.json',
+        'D:/tools/agy/agy.exe',
+      ].includes(filePath.replace(/\\/g, '/')),
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.checks.map((check) => [check.name, check.status])).toEqual([
+      ['VS Code CLI', 'ready'],
+      ['Node.js CLI', 'ready'],
+      ['Claude Code', 'ready'],
+      ['Codex CLI', 'ready'],
+      ['Google provider (Antigravity CLI)', 'ready'],
     ]);
   });
 
@@ -554,7 +584,7 @@ describe('live readiness verifier', () => {
 
   it('keeps the standalone readiness CLI path validator aligned with the extension validator', async () => {
     const { cliPathMisconfiguration } = await readinessModule();
-    const cases: Array<{ runtime: 'codex' | 'gemini'; filePath: string }> = [
+    const cases: Array<{ runtime: 'codex' | 'antigravity' | 'gemini'; filePath: string }> = [
       { runtime: 'codex', filePath: 'D:/tools/codex/bin/codex.js' },
       { runtime: 'codex', filePath: 'D:/tools/codex.exe' },
       { runtime: 'codex', filePath: '/usr/local/bin/codex' },
@@ -565,6 +595,9 @@ describe('live readiness verifier', () => {
       { runtime: 'gemini', filePath: '/usr/local/bin/gemini' },
       { runtime: 'gemini', filePath: 'D:/npm/gemini.ps1' },
       { runtime: 'gemini', filePath: 'D:/tools/not-gemini.js' },
+      { runtime: 'antigravity', filePath: 'D:/tools/agy/agy.exe' },
+      { runtime: 'antigravity', filePath: '/usr/local/bin/agy' },
+      { runtime: 'antigravity', filePath: 'D:/tools/not-agy.exe' },
     ];
 
     for (const { runtime, filePath } of cases) {
@@ -584,12 +617,14 @@ describe('live readiness verifier', () => {
       readFile: () => `{
         // VS Code settings are JSONC.
         "veyra.codexCliPath": "D:/tools/codex/bin/codex.js",
+        "veyra.antigravityCliPath": "D:/tools/agy/agy.exe",
         "veyra.geminiCliPath": "D:/tools/gemini/bundle/gemini.js",
       }`,
     });
 
     expect(overrides).toEqual({
       codex: 'D:/tools/codex/bin/codex.js',
+      antigravity: 'D:/tools/agy/agy.exe',
       gemini: 'D:/tools/gemini/bundle/gemini.js',
     });
   });
@@ -600,18 +635,21 @@ describe('live readiness verifier', () => {
     const overrides = resolveCliOverrides({
       env: {
         VEYRA_CODEX_CLI_PATH: 'E:/env/codex.js',
+        VEYRA_ANTIGRAVITY_CLI_PATH: 'E:/env/agy.exe',
         VEYRA_GEMINI_CLI_PATH: 'E:/env/gemini.js',
       },
       cwd: 'C:/repo',
       fileExists: () => true,
       readFile: () => `{
         "veyra.codexCliPath": "D:/settings/codex.js",
+        "veyra.antigravityCliPath": "D:/settings/agy.exe",
         "veyra.geminiCliPath": "D:/settings/gemini.js"
       }`,
     });
 
     expect(overrides).toEqual({
       codex: 'E:/env/codex.js',
+      antigravity: 'E:/env/agy.exe',
       gemini: 'E:/env/gemini.js',
     });
   });
@@ -744,6 +782,35 @@ describe('live readiness verifier', () => {
     expect(failure).toContain("$env:VEYRA_CODEX_CLI_PATH = 'C:/npm/root/@openai/codex/bin/codex.js'");
     expect(failure).toContain("$env:VEYRA_GEMINI_CLI_PATH = 'C:/npm/root/@google/gemini-cli/bundle/gemini.js'");
     expect(failure).toContain('npm run verify:live-ready');
+  });
+
+  it('includes unrestricted PowerShell diagnostics for inaccessible Antigravity paths', async () => {
+    const { evaluateLiveReadiness, liveReadinessFailure } = await readinessModule();
+    const result = evaluateLiveReadiness({
+      platform: 'win32',
+      homeDir: 'C:/Users/tester',
+      npmRoot: null,
+      cliOverrides: {
+        codex: 'D:/tools/codex/codex.exe',
+        antigravity: 'D:/tools/agy/agy.exe',
+      },
+      commandAvailable: (command) => command === 'code' || command === 'claude',
+      fileExists: () => false,
+      fileStatus: (filePath) => {
+        const normalized = filePath.replace(/\\/g, '/');
+        if (normalized === 'C:/Users/tester/.claude/.credentials.json') return 'exists';
+        if (normalized === 'D:/tools/codex/codex.exe') return 'exists';
+        if (normalized === 'C:/Users/tester/.codex/auth.json') return 'exists';
+        if (normalized === 'D:/tools/agy/agy.exe') return 'inaccessible';
+        return 'missing';
+      },
+    });
+
+    const failure = liveReadinessFailure(result).replace(/\\/g, '/');
+
+    expect(failure).toContain("Test-Path -LiteralPath 'D:/tools/agy/agy.exe'");
+    expect(failure).toContain("$env:VEYRA_ANTIGRAVITY_CLI_PATH = 'D:/tools/agy/agy.exe'");
+    expect(failure).not.toContain("$env:VEYRA_GEMINI_CLI_PATH = 'D:/tools/agy/agy.exe'");
   });
 
   it('includes resolved Windows npm shim diagnostics in live readiness failures', async () => {

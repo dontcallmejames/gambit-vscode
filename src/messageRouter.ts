@@ -247,22 +247,22 @@ function setupMessage(agentId: AgentId, status: AgentStatus): string {
 
   if (agentId === 'gemini') {
     if (status === 'not-installed') {
-      return 'Gemini is not installed. Install it with `npm install -g @google/gemini-cli`, then run `gemini` once to sign in. You can also run Veyra: Configure Codex/Gemini CLI paths or Veyra: Show setup guide.';
+      return 'Google provider CLI is not installed. Install Antigravity CLI from https://antigravity.google/cli, then run `agy` once if sign-in is needed. Legacy Gemini CLI remains a fallback for existing/API-key users. You can also run Veyra: Configure Codex/Gemini CLI paths or Veyra: Show setup guide.';
     }
     if (status === 'inaccessible') {
-      return 'Gemini files are inaccessible. Check filesystem permissions, rerun outside the current sandbox, or set VEYRA_GEMINI_CLI_PATH / veyra.geminiCliPath to the Gemini JS bundle, native executable, or Windows npm shim. You can also run Veyra: Configure Codex/Gemini CLI paths, Veyra: Show setup guide, or Veyra: Show live validation guide.';
+      return 'Google provider files are inaccessible. Check filesystem permissions, rerun outside the current sandbox, set VEYRA_ANTIGRAVITY_CLI_PATH / veyra.antigravityCliPath to agy.exe, or set VEYRA_GEMINI_CLI_PATH / veyra.geminiCliPath to the legacy Gemini JS bundle, native executable, or Windows npm shim. You can also run Veyra: Configure Codex/Gemini CLI paths, Veyra: Show setup guide, or Veyra: Show live validation guide.';
     }
     if (status === 'misconfigured') {
-      return 'Gemini CLI path is misconfigured. Set VEYRA_GEMINI_CLI_PATH / veyra.geminiCliPath to gemini.js, gemini.exe, or gemini. You can also run Veyra: Configure Codex/Gemini CLI paths or Veyra: Show setup guide.';
+      return 'Google provider CLI path is misconfigured. Set VEYRA_ANTIGRAVITY_CLI_PATH / veyra.antigravityCliPath to agy.exe, or set VEYRA_GEMINI_CLI_PATH / veyra.geminiCliPath to gemini.js, gemini.exe, or gemini. You can also run Veyra: Configure Codex/Gemini CLI paths or Veyra: Show setup guide.';
     }
     if (status === 'node-missing') {
-      return 'Gemini needs Node.js on PATH to launch a JS bundle. Install Node.js, or set VEYRA_GEMINI_CLI_PATH / veyra.geminiCliPath to a native gemini executable. You can also run Veyra: Configure Codex/Gemini CLI paths or Veyra: Show setup guide.';
+      return 'Legacy Gemini needs Node.js on PATH to launch a JS bundle. Install Node.js, configure Antigravity CLI with VEYRA_ANTIGRAVITY_CLI_PATH / veyra.antigravityCliPath, or set VEYRA_GEMINI_CLI_PATH / veyra.geminiCliPath to a native gemini executable. You can also run Veyra: Configure Codex/Gemini CLI paths or Veyra: Show setup guide.';
     }
-    return 'Gemini is unauthenticated. Run `gemini` once to sign in. If `gemini` is missing, install it with `npm install -g @google/gemini-cli`. You can also run Veyra: Show setup guide.';
+    return 'Google provider is unauthenticated. Run `agy` once if Antigravity needs sign-in, or run `gemini` once for the legacy Gemini fallback. You can also run Veyra: Show setup guide.';
   }
 
   if (status === 'not-installed') {
-    return 'Claude is not installed. Install Claude Code, then run `claude` to sign in. You can also run Veyra: Show setup guide.';
+    return 'Claude is not installed. Install Claude Code with `npm install -g @anthropic-ai/claude-code`, then run `claude` or `claude /login`. You can also run Veyra: Show setup guide.';
   }
   if (status === 'inaccessible') {
     return 'Claude files are inaccessible. Check filesystem permissions or rerun outside the current sandbox. You can also run Veyra: Show setup guide.';

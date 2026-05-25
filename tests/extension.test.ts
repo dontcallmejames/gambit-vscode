@@ -72,8 +72,9 @@ const mocks = vi.hoisted(() => {
     checkCodex: vi.fn().mockResolvedValue('unauthenticated'),
     checkGemini: vi.fn().mockResolvedValue('not-installed'),
     clearStatusCache: vi.fn(),
-    detectCliBundlePaths: vi.fn(() => ({
+    detectCliBundlePaths: vi.fn((): any => ({
       codex: { status: 'missing', path: 'C:\\npm-root\\@openai\\codex\\bin\\codex.js', detail: 'Codex missing' },
+      antigravity: { status: 'missing', path: undefined, detail: 'Antigravity CLI not found.' },
       gemini: { status: 'missing', path: 'C:\\npm-root\\@google\\gemini-cli\\bundle\\gemini.js', detail: 'Gemini missing' },
     })),
     onDidChangeConfiguration: vi.fn((listener: typeof configListener) => {
@@ -215,6 +216,7 @@ const mocks = vi.hoisted(() => {
       this.detectCliBundlePaths.mockClear();
       this.detectCliBundlePaths.mockReturnValue({
         codex: { status: 'missing', path: 'C:\\npm-root\\@openai\\codex\\bin\\codex.js', detail: 'Codex missing' },
+        antigravity: { status: 'missing', path: undefined, detail: 'Antigravity CLI not found.' },
         gemini: { status: 'missing', path: 'C:\\npm-root\\@google\\gemini-cli\\bundle\\gemini.js', detail: 'Gemini missing' },
       });
       this.onDidChangeConfiguration.mockClear();
@@ -721,6 +723,7 @@ describe('activate', () => {
   it('auto-configures detected Codex and Gemini CLI bundle paths from the command palette', async () => {
     mocks.detectCliBundlePaths.mockReturnValueOnce({
       codex: { status: 'detected', path: 'D:\\tools\\codex\\codex.js', detail: '' },
+      antigravity: { status: 'detected', path: 'D:\\tools\\agy\\agy.exe', detail: '' },
       gemini: { status: 'detected', path: 'D:\\tools\\gemini\\gemini.js', detail: '' },
     });
     activate(context() as any);
@@ -730,10 +733,11 @@ describe('activate', () => {
     await configureCliPaths!();
 
     expect(mocks.configUpdate).toHaveBeenCalledWith('codexCliPath', 'D:\\tools\\codex\\codex.js', 'Workspace');
+    expect(mocks.configUpdate).toHaveBeenCalledWith('antigravityCliPath', 'D:\\tools\\agy\\agy.exe', 'Workspace');
     expect(mocks.configUpdate).toHaveBeenCalledWith('geminiCliPath', 'D:\\tools\\gemini\\gemini.js', 'Workspace');
     expect(mocks.clearStatusCache).toHaveBeenCalledTimes(1);
     expect(mocks.showInformationMessage).toHaveBeenCalledWith(
-      'Configured Veyra CLI path settings: Codex, Gemini.',
+      'Configured Veyra CLI path settings: Codex, Antigravity, Gemini.',
     );
     expect(mocks.executeCommand).toHaveBeenCalledWith('veyra.checkStatus');
   });
@@ -741,6 +745,7 @@ describe('activate', () => {
   it('warns when automatic CLI bundle path configuration cannot find usable bundles', async () => {
     mocks.detectCliBundlePaths.mockReturnValueOnce({
       codex: { status: 'inaccessible', path: 'C:\\npm-root\\@openai\\codex\\bin\\codex.js', detail: 'Cannot inspect Codex path.' },
+      antigravity: { status: 'missing', detail: 'Antigravity CLI not found. Install it from https://antigravity.google/cli.' },
       gemini: { status: 'missing', path: 'C:\\npm-root\\@google\\gemini-cli\\bundle\\gemini.js', detail: 'Gemini bundle missing.' },
     });
     activate(context() as any);
@@ -751,7 +756,7 @@ describe('activate', () => {
 
     expect(mocks.configUpdate).not.toHaveBeenCalled();
     expect(mocks.showWarningMessage).toHaveBeenCalledWith(
-      'Veyra CLI path detection incomplete: Codex inaccessible - Cannot inspect Codex path; Gemini missing - Gemini bundle missing.',
+      'Veyra CLI path detection incomplete: Codex inaccessible - Cannot inspect Codex path; Antigravity missing - Antigravity CLI not found. Install it from https://antigravity.google/cli; Gemini missing - Gemini bundle missing.',
       'Enter paths manually',
       'Show setup guide',
       'Show live validation guide',
@@ -761,6 +766,7 @@ describe('activate', () => {
   it('opens the live validation guide when selected from incomplete CLI path detection', async () => {
     mocks.detectCliBundlePaths.mockReturnValueOnce({
       codex: { status: 'inaccessible', path: 'C:\\npm-root\\@openai\\codex\\bin\\codex.js', detail: 'Cannot inspect Codex path.' },
+      antigravity: { status: 'missing', detail: 'Antigravity CLI not found. Install it from https://antigravity.google/cli.' },
       gemini: { status: 'missing', path: 'C:\\npm-root\\@google\\gemini-cli\\bundle\\gemini.js', detail: 'Gemini bundle missing.' },
     });
     mocks.showWarningMessage.mockResolvedValueOnce('Show live validation guide');
@@ -777,11 +783,13 @@ describe('activate', () => {
   it('accepts manual CLI runtime paths when automatic configuration cannot inspect bundles', async () => {
     mocks.detectCliBundlePaths.mockReturnValueOnce({
       codex: { status: 'inaccessible', path: 'C:\\npm-root\\@openai\\codex\\bin\\codex.js', detail: 'Cannot inspect Codex path.' },
+      antigravity: { status: 'missing', detail: 'Antigravity CLI not found. Install it from https://antigravity.google/cli.' },
       gemini: { status: 'missing', path: 'C:\\npm-root\\@google\\gemini-cli\\bundle\\gemini.js', detail: 'Gemini bundle missing.' },
     });
     mocks.showWarningMessage.mockResolvedValueOnce('Enter paths manually');
     mocks.showInputBox
       .mockResolvedValueOnce('D:\\manual\\codex\\codex.exe')
+      .mockResolvedValueOnce('D:\\manual\\agy\\agy.exe')
       .mockResolvedValueOnce('D:\\manual\\gemini\\gemini.exe');
     activate(context() as any);
 
@@ -791,7 +799,7 @@ describe('activate', () => {
     await flushAsyncWork();
 
     expect(mocks.showWarningMessage).toHaveBeenCalledWith(
-      'Veyra CLI path detection incomplete: Codex inaccessible - Cannot inspect Codex path; Gemini missing - Gemini bundle missing.',
+      'Veyra CLI path detection incomplete: Codex inaccessible - Cannot inspect Codex path; Antigravity missing - Antigravity CLI not found. Install it from https://antigravity.google/cli; Gemini missing - Gemini bundle missing.',
       'Enter paths manually',
       'Show setup guide',
       'Show live validation guide',
@@ -802,6 +810,11 @@ describe('activate', () => {
       value: 'C:\\npm-root\\@openai\\codex\\bin\\codex.js',
     }));
     expect(mocks.showInputBox).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      title: 'Antigravity CLI path',
+      prompt: 'Enter the Antigravity CLI native executable path.',
+      value: '',
+    }));
+    expect(mocks.showInputBox).toHaveBeenNthCalledWith(3, expect.objectContaining({
       title: 'Gemini CLI path',
       prompt: 'Enter the Gemini CLI JS bundle, native executable, or Windows npm shim path.',
       value: 'C:\\npm-root\\@google\\gemini-cli\\bundle\\gemini.js',
@@ -809,13 +822,16 @@ describe('activate', () => {
     const codexOptions = mocks.showInputBox.mock.calls[0][0];
     expect(codexOptions.validateInput('D:\\npm\\codex.bat')).toBeUndefined();
     expect(codexOptions.validateInput('D:\\tools\\not-codex.exe')).toBe('Codex CLI path override must point to codex.js, codex.exe, or codex. Received D:\\tools\\not-codex.exe.');
-    const geminiOptions = mocks.showInputBox.mock.calls[1][0];
+    const antigravityOptions = mocks.showInputBox.mock.calls[1][0];
+    expect(antigravityOptions.validateInput('D:\\tools\\not-agy.exe')).toBe('Antigravity CLI path override must point to agy.exe or agy. Received D:\\tools\\not-agy.exe.');
+    const geminiOptions = mocks.showInputBox.mock.calls[2][0];
     expect(geminiOptions.validateInput('D:\\tools\\not-gemini.js')).toBe('Gemini CLI path override must point to gemini.js, gemini.exe, or gemini. Received D:\\tools\\not-gemini.js.');
     expect(mocks.configUpdate).toHaveBeenCalledWith('codexCliPath', 'D:\\manual\\codex\\codex.exe', 'Workspace');
+    expect(mocks.configUpdate).toHaveBeenCalledWith('antigravityCliPath', 'D:\\manual\\agy\\agy.exe', 'Workspace');
     expect(mocks.configUpdate).toHaveBeenCalledWith('geminiCliPath', 'D:\\manual\\gemini\\gemini.exe', 'Workspace');
     expect(mocks.clearStatusCache).toHaveBeenCalledTimes(1);
     expect(mocks.showInformationMessage).toHaveBeenCalledWith(
-      'Configured Veyra CLI path settings: Codex, Gemini.',
+      'Configured Veyra CLI path settings: Codex, Antigravity, Gemini.',
     );
     expect(mocks.executeCommand).toHaveBeenCalledWith('veyra.checkStatus');
   });
@@ -823,11 +839,13 @@ describe('activate', () => {
   it('normalizes manually entered Windows npm shim paths before saving workspace settings', async () => {
     mocks.detectCliBundlePaths.mockReturnValueOnce({
       codex: { status: 'missing', path: 'C:\\npm-root\\@openai\\codex\\bin\\codex.js', detail: 'Codex missing.' },
+      antigravity: { status: 'missing', detail: 'Antigravity CLI not found. Install it from https://antigravity.google/cli.' },
       gemini: { status: 'missing', path: 'C:\\npm-root\\@google\\gemini-cli\\bundle\\gemini.js', detail: 'Gemini missing.' },
     });
     mocks.showWarningMessage.mockResolvedValueOnce('Enter paths manually');
     mocks.showInputBox
       .mockResolvedValueOnce('D:\\npm\\codex.cmd')
+      .mockResolvedValueOnce('D:\\tools\\agy.exe')
       .mockResolvedValueOnce('D:\\npm\\gemini.ps1');
     activate(context() as any);
 
@@ -837,6 +855,7 @@ describe('activate', () => {
     await flushAsyncWork();
 
     expect(mocks.configUpdate).toHaveBeenCalledWith('codexCliPath', 'D:\\npm\\node_modules\\@openai\\codex\\bin\\codex.js', 'Workspace');
+    expect(mocks.configUpdate).toHaveBeenCalledWith('antigravityCliPath', 'D:\\tools\\agy.exe', 'Workspace');
     expect(mocks.configUpdate).toHaveBeenCalledWith('geminiCliPath', 'D:\\npm\\node_modules\\@google\\gemini-cli\\bundle\\gemini.js', 'Workspace');
     expect(mocks.executeCommand).toHaveBeenCalledWith('veyra.checkStatus');
   });
@@ -845,6 +864,7 @@ describe('activate', () => {
     let resolveWarning: (value: unknown) => void = () => {};
     mocks.detectCliBundlePaths.mockReturnValueOnce({
       codex: { status: 'inaccessible', path: 'C:\\npm-root\\@openai\\codex\\bin\\codex.js', detail: 'Cannot inspect Codex path.' },
+      antigravity: { status: 'missing', detail: 'Antigravity CLI not found. Install it from https://antigravity.google/cli.' },
       gemini: { status: 'missing', path: 'C:\\npm-root\\@google\\gemini-cli\\bundle\\gemini.js', detail: 'Gemini bundle missing.' },
     });
     mocks.showWarningMessage.mockReturnValueOnce(new Promise((resolve) => {
@@ -852,6 +872,7 @@ describe('activate', () => {
     }));
     mocks.showInputBox
       .mockResolvedValueOnce('D:\\manual\\codex\\codex.js')
+      .mockResolvedValueOnce('D:\\manual\\agy\\agy.exe')
       .mockResolvedValueOnce('D:\\manual\\gemini\\gemini.js');
     activate(context() as any);
 
@@ -864,6 +885,7 @@ describe('activate', () => {
     await flushAsyncWork();
 
     expect(mocks.configUpdate).toHaveBeenCalledWith('codexCliPath', 'D:\\manual\\codex\\codex.js', 'Workspace');
+    expect(mocks.configUpdate).toHaveBeenCalledWith('antigravityCliPath', 'D:\\manual\\agy\\agy.exe', 'Workspace');
     expect(mocks.configUpdate).toHaveBeenCalledWith('geminiCliPath', 'D:\\manual\\gemini\\gemini.js', 'Workspace');
     expect(mocks.executeCommand).toHaveBeenCalledWith('veyra.checkStatus');
   });
@@ -871,6 +893,7 @@ describe('activate', () => {
   it('reports background manual CLI path configuration failures', async () => {
     mocks.detectCliBundlePaths.mockReturnValueOnce({
       codex: { status: 'inaccessible', path: 'C:\\npm-root\\@openai\\codex\\bin\\codex.js', detail: 'Cannot inspect Codex path.' },
+      antigravity: { status: 'missing', detail: 'Antigravity CLI not found. Install it from https://antigravity.google/cli.' },
       gemini: { status: 'missing', path: 'C:\\npm-root\\@google\\gemini-cli\\bundle\\gemini.js', detail: 'Gemini bundle missing.' },
     });
     mocks.showWarningMessage.mockResolvedValueOnce('Enter paths manually');
@@ -891,11 +914,13 @@ describe('activate', () => {
   it('does not save malformed manual CLI runtime paths even if validation is bypassed', async () => {
     mocks.detectCliBundlePaths.mockReturnValueOnce({
       codex: { status: 'missing', path: 'C:\\npm-root\\@openai\\codex\\bin\\codex.js', detail: 'Codex missing.' },
+      antigravity: { status: 'missing', detail: 'Antigravity CLI not found. Install it from https://antigravity.google/cli.' },
       gemini: { status: 'missing', path: 'C:\\npm-root\\@google\\gemini-cli\\bundle\\gemini.js', detail: 'Gemini missing.' },
     });
     mocks.showWarningMessage.mockResolvedValueOnce('Enter paths manually');
     mocks.showInputBox
       .mockResolvedValueOnce('D:\\tools\\not-codex.exe')
+      .mockResolvedValueOnce('D:\\tools\\not-agy.exe')
       .mockResolvedValueOnce('D:\\tools\\not-gemini.js');
     activate(context() as any);
 
@@ -907,6 +932,9 @@ describe('activate', () => {
     expect(mocks.configUpdate).not.toHaveBeenCalled();
     expect(mocks.showWarningMessage).toHaveBeenCalledWith(
       'Veyra did not save Codex: Codex CLI path override must point to codex.js, codex.exe, or codex. Received D:\\tools\\not-codex.exe.',
+    );
+    expect(mocks.showWarningMessage).toHaveBeenCalledWith(
+      'Veyra did not save Antigravity: Antigravity CLI path override must point to agy.exe or agy. Received D:\\tools\\not-agy.exe.',
     );
     expect(mocks.showWarningMessage).toHaveBeenCalledWith(
       'Veyra did not save Gemini: Gemini CLI path override must point to gemini.js, gemini.exe, or gemini. Received D:\\tools\\not-gemini.js.',
@@ -928,7 +956,7 @@ describe('activate', () => {
       'Veyra agent status: Claude ready; Codex unauthenticated; Gemini not installed',
     );
     expect(mocks.showWarningMessage).toHaveBeenCalledWith(
-      'Veyra setup needed: Codex is unauthenticated (run codex login); Gemini is not installed (install with npm install -g @google/gemini-cli, then run gemini once to complete OAuth).',
+      'Veyra setup needed: Codex is unauthenticated (run codex login); Google provider CLI is not installed (install Antigravity CLI from https://antigravity.google/cli, or use legacy Gemini CLI with npm install -g @google/gemini-cli).',
       'Configure CLI paths',
       'Show setup guide',
       'Show live validation guide',
@@ -944,7 +972,7 @@ describe('activate', () => {
     await checkStatus!();
 
     expect(mocks.showWarningMessage).toHaveBeenCalledWith(
-      'Veyra setup needed: Codex is unauthenticated (run codex login); Gemini is not installed (install with npm install -g @google/gemini-cli, then run gemini once to complete OAuth).',
+      'Veyra setup needed: Codex is unauthenticated (run codex login); Google provider CLI is not installed (install Antigravity CLI from https://antigravity.google/cli, or use legacy Gemini CLI with npm install -g @google/gemini-cli).',
       'Configure CLI paths',
       'Show setup guide',
       'Show live validation guide',
@@ -1086,7 +1114,7 @@ describe('activate', () => {
       language: 'markdown',
     });
     expect(mocks.openTextDocument).toHaveBeenCalledWith({
-      content: expect.stringContaining('npm install -g @google/gemini-cli'),
+      content: expect.stringContaining('Antigravity CLI from https://antigravity.google/cli'),
       language: 'markdown',
     });
     expect(mocks.openTextDocument).toHaveBeenCalledWith({
@@ -1113,6 +1141,14 @@ describe('activate', () => {
     });
     expect(mocks.openTextDocument).toHaveBeenCalledWith({
       content: expect.stringContaining('veyra.codexCliPath'),
+      language: 'markdown',
+    });
+    expect(mocks.openTextDocument).toHaveBeenCalledWith({
+      content: expect.stringContaining('VEYRA_ANTIGRAVITY_CLI_PATH'),
+      language: 'markdown',
+    });
+    expect(mocks.openTextDocument).toHaveBeenCalledWith({
+      content: expect.stringContaining('veyra.antigravityCliPath'),
       language: 'markdown',
     });
     expect(mocks.openTextDocument).toHaveBeenCalledWith({

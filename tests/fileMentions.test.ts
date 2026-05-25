@@ -106,10 +106,10 @@ describe('parseFileMentions', () => {
   });
 
   it('does not treat scoped package names as file attachments', () => {
-    const r = parseFileMentions('upgrade @anthropic-ai/claude-agent-sdk and @openai/codex');
+    const r = parseFileMentions('upgrade @google/generative-ai and @openai/codex');
 
     expect(r.filePaths).toEqual([]);
-    expect(r.remainingText).toBe('upgrade @anthropic-ai/claude-agent-sdk and @openai/codex');
+    expect(r.remainingText).toBe('upgrade @google/generative-ai and @openai/codex');
   });
 
   it('does not treat PowerShell array literals as file attachments', () => {

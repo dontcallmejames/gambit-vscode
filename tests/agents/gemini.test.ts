@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { EventEmitter } from 'node:events';
 import { Readable, Writable } from 'node:stream';
 import { GeminiAgent } from '../../src/agents/gemini.js';
@@ -21,6 +21,10 @@ vi.mock('node:fs', () => ({
 
 import { spawn } from 'node:child_process';
 const mockedSpawn = spawn as unknown as ReturnType<typeof vi.fn>;
+
+afterEach(() => {
+  delete process.env.VEYRA_ANTIGRAVITY_CLI_PATH;
+});
 
 function fakeProcess(stdoutChunks: string[], exitCode = 0) {
   const proc: any = new EventEmitter();
@@ -202,6 +206,28 @@ describe('GeminiAgent', () => {
     expect(args).not.toContain(prompt);
     expect(options.stdio[0]).toBe('pipe');
     expect(proc.stdinText).toBe(prompt);
+  });
+
+  it('treats Antigravity --print output as plain assistant text', async () => {
+    process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\agy\\agy.exe';
+    mockedSpawn.mockReturnValueOnce(fakeProcess(['plain answer\n']));
+
+    const agent = new GeminiAgent();
+    const chunks = [];
+    for await (const c of agent.send('hi', { readOnly: true } as any)) chunks.push(c);
+
+    expect(mockedSpawn).toHaveBeenCalledWith(
+      'D:\\tools\\agy\\agy.exe',
+      expect.arrayContaining(['--print', 'hi']),
+      expect.anything(),
+    );
+    const args = mockedSpawn.mock.calls.at(-1)?.[1] as string[];
+    expect(args).not.toContain('-o');
+    expect(args).not.toContain('stream-json');
+    expect(chunks).toEqual([
+      { type: 'text', text: 'plain answer\n' },
+      { type: 'done' },
+    ]);
   });
 
   it('exposes id "gemini"', () => {

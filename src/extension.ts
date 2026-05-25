@@ -34,16 +34,16 @@ Veyra coordinates Claude, Codex, and Gemini through their local authenticated to
 
 ## Backend Setup
 
-1. Claude: install Claude Code, then run \`claude /login\`.
+1. Claude: install Claude Code with \`npm install -g @anthropic-ai/claude-code\`, then run \`claude\` or \`claude /login\`.
 2. Codex: install with \`npm install -g @openai/codex\`, then run \`codex login\`.
-3. Gemini: install with \`npm install -g @google/gemini-cli\`, then run \`gemini\` once to complete OAuth.
+3. Gemini: install Antigravity CLI from https://antigravity.google/cli, then run \`agy\` once if sign-in is needed. Legacy Gemini CLI remains a fallback for existing/API-key users.
 4. Install Node.js and ensure the \`node\` command is on PATH when Veyra launches JS bundle paths or runs inside the VS Code Extension Host.
 
 ## Verify
 
 Run \`Veyra: Check agent status\` from the Command Palette. All three agents should report ready before starting \`@veyra /review\`, \`@veyra /debate\`, \`@veyra /consensus\`, or \`@veyra /implement\`.
 
-On Windows, run \`Veyra: Configure Codex/Gemini CLI paths\` to detect native executables or npm global CLI bundle paths and save them to workspace settings. If detection cannot inspect the package tree, choose \`Enter paths manually\` and paste the JS bundle paths, native executable paths, or npm shim paths such as \`codex.cmd\` and \`gemini.ps1\`. Veyra resolves npm shim paths to the underlying JS bundle before launch.
+On Windows, run \`Veyra: Configure Codex/Gemini CLI paths\` to detect native executables or npm global CLI bundle paths and save them to workspace settings. If detection cannot inspect the package tree, choose \`Enter paths manually\` and paste the JS bundle paths, native executable paths, or npm shim paths such as \`codex.cmd\` and \`gemini.ps1\`. Veyra resolves npm shim paths to the underlying JS bundle before launch. New Google-provider setups should point \`veyra.antigravityCliPath\` at \`agy.exe\`; \`veyra.geminiCliPath\` remains available as a legacy fallback.
 
 ## Preview Quickstart
 
@@ -61,6 +61,7 @@ For durable VS Code configuration, set:
 \`\`\`json
 {
   "veyra.codexCliPath": "C:\\\\Users\\\\<you>\\\\AppData\\\\Roaming\\\\npm\\\\node_modules\\\\@openai\\\\codex\\\\bin\\\\codex.js",
+  "veyra.antigravityCliPath": "C:\\\\Users\\\\<you>\\\\AppData\\\\Local\\\\agy\\\\bin\\\\agy.exe",
   "veyra.geminiCliPath": "C:\\\\Users\\\\<you>\\\\AppData\\\\Roaming\\\\npm\\\\node_modules\\\\@google\\\\gemini-cli\\\\bundle\\\\gemini.js"
 }
 \`\`\`
@@ -69,6 +70,7 @@ For a single shell session before starting VS Code, set:
 
 \`\`\`powershell
 $env:VEYRA_CODEX_CLI_PATH = 'C:\\Users\\<you>\\AppData\\Roaming\\npm\\node_modules\\@openai\\codex\\bin\\codex.js'
+$env:VEYRA_ANTIGRAVITY_CLI_PATH = 'C:\\Users\\<you>\\AppData\\Local\\agy\\bin\\agy.exe'
 $env:VEYRA_GEMINI_CLI_PATH = 'C:\\Users\\<you>\\AppData\\Roaming\\npm\\node_modules\\@google\\gemini-cli\\bundle\\gemini.js'
 \`\`\`
 
@@ -87,7 +89,7 @@ Run readiness first:
 npm run verify:live-ready
 \`\`\`
 
-No paid prompts are sent unless readiness is green. If readiness reports Codex or Gemini as inaccessible, run \`Veyra: Configure Codex/Gemini CLI paths\` and use JS bundle paths, native executable paths, or Windows npm shim paths such as \`codex.cmd\` and \`gemini.ps1\`.
+No paid prompts are sent unless readiness is green. If readiness reports Codex or Gemini as inaccessible, run \`Veyra: Configure Codex/Gemini CLI paths\` and use JS bundle paths, native executable paths, or Windows npm shim paths such as \`codex.cmd\` and \`gemini.ps1\`. For the Google provider, prefer Antigravity CLI via \`agy.exe\` / \`VEYRA_ANTIGRAVITY_CLI_PATH\`; legacy Gemini CLI stays as fallback.
 
 ## Full Goal Verification
 
@@ -270,6 +272,7 @@ export function activate(context: vscode.ExtensionContext): void {
       if (
         e.affectsConfiguration('veyra')
         || e.affectsConfiguration('veyra.codexCliPath')
+        || e.affectsConfiguration('veyra.antigravityCliPath')
         || e.affectsConfiguration('veyra.geminiCliPath')
       ) {
         clearStatusCache();
@@ -455,12 +458,23 @@ async function configureCliPaths(): Promise<void> {
   const config = vscode.workspace.getConfiguration('veyra');
   const configured: string[] = [];
   const incomplete: string[] = [];
+  const antigravityDetection = detection.antigravity ?? {
+    status: 'missing',
+    detail: 'Antigravity CLI not found. Install it from https://antigravity.google/cli.',
+  } satisfies DetectedCliBundlePath;
 
   if (detection.codex.status === 'detected' && detection.codex.path) {
     await config.update('codexCliPath', detection.codex.path, vscode.ConfigurationTarget.Workspace);
     configured.push('Codex');
   } else {
     incomplete.push(formatCliDetectionIssue('Codex', detection.codex));
+  }
+
+  if (antigravityDetection.status === 'detected' && antigravityDetection.path) {
+    await config.update('antigravityCliPath', antigravityDetection.path, vscode.ConfigurationTarget.Workspace);
+    configured.push('Antigravity');
+  } else {
+    incomplete.push(formatCliDetectionIssue('Antigravity', antigravityDetection));
   }
 
   if (detection.gemini.status === 'detected' && detection.gemini.path) {
@@ -494,9 +508,17 @@ async function handleIncompleteCliPathDetection(
   );
   if (selected === ENTER_CLI_PATHS_ACTION) {
     const configured: string[] = [];
+    const antigravityDetection = detection.antigravity ?? {
+      status: 'missing',
+      detail: 'Antigravity CLI not found. Install it from https://antigravity.google/cli.',
+    } satisfies DetectedCliBundlePath;
     if (detection.codex.status !== 'detected') {
       const didConfigure = await promptForCliPath('Codex', 'codexCliPath', detection.codex.path);
       if (didConfigure) configured.push('Codex');
+    }
+    if (antigravityDetection.status !== 'detected') {
+      const didConfigure = await promptForCliPath('Antigravity', 'antigravityCliPath', antigravityDetection.path);
+      if (didConfigure) configured.push('Antigravity');
     }
     if (detection.gemini.status !== 'detected') {
       const didConfigure = await promptForCliPath('Gemini', 'geminiCliPath', detection.gemini.path);
@@ -518,13 +540,21 @@ function announceConfiguredCliPaths(configured: string[]): void {
   void vscode.commands.executeCommand('veyra.checkStatus');
 }
 
-async function promptForCliPath(label: 'Codex' | 'Gemini', configKey: 'codexCliPath' | 'geminiCliPath', detectedPath?: string): Promise<boolean> {
-  const runtime = label.toLowerCase() as 'codex' | 'gemini';
+async function promptForCliPath(
+  label: 'Codex' | 'Antigravity' | 'Gemini',
+  configKey: 'codexCliPath' | 'antigravityCliPath' | 'geminiCliPath',
+  detectedPath?: string,
+): Promise<boolean> {
+  const runtime = label === 'Antigravity' ? 'antigravity' : label.toLowerCase() as 'codex' | 'gemini';
   const value = await vscode.window.showInputBox({
     title: `${label} CLI path`,
-    prompt: `Enter the ${label} CLI JS bundle, native executable, or Windows npm shim path.`,
+    prompt: label === 'Antigravity'
+      ? 'Enter the Antigravity CLI native executable path.'
+      : `Enter the ${label} CLI JS bundle, native executable, or Windows npm shim path.`,
     value: detectedPath ?? '',
-    placeHolder: label === 'Codex'
+    placeHolder: label === 'Antigravity'
+      ? 'C:\\Users\\<you>\\AppData\\Local\\agy\\bin\\agy.exe'
+      : label === 'Codex'
       ? 'C:\\Users\\<you>\\AppData\\Roaming\\npm\\node_modules\\@openai\\codex\\bin\\codex.js'
       : 'C:\\Users\\<you>\\AppData\\Roaming\\npm\\node_modules\\@google\\gemini-cli\\bundle\\gemini.js',
     ignoreFocusOut: true,
@@ -554,7 +584,7 @@ function errorMessage(err: unknown): string {
   return String(err);
 }
 
-function formatCliDetectionIssue(label: 'Codex' | 'Gemini', result: DetectedCliBundlePath): string {
+function formatCliDetectionIssue(label: 'Codex' | 'Antigravity' | 'Gemini', result: DetectedCliBundlePath): string {
   const detail = result.detail.replace(/[.\s]+$/u, '');
   if (result.status === 'unsupported') return `${label} unsupported - ${detail}`;
   if (result.status === 'inaccessible') return `${label} inaccessible - ${detail}`;
@@ -566,7 +596,7 @@ function formatSetupGuidance(status: Record<'claude' | 'codex' | 'gemini', Agent
   if (status.claude === 'unauthenticated') {
     items.push('Claude is unauthenticated (run claude /login)');
   } else if (status.claude === 'not-installed') {
-    items.push('Claude is not installed (install Claude Code, then run claude /login)');
+    items.push('Claude is not installed (install Claude Code with npm install -g @anthropic-ai/claude-code, then run claude or claude /login)');
   } else if (status.claude === 'inaccessible') {
     items.push('Claude files are inaccessible (check filesystem permissions or rerun outside the current sandbox)');
   } else if (status.claude === 'node-missing') {
@@ -586,15 +616,15 @@ function formatSetupGuidance(status: Record<'claude' | 'codex' | 'gemini', Agent
   }
 
   if (status.gemini === 'unauthenticated') {
-    items.push('Gemini is unauthenticated (run gemini once to complete OAuth)');
+    items.push('Gemini fallback is unauthenticated (run gemini once to complete OAuth, or configure Antigravity CLI with VEYRA_ANTIGRAVITY_CLI_PATH / veyra.antigravityCliPath)');
   } else if (status.gemini === 'not-installed') {
-    items.push('Gemini is not installed (install with npm install -g @google/gemini-cli, then run gemini once to complete OAuth)');
+    items.push('Google provider CLI is not installed (install Antigravity CLI from https://antigravity.google/cli, or use legacy Gemini CLI with npm install -g @google/gemini-cli)');
   } else if (status.gemini === 'inaccessible') {
-    items.push('Gemini files are inaccessible (check filesystem permissions, rerun outside the current sandbox, put native gemini.exe on PATH, or set VEYRA_GEMINI_CLI_PATH / veyra.geminiCliPath to a JS bundle, native executable, or npm shim)');
+    items.push('Gemini files are inaccessible (check filesystem permissions, rerun outside the current sandbox, put native agy.exe or gemini.exe on PATH, set VEYRA_ANTIGRAVITY_CLI_PATH / veyra.antigravityCliPath to agy.exe, or set VEYRA_GEMINI_CLI_PATH / veyra.geminiCliPath to a legacy JS bundle, native executable, or npm shim)');
   } else if (status.gemini === 'misconfigured') {
-    items.push('Gemini CLI path is misconfigured (set VEYRA_GEMINI_CLI_PATH / veyra.geminiCliPath to gemini.js, gemini.exe, or gemini)');
+    items.push('Gemini CLI path is misconfigured (set VEYRA_ANTIGRAVITY_CLI_PATH / veyra.antigravityCliPath to agy.exe, or set VEYRA_GEMINI_CLI_PATH / veyra.geminiCliPath to gemini.js, gemini.exe, or gemini)');
   } else if (status.gemini === 'node-missing') {
-    items.push('Gemini needs Node.js on PATH to launch a JS bundle (install Node.js or set VEYRA_GEMINI_CLI_PATH / veyra.geminiCliPath to a native gemini executable)');
+    items.push('Gemini needs Node.js on PATH to launch a legacy JS bundle (install Node.js, configure Antigravity CLI with VEYRA_ANTIGRAVITY_CLI_PATH / veyra.antigravityCliPath, or set VEYRA_GEMINI_CLI_PATH / veyra.geminiCliPath to a native gemini executable)');
   }
 
   if (items.length === 0) return null;

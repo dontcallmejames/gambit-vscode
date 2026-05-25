@@ -13,6 +13,7 @@ export interface DetectedCliBundlePath {
 
 export interface CliBundlePathDetection {
   codex: DetectedCliBundlePath;
+  antigravity: DetectedCliBundlePath;
   gemini: DetectedCliBundlePath;
 }
 
@@ -28,26 +29,31 @@ export function detectCliBundlePaths({
   accessSync = defaultAccessSync,
 }: DetectCliBundlePathsOptions = {}): CliBundlePathDetection {
   if (platform !== 'win32') {
-    const detail = 'Automatic CLI bundle path configuration is only needed on Windows; non-Windows hosts use codex and gemini from PATH.';
+    const detail = 'Automatic CLI bundle path configuration is only needed on Windows; non-Windows hosts use codex, agy, and gemini from PATH.';
     return {
       codex: { status: 'unsupported', detail },
+      antigravity: { status: 'unsupported', detail },
       gemini: { status: 'unsupported', detail },
     };
   }
 
   const codexNative = probeNativeExecutable('codex', execSync, accessSync);
+  const antigravityNative = probeNativeExecutable('agy', execSync, accessSync);
   const geminiNative = probeNativeExecutable('gemini', execSync, accessSync);
   const codexShim = codexNative ?? probeWindowsNpmShim('codex', execSync, accessSync);
+  const antigravity = antigravityNative ?? probeAntigravityInstallPath(execSync, accessSync);
   const geminiShim = geminiNative ?? probeWindowsNpmShim('gemini', execSync, accessSync);
   if (codexNative && geminiNative) {
     return {
       codex: codexNative,
+      antigravity,
       gemini: geminiNative,
     };
   }
   if (codexShim && geminiShim) {
     return {
       codex: codexShim,
+      antigravity,
       gemini: geminiShim,
     };
   }
@@ -58,6 +64,7 @@ export function detectCliBundlePaths({
   } catch {
     return {
       codex: codexShim ?? { status: 'missing', detail: 'Could not resolve npm root -g. Install Node/npm and the Codex CLI.' },
+      antigravity,
       gemini: geminiShim ?? { status: 'missing', detail: 'Could not resolve npm root -g. Install Node/npm and the Gemini CLI.' },
     };
   }
@@ -68,6 +75,7 @@ export function detectCliBundlePaths({
       'Codex',
       accessSync,
     ),
+    antigravity,
     gemini: geminiShim ?? probeBundlePath(
       join(npmRoot, '@google', 'gemini-cli', 'bundle', 'gemini.js'),
       'Gemini',
@@ -108,7 +116,7 @@ function probeWindowsNpmShim(
 }
 
 function probeNativeExecutable(
-  baseName: 'codex' | 'gemini',
+  baseName: 'codex' | 'gemini' | 'agy',
   execSync: typeof defaultExecSync,
   accessSync: typeof defaultAccessSync,
 ): DetectedCliBundlePath | null {
@@ -145,9 +153,36 @@ function probeNativeExecutable(
   }
 }
 
+function probeAntigravityInstallPath(
+  execSync: typeof defaultExecSync,
+  accessSync: typeof defaultAccessSync,
+): DetectedCliBundlePath {
+  const installPath = resolveWindowsAntigravityInstallPath(execSync);
+  if (!installPath) {
+    return {
+      status: 'missing',
+      detail: 'Antigravity CLI not found. Install it from https://antigravity.google/cli.',
+    };
+  }
+  return probeBundlePath(installPath, 'Antigravity', accessSync);
+}
+
+function resolveWindowsAntigravityInstallPath(execSync: typeof defaultExecSync): string | null {
+  try {
+    const localAppData = execSync('powershell.exe -NoProfile -Command "[Environment]::GetFolderPath(\'LocalApplicationData\')"', {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    if (!localAppData || !/[\\/]AppData[\\/]Local(?:[\\/]|$)/i.test(localAppData)) return null;
+    return join(localAppData, 'agy', 'bin', 'agy.exe');
+  } catch {
+    return null;
+  }
+}
+
 function probeBundlePath(
   bundlePath: string,
-  label: 'Codex' | 'Gemini',
+  label: 'Codex' | 'Gemini' | 'Antigravity',
   accessSync: typeof defaultAccessSync,
 ): DetectedCliBundlePath {
   try {

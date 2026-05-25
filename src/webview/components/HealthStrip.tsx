@@ -6,7 +6,7 @@ import type { FromWebview } from '../../shared/protocol.js';
 const FIX_INSTRUCTIONS: Record<AgentId, Record<Exclude<AgentStatus, 'ready' | 'busy'>, string>> = {
   claude: {
     'unauthenticated': 'Run `claude /login` in a terminal.',
-    'not-installed': 'Install Claude Code, then run `claude /login`.',
+    'not-installed': 'Install Claude Code with `npm install -g @anthropic-ai/claude-code`, then run `claude` or `claude /login`.',
     'inaccessible': 'Check filesystem permissions or rerun outside the current sandbox.',
     'misconfigured': 'Check Veyra CLI path settings.',
     'node-missing': 'Install Node.js on PATH so Veyra can launch Claude from VS Code.',
@@ -19,11 +19,11 @@ const FIX_INSTRUCTIONS: Record<AgentId, Record<Exclude<AgentStatus, 'ready' | 'b
     'node-missing': 'Install Node.js on PATH, or set `VEYRA_CODEX_CLI_PATH` / `veyra.codexCliPath` to a native codex executable.',
   },
   gemini: {
-    'unauthenticated': 'Run `gemini` in a terminal and complete the OAuth flow.',
-    'not-installed': 'Install Gemini CLI: `npm i -g @google/gemini-cli` then run `gemini`.',
-    'inaccessible': 'Check filesystem permissions, rerun outside the current sandbox, or set `VEYRA_GEMINI_CLI_PATH` / `veyra.geminiCliPath` to a JS bundle, native executable, or npm shim. Run Veyra: Show live validation guide before paid prompts.',
-    'misconfigured': 'Set `VEYRA_GEMINI_CLI_PATH` / `veyra.geminiCliPath` to gemini.js, gemini.exe, or gemini.',
-    'node-missing': 'Install Node.js on PATH, or set `VEYRA_GEMINI_CLI_PATH` / `veyra.geminiCliPath` to a native gemini executable.',
+    'unauthenticated': 'Run `agy` once if Antigravity needs sign-in, or run `gemini` once for the legacy Gemini fallback.',
+    'not-installed': 'Install Antigravity CLI from https://antigravity.google/cli, then run `agy` once if sign-in is needed. Legacy Gemini CLI remains a fallback.',
+    'inaccessible': 'Check filesystem permissions, rerun outside the current sandbox, set `VEYRA_ANTIGRAVITY_CLI_PATH` / `veyra.antigravityCliPath` to agy.exe, or set legacy `VEYRA_GEMINI_CLI_PATH` / `veyra.geminiCliPath`. Run Veyra: Show live validation guide before paid prompts.',
+    'misconfigured': 'Set `VEYRA_ANTIGRAVITY_CLI_PATH` / `veyra.antigravityCliPath` to agy.exe, or set `VEYRA_GEMINI_CLI_PATH` / `veyra.geminiCliPath` to gemini.js, gemini.exe, or gemini.',
+    'node-missing': 'Install Node.js on PATH, configure Antigravity CLI, or set `VEYRA_GEMINI_CLI_PATH` / `veyra.geminiCliPath` to a native gemini executable.',
   },
 };
 

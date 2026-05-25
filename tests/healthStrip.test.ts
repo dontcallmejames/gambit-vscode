@@ -50,8 +50,7 @@ describe('HealthStrip', () => {
     });
 
     const text = collectText(vnode);
-    expect(text).toContain('Install Claude Code, then run `claude /login`.');
-    expect(text).not.toContain('@anthropic-ai/claude-code');
+    expect(text).toContain('Install Claude Code with `npm install -g @anthropic-ai/claude-code`, then run `claude` or `claude /login`.');
     expect(text).toContain('Open setup guide');
 
     const action = findClickableNodeByText(vnode, 'Open setup guide');
@@ -127,7 +126,7 @@ describe('HealthStrip', () => {
       veyraMdPresent: false,
     });
 
-    expect(collectText(vnode)).toContain('Check filesystem permissions, rerun outside the current sandbox, or set `VEYRA_GEMINI_CLI_PATH` / `veyra.geminiCliPath` to a JS bundle, native executable, or npm shim.');
+    expect(collectText(vnode)).toContain('Check filesystem permissions, rerun outside the current sandbox, set `VEYRA_ANTIGRAVITY_CLI_PATH` / `veyra.antigravityCliPath` to agy.exe, or set legacy `VEYRA_GEMINI_CLI_PATH` / `veyra.geminiCliPath`.');
     expect(collectText(vnode)).toContain('Run Veyra: Show live validation guide before paid prompts.');
   });
 

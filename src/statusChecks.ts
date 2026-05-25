@@ -3,7 +3,7 @@ import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import type { AgentId, AgentStatus } from './types.js';
-import { getCodexCliPathOverride, getGeminiCliPathOverride } from './cliPathOverrides.js';
+import { getAntigravityCliPathOverride, getCodexCliPathOverride, getGeminiCliPathOverride } from './cliPathOverrides.js';
 import { cliPathMisconfiguration, normalizeCliPathOverride, windowsNpmShimNames, type CliRuntimeName } from './cliPathValidation.js';
 
 const CACHE_TTL_MS = 30_000;
@@ -57,6 +57,17 @@ export async function checkCodex(): Promise<AgentStatus> {
 
 export async function checkGemini(): Promise<AgentStatus> {
   return memoize('gemini', async () => {
+    const antigravity = resolveAntigravityCli();
+    if (antigravity !== null) {
+      if (antigravity) {
+        if (cliPathMisconfiguration('antigravity', antigravity)) return 'misconfigured';
+        const antigravityStatus = inspectPath(antigravity);
+        if (antigravityStatus === 'inaccessible') return 'inaccessible';
+        if (antigravityStatus === 'missing') return 'not-installed';
+      }
+      return 'ready';
+    }
+
     const bundle = resolveGeminiBundle();
     if (bundle === null) return 'not-installed';
     if (bundle) {
@@ -138,6 +149,23 @@ function resolveGeminiBundle(): string | null {
   return npmRoot ? join(npmRoot, '@google', 'gemini-cli', 'bundle', 'gemini.js') : null;
 }
 
+function resolveAntigravityCli(): string | null {
+  const override = getAntigravityCliPathOverride();
+  if (override) return override;
+
+  if (process.platform === 'win32') {
+    const nativeExecutable = resolveWindowsNativeExecutable('agy');
+    if (nativeExecutable) return nativeExecutable;
+    const installPath = resolveWindowsAntigravityInstallPath();
+    if (!installPath) return null;
+    return inspectPath(installPath) === 'missing' ? null : installPath;
+  }
+
+  if (commandExists('agy')) return '';
+  const installPath = join(homedir(), '.local', 'bin', 'agy');
+  return inspectPath(installPath) === 'missing' ? null : installPath;
+}
+
 function resolveWindowsNpmShim(runtime: CliRuntimeName): string | null {
   for (const shimName of windowsNpmShimNames(runtime)) {
     try {
@@ -162,7 +190,7 @@ function resolveWindowsNpmShim(runtime: CliRuntimeName): string | null {
   return null;
 }
 
-function resolveWindowsNativeExecutable(baseName: 'codex' | 'gemini'): string | null {
+function resolveWindowsNativeExecutable(baseName: 'codex' | 'gemini' | 'agy'): string | null {
   try {
     const output = execSync(`where.exe ${baseName}.exe`, {
       encoding: 'utf8',
@@ -173,6 +201,19 @@ function resolveWindowsNativeExecutable(baseName: 'codex' | 'gemini'): string | 
       .split(/\r?\n/u)
       .map((line) => line.trim())
       .find((line) => line.toLowerCase().endsWith(expectedName)) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function resolveWindowsAntigravityInstallPath(): string | null {
+  try {
+    const localAppData = execSync('powershell.exe -NoProfile -Command "[Environment]::GetFolderPath(\'LocalApplicationData\')"', {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    if (!localAppData || !/[\\/]AppData[\\/]Local(?:[\\/]|$)/i.test(localAppData)) return null;
+    return join(localAppData, 'agy', 'bin', 'agy.exe');
   } catch {
     return null;
   }

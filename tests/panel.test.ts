@@ -64,8 +64,7 @@ vi.mock('node:fs', () => ({
   appendFileSync: vi.fn(),
 }));
 
-// Mock the agent SDK and child_process so adapters don't try to run anything
-vi.mock('@anthropic-ai/claude-agent-sdk', () => ({ query: vi.fn() }));
+// Mock child_process so adapters don't try to run anything
 vi.mock('node:child_process', () => ({
   spawn: vi.fn(),
   execFile: vi.fn((_cmd: string, _args: string[], _opts: unknown, cb: (err: Error | null, stdout?: string, stderr?: string) => void) => {

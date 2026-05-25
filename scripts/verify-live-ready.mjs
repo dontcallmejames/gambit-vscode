@@ -6,12 +6,13 @@ import { fileURLToPath } from 'node:url';
 
 const SETUP = {
   code: 'Install VS Code and ensure the `code` command is on PATH.',
-  node: 'Install Node.js and ensure the `node` command is on PATH so Veyra can launch wrapped Codex/Gemini JS-bundle CLIs, or configure native Codex/Gemini executable paths.',
-  claudeInstall: 'Install Claude Code, then run `claude /login`.',
+  node: 'Install Node.js and ensure the `node` command is on PATH so Veyra can launch wrapped Codex/Gemini JS-bundle CLIs, or configure native Codex/Gemini/Antigravity executable paths.',
+  claudeInstall: 'Install Claude Code with `npm install -g @anthropic-ai/claude-code`, then run `claude` or `claude /login`.',
   claudeAuth: 'Run `claude /login`.',
   codexInstall: 'Install with `npm install -g @openai/codex`, then run `codex login`.',
   codexAuth: 'Run `codex login`.',
-  geminiInstall: 'Install with `npm install -g @google/gemini-cli`, then run `gemini` once.',
+  antigravityInstall: 'Install Antigravity CLI from https://antigravity.google/cli, then run `agy` once if sign-in is needed. Legacy Gemini CLI remains a fallback for existing/API-key users.',
+  geminiInstall: 'Install Antigravity CLI from https://antigravity.google/cli, or use legacy Gemini CLI with `npm install -g @google/gemini-cli`, then run `gemini` once.',
   geminiAuth: 'Run `gemini` once to complete OAuth.',
 };
 
@@ -62,6 +63,13 @@ function selectedCodexPathRequiresNode(input) {
 }
 
 function selectedGeminiPathRequiresNode(input) {
+  if (input.cliOverrides?.antigravity) return false;
+  if (input.platform === 'win32') {
+    const antigravityStatus = windowsAntigravityStatus(input);
+    if (antigravityStatus.status === 'exists' || antigravityStatus.status === 'inaccessible') return false;
+  } else if (input.commandAvailable('agy')) {
+    return false;
+  }
   return selectedWindowsCliPathRequiresNode(input, 'gemini', 'gemini.exe');
 }
 
@@ -158,6 +166,15 @@ function checkCodexAuth(input) {
 }
 
 function checkGemini(input) {
+  const antigravity = antigravityCliStatus(input);
+  if (antigravity) {
+    const name = 'Google provider (Antigravity CLI)';
+    if (antigravity.status === 'ready') {
+      return { name, status: 'ready', detail: '' };
+    }
+    return { name, status: antigravity.status, detail: antigravity.detail };
+  }
+
   if (input.platform === 'win32') {
     if (!input.cliOverrides?.gemini) {
       const nativeStatus = windowsNativeExecutableStatus(input, 'gemini.exe');
@@ -208,6 +225,63 @@ function checkGemini(input) {
   }
 
   return checkGeminiAuth(input);
+}
+
+function antigravityCliStatus(input) {
+  const override = input.cliOverrides?.antigravity;
+  if (override) {
+    const misconfiguration = cliPathMisconfiguration('antigravity', override);
+    if (misconfiguration) {
+      return { status: 'misconfigured', detail: misconfiguration };
+    }
+    const status = fileProbeStatus(input, override);
+    if (status === 'exists') return { status: 'ready', detail: '' };
+    if (status === 'inaccessible') {
+      return {
+        status: 'inaccessible',
+        detail: inaccessibleDetail(override, 'VEYRA_ANTIGRAVITY_CLI_PATH', 'veyra.antigravityCliPath', 'agy.exe'),
+      };
+    }
+    return { status: 'not-installed', detail: SETUP.antigravityInstall };
+  }
+
+  if (input.platform === 'win32') {
+    const nativeStatus = windowsNativeExecutableStatus(input, 'agy.exe');
+    if (nativeStatus.status === 'exists') return { status: 'ready', detail: '' };
+    if (nativeStatus.status === 'inaccessible') {
+      return {
+        status: 'inaccessible',
+        detail: inaccessibleDetail(nativeStatus.path, 'VEYRA_ANTIGRAVITY_CLI_PATH', 'veyra.antigravityCliPath', 'agy.exe'),
+      };
+    }
+    const installStatus = windowsAntigravityStatus(input);
+    if (installStatus.status === 'exists') return { status: 'ready', detail: '' };
+    if (installStatus.status === 'inaccessible') {
+      return {
+        status: 'inaccessible',
+        detail: inaccessibleDetail(installStatus.path, 'VEYRA_ANTIGRAVITY_CLI_PATH', 'veyra.antigravityCliPath', 'agy.exe'),
+      };
+    }
+    return null;
+  }
+
+  if (input.commandAvailable('agy')) return { status: 'ready', detail: '' };
+  const installPath = join(input.homeDir, '.local', 'bin', 'agy');
+  const installStatus = fileProbeStatus(input, installPath);
+  if (installStatus === 'exists') return { status: 'ready', detail: '' };
+  if (installStatus === 'inaccessible') {
+    return {
+      status: 'inaccessible',
+      detail: inaccessibleDetail(installPath, 'VEYRA_ANTIGRAVITY_CLI_PATH', 'veyra.antigravityCliPath', 'agy'),
+    };
+  }
+  return null;
+}
+
+function windowsAntigravityStatus(input) {
+  const installPath = join(input.homeDir, 'AppData', 'Local', 'agy', 'bin', 'agy.exe');
+  const status = fileProbeStatus(input, installPath);
+  return { status, path: installPath };
 }
 
 function checkGeminiAuth(input) {
@@ -289,6 +363,7 @@ function normalizeReadinessInput(input) {
     ...input,
     cliOverrides: {
       codex: input.cliOverrides?.codex ? normalizeCliPathOverride('codex', input.cliOverrides.codex) : undefined,
+      antigravity: input.cliOverrides?.antigravity ? normalizeCliPathOverride('antigravity', input.cliOverrides.antigravity) : undefined,
       gemini: input.cliOverrides?.gemini ? normalizeCliPathOverride('gemini', input.cliOverrides.gemini) : undefined,
     },
   };
@@ -309,6 +384,7 @@ function isWindowsNpmShimPath(runtime, filePath) {
 }
 
 function windowsNpmShimNames(runtime) {
+  if (runtime === 'antigravity') return [];
   return [`${runtime}.cmd`, `${runtime}.bat`, `${runtime}.ps1`];
 }
 
@@ -320,9 +396,9 @@ function dirnameFromPath(filePath) {
 }
 
 function windowsNpmBundleSegments(runtime) {
-  return runtime === 'codex'
-    ? ['node_modules', '@openai', 'codex', 'bin', 'codex.js']
-    : ['node_modules', '@google', 'gemini-cli', 'bundle', 'gemini.js'];
+  if (runtime === 'codex') return ['node_modules', '@openai', 'codex', 'bin', 'codex.js'];
+  if (runtime === 'gemini') return ['node_modules', '@google', 'gemini-cli', 'bundle', 'gemini.js'];
+  return [];
 }
 
 function requiresNode(filePath) {
@@ -335,14 +411,17 @@ function windowsShimOverrideDetail(label, overrideVariable, settingKey) {
 
 export function cliPathMisconfiguration(runtime, filePath) {
   const baseName = filePath.replace(/\\/g, '/').split('/').pop()?.toLowerCase() ?? '';
-  const expected = [`${runtime}.js`, `${runtime}.exe`, runtime];
+  const expected = runtime === 'antigravity'
+    ? ['agy.exe', 'agy']
+    : [`${runtime}.js`, `${runtime}.exe`, runtime];
   if (expected.includes(baseName)) return null;
-  const label = runtime === 'codex' ? 'Codex' : 'Gemini';
+  const label = runtime === 'codex' ? 'Codex' : runtime === 'gemini' ? 'Gemini' : 'Antigravity';
   return `${label} CLI path override must point to ${formatExpectedNames(expected)}. Received ${filePath}.`;
 }
 
 function formatExpectedNames(names) {
   if (names.length <= 1) return names.join('');
+  if (names.length === 2) return `${names[0]} or ${names[1]}`;
   return `${names.slice(0, -1).join(', ')}, or ${names[names.length - 1]}`;
 }
 
@@ -444,6 +523,7 @@ export function resolveCliOverrides({
   const settings = readWorkspaceCliOverrides(cwd, fileExists, readFile);
   return {
     codex: normalizeOverride(env.VEYRA_CODEX_CLI_PATH) || settings.codex,
+    antigravity: normalizeOverride(env.VEYRA_ANTIGRAVITY_CLI_PATH) || settings.antigravity,
     gemini: normalizeOverride(env.VEYRA_GEMINI_CLI_PATH) || settings.gemini,
   };
 }
@@ -456,6 +536,7 @@ function readWorkspaceCliOverrides(cwd, fileExists, readFile) {
     const settings = JSON.parse(stripTrailingCommas(stripJsonComments(readFile(settingsPath, 'utf8'))));
     return {
       codex: normalizeOverride(settings['veyra.codexCliPath']),
+      antigravity: normalizeOverride(settings['veyra.antigravityCliPath']),
       gemini: normalizeOverride(settings['veyra.geminiCliPath']),
     };
   } catch {
@@ -629,11 +710,14 @@ function formatDiagnosticSection(result) {
 function readinessDiagnostics(input) {
   const lines = [
     `VEYRA_CODEX_CLI_PATH / veyra.codexCliPath: ${formatCliOverride(input.cliOverrides?.codex)}`,
+    `VEYRA_ANTIGRAVITY_CLI_PATH / veyra.antigravityCliPath: ${formatCliOverride(input.cliOverrides?.antigravity)}`,
     `VEYRA_GEMINI_CLI_PATH / veyra.geminiCliPath: ${formatCliOverride(input.cliOverrides?.gemini)}`,
   ];
 
   if (input.platform === 'win32') {
     lines.push(`Windows native codex.exe: ${formatNativeExecutableStatus(windowsNativeExecutableStatus(input, 'codex.exe'))}`);
+    lines.push(`Windows native agy.exe: ${formatNativeExecutableStatus(windowsNativeExecutableStatus(input, 'agy.exe'))}`);
+    lines.push(`Windows Antigravity install: ${formatNativeExecutableStatus(windowsAntigravityStatus(input))}`);
     lines.push(`Windows native gemini.exe: ${formatNativeExecutableStatus(windowsNativeExecutableStatus(input, 'gemini.exe'))}`);
     lines.push(`Windows npm Codex shim: ${formatWindowsNpmShimStatus(windowsNpmShimStatus(input, 'codex'))}`);
     lines.push(`Windows npm Gemini shim: ${formatWindowsNpmShimStatus(windowsNpmShimStatus(input, 'gemini'))}`);
@@ -703,7 +787,7 @@ function printReadiness(result) {
 
 function formatUnrestrictedPowerShellDiagnostics(result) {
   const paths = inaccessibleCliPaths(result);
-  if (!paths.codex && !paths.gemini) return [];
+  if (!paths.codex && !paths.antigravity && !paths.gemini) return [];
 
   const lines = [
     '',
@@ -713,12 +797,18 @@ function formatUnrestrictedPowerShellDiagnostics(result) {
   if (paths.codex) {
     lines.push(`  Test-Path -LiteralPath ${powerShellSingleQuoted(paths.codex)}`);
   }
+  if (paths.antigravity) {
+    lines.push(`  Test-Path -LiteralPath ${powerShellSingleQuoted(paths.antigravity)}`);
+  }
   if (paths.gemini) {
     lines.push(`  Test-Path -LiteralPath ${powerShellSingleQuoted(paths.gemini)}`);
   }
   lines.push('  # If Test-Path returns True, point Veyra at the exact inspectable CLI paths:');
   if (paths.codex) {
     lines.push(`  $env:VEYRA_CODEX_CLI_PATH = ${powerShellSingleQuoted(paths.codex)}`);
+  }
+  if (paths.antigravity) {
+    lines.push(`  $env:VEYRA_ANTIGRAVITY_CLI_PATH = ${powerShellSingleQuoted(paths.antigravity)}`);
   }
   if (paths.gemini) {
     lines.push(`  $env:VEYRA_GEMINI_CLI_PATH = ${powerShellSingleQuoted(paths.gemini)}`);
@@ -734,7 +824,11 @@ function inaccessibleCliPaths(result) {
     const match = check.detail.match(/^Cannot inspect (.+?)\. Check filesystem permissions/);
     if (!match) continue;
     if (check.name === 'Codex CLI') paths.codex = match[1];
-    if (check.name === 'Gemini CLI') paths.gemini = match[1];
+    if (check.detail.includes('VEYRA_ANTIGRAVITY_CLI_PATH')) {
+      paths.antigravity = match[1];
+    } else if (check.name === 'Gemini CLI') {
+      paths.gemini = match[1];
+    }
   }
   return paths;
 }

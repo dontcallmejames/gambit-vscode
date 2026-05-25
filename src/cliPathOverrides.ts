@@ -9,6 +9,10 @@ export function getGeminiCliPathOverride(): string {
   return getCliPathOverride('gemini', 'VEYRA_GEMINI_CLI_PATH', 'geminiCliPath');
 }
 
+export function getAntigravityCliPathOverride(): string {
+  return getCliPathOverride('antigravity', 'VEYRA_ANTIGRAVITY_CLI_PATH', 'antigravityCliPath');
+}
+
 function getCliPathOverride(runtime: CliRuntimeName, envName: string, configKey: string): string {
   const envValue = process.env[envName]?.trim();
   if (envValue) return normalizeCliPathOverride(runtime, envValue);

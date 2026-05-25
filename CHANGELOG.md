@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Migrates Claude routing and direct Claude dispatch to the local Claude CLI runtime and removes the Anthropic Agent SDK dependency.
+
 ## 1.0.5 - 2026-05-25
 
 - Adds `Veyra: Review CI/PR Output` for local-first PR readiness guidance from copied CI or PR output plus sanitized Git context.

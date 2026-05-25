@@ -1,97 +1,131 @@
-import { describe, it, expect, vi } from 'vitest';
-import { chooseFacilitatorAgent } from '../src/facilitator.js';
+import { EventEmitter } from 'node:events';
+import { PassThrough, Readable } from 'node:stream';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AgentStatus } from '../src/types.js';
 
-vi.mock('@anthropic-ai/claude-agent-sdk', () => ({
-  query: vi.fn(),
-}));
+type FakeChild = EventEmitter & {
+  stdout: Readable;
+  stderr: PassThrough;
+  stdin: { end: ReturnType<typeof vi.fn> };
+  kill: ReturnType<typeof vi.fn>;
+};
 
-vi.mock('../src/findNode.js', () => ({
-  findNode: vi.fn(() => 'C:\\node.exe'),
-}));
+function fakeClaudeProcess(text: string, closeCode = 0, stderrText = ''): FakeChild {
+  const child = new EventEmitter() as FakeChild;
+  child.stdout = Readable.from([
+    `${JSON.stringify({
+      type: 'assistant',
+      message: { content: [{ type: 'text', text }] },
+    })}\n`,
+    `${JSON.stringify({ type: 'result', subtype: closeCode === 0 ? 'success' : 'error', error: stderrText })}\n`,
+  ]);
+  child.stderr = new PassThrough();
+  child.stdin = { end: vi.fn() };
+  child.kill = vi.fn();
+  return child;
+}
 
-import { query } from '@anthropic-ai/claude-agent-sdk';
-import { findNode } from '../src/findNode.js';
-const mockedQuery = query as unknown as ReturnType<typeof vi.fn>;
-const mockedFindNode = findNode as unknown as ReturnType<typeof vi.fn>;
-
-async function* sdkResponse(text: string) {
-  yield {
-    type: 'assistant',
-    message: { content: [{ type: 'text', text }] },
-  };
-  yield { type: 'result', subtype: 'success' };
+async function importFacilitatorWithCli(child: FakeChild, closeCode = 0, stderrText = '') {
+  const spawn = vi.fn(() => {
+    queueMicrotask(() => {
+      if (stderrText) child.stderr.end(stderrText);
+      child.emit('close', closeCode);
+    });
+    return child;
+  });
+  const execSync = vi.fn(() => 'C:\\Users\\jford\\.local\\bin\\claude.exe\r\n');
+  vi.doMock('node:child_process', () => ({ spawn, execSync }));
+  const { chooseFacilitatorAgent } = await import('../src/facilitator.js');
+  return { chooseFacilitatorAgent, spawn };
 }
 
 const allReady: Record<'claude' | 'codex' | 'gemini', AgentStatus> = {
-  claude: 'ready', codex: 'ready', gemini: 'ready',
+  claude: 'ready',
+  codex: 'ready',
+  gemini: 'ready',
 };
 
 describe('chooseFacilitatorAgent', () => {
-  it('returns parsed { agent, reason } on well-formed JSON response', async () => {
-    mockedQuery.mockReturnValueOnce(sdkResponse('{"agent":"gemini","reason":"current events"}'));
+  afterEach(() => {
+    vi.doUnmock('node:child_process');
+    vi.resetModules();
+  });
+
+  it('returns parsed { agent, reason } from a Claude CLI JSON response', async () => {
+    const child = fakeClaudeProcess('{"agent":"gemini","reason":"current events"}');
+    const { chooseFacilitatorAgent, spawn } = await importFacilitatorWithCli(child);
+
     const decision = await chooseFacilitatorAgent('what is the news?', allReady);
+
+    expect(spawn).toHaveBeenCalledWith(
+      'C:\\Users\\jford\\.local\\bin\\claude.exe',
+      ['-p', '--output-format', 'stream-json', '--verbose', '--permission-mode', 'default'],
+      { stdio: ['pipe', 'pipe', 'pipe'] },
+    );
+    expect(child.stdin.end.mock.calls[0][0]).toContain('what is the news?');
     expect(decision).toEqual({ agent: 'gemini', reason: 'current events' });
   });
 
   it('strips markdown code fences before parsing', async () => {
-    const fenced = '```json\n{"agent":"claude","reason":"code review"}\n```';
-    mockedQuery.mockReturnValueOnce(sdkResponse(fenced));
+    const child = fakeClaudeProcess('```json\n{"agent":"claude","reason":"code review"}\n```');
+    const { chooseFacilitatorAgent } = await importFacilitatorWithCli(child);
+
     const decision = await chooseFacilitatorAgent('review this', allReady);
+
     expect(decision).toEqual({ agent: 'claude', reason: 'code review' });
   });
 
   it('falls back to deterministic routing on malformed JSON', async () => {
-    mockedQuery.mockReturnValueOnce(sdkResponse('not even close to json'));
+    const child = fakeClaudeProcess('not even close to json');
+    const { chooseFacilitatorAgent } = await importFacilitatorWithCli(child);
+
     const decision = await chooseFacilitatorAgent('run the tests', allReady);
+
     expect(decision).toMatchObject({ agent: 'codex', reason: expect.stringContaining('fallback') });
   });
 
   it('falls back to deterministic routing on invalid agent name', async () => {
-    mockedQuery.mockReturnValueOnce(sdkResponse('{"agent":"GPT-9000","reason":"ok"}'));
+    const child = fakeClaudeProcess('{"agent":"GPT-9000","reason":"ok"}');
+    const { chooseFacilitatorAgent } = await importFacilitatorWithCli(child);
+
     const decision = await chooseFacilitatorAgent('review this design', allReady);
+
     expect(decision).toMatchObject({ agent: 'claude', reason: expect.stringContaining('fallback') });
   });
 
-  it('falls back to a ready agent when the facilitator selects an unavailable agent', async () => {
-    mockedQuery.mockReturnValueOnce(sdkResponse('{"agent":"codex","reason":"run tests"}'));
-    const decision = await chooseFacilitatorAgent(
-      'research the latest VS Code chat API',
-      { claude: 'ready', codex: 'unauthenticated', gemini: 'ready' },
-    );
-    expect(decision).toMatchObject({ agent: 'gemini', reason: expect.stringContaining('fallback') });
-  });
-
-  it('does not offer busy agents to the routing model and falls back if one is selected', async () => {
-    let capturedSystemPrompt = '';
-    mockedQuery.mockImplementationOnce(({ options }: { options: { systemPrompt: string } }) => {
-      capturedSystemPrompt = options.systemPrompt;
-      return sdkResponse('{"agent":"codex","reason":"run tests"}');
-    });
+  it('does not offer busy agents to the routing prompt and falls back if one is selected', async () => {
+    const child = fakeClaudeProcess('{"agent":"codex","reason":"run tests"}');
+    const { chooseFacilitatorAgent } = await importFacilitatorWithCli(child);
 
     const decision = await chooseFacilitatorAgent(
       'review this design',
       { claude: 'ready', codex: 'busy', gemini: 'not-installed' },
     );
 
-    expect(capturedSystemPrompt).toContain('- claude:');
-    expect(capturedSystemPrompt).not.toContain('- codex:');
+    const prompt = child.stdin.end.mock.calls[0][0];
+    expect(prompt).toContain('- claude:');
+    expect(prompt).not.toContain('- codex:');
     expect(decision).toMatchObject({ agent: 'claude', reason: expect.stringContaining('fallback') });
   });
 
-  it('returns error without calling SDK when all agents unavailable', async () => {
-    mockedQuery.mockClear();
+  it('returns error without spawning Claude CLI when all agents are unavailable', async () => {
+    const child = fakeClaudeProcess('{"agent":"claude","reason":"unused"}');
+    const { chooseFacilitatorAgent, spawn } = await importFacilitatorWithCli(child);
+
     const decision = await chooseFacilitatorAgent(
       'anything',
       { claude: 'unauthenticated', codex: 'unauthenticated', gemini: 'not-installed' },
     );
+
     expect(decision).toMatchObject({ error: expect.stringContaining('Veyra: Check agent status') });
     expect(decision).toMatchObject({ error: expect.stringContaining('Veyra: Show setup guide') });
-    expect(mockedQuery).not.toHaveBeenCalled();
+    expect(spawn).not.toHaveBeenCalled();
   });
 
-  it('returns busy-specific guidance without calling SDK when every usable agent is busy', async () => {
-    mockedQuery.mockClear();
+  it('returns busy-specific guidance without spawning Claude CLI when every usable agent is busy', async () => {
+    const child = fakeClaudeProcess('{"agent":"claude","reason":"unused"}');
+    const { chooseFacilitatorAgent, spawn } = await importFacilitatorWithCli(child);
+
     const decision = await chooseFacilitatorAgent(
       'review this',
       { claude: 'busy', codex: 'busy', gemini: 'not-installed' },
@@ -99,83 +133,48 @@ describe('chooseFacilitatorAgent', () => {
 
     expect(decision).toMatchObject({ error: expect.stringContaining('busy') });
     expect(decision).toMatchObject({ error: expect.stringContaining('wait') });
-    expect(mockedQuery).not.toHaveBeenCalled();
+    expect(spawn).not.toHaveBeenCalled();
   });
 
-  it('falls back to deterministic routing when SDK throws', async () => {
-    mockedQuery.mockImplementationOnce(() => { throw new Error('auth fail'); });
+  it('falls back to deterministic routing when Claude CLI fails', async () => {
+    const child = fakeClaudeProcess('');
+    const { chooseFacilitatorAgent } = await importFacilitatorWithCli(child, 1, 'auth fail');
+
     const decision = await chooseFacilitatorAgent('implement the fix', allReady);
+
     expect(decision).toMatchObject({ agent: 'codex', reason: expect.stringContaining('fallback') });
   });
 
-  it('passes shared context into the system prompt when provided', async () => {
-    let capturedSystemPrompt = '';
-    let capturedUserPrompt = '';
-    mockedQuery.mockImplementationOnce(({ prompt, options }: { prompt: string; options: { systemPrompt: string } }) => {
-      capturedSystemPrompt = options.systemPrompt;
-      capturedUserPrompt = prompt;
-      return sdkResponse('{"agent":"claude","reason":"r"}');
-    });
-
+  it('passes shared context into the CLI routing prompt when provided', async () => {
+    const child = fakeClaudeProcess('{"agent":"claude","reason":"r"}');
+    const { chooseFacilitatorAgent } = await importFacilitatorWithCli(child);
     const sharedContext = '[Conversation so far]\nuser: prior\n[/Conversation so far]';
+
     await chooseFacilitatorAgent('what next', allReady, sharedContext);
 
-    expect(capturedSystemPrompt).toContain('Conversation so far');
-    expect(capturedSystemPrompt).toContain('user: prior');
-    expect(capturedUserPrompt).toBe('what next');
+    const prompt = child.stdin.end.mock.calls[0][0];
+    expect(prompt).toContain('Conversation so far');
+    expect(prompt).toContain('user: prior');
+    expect(prompt).toContain('what next');
   });
 
-  it('omits shared-context block from system prompt when sharedContext is empty', async () => {
-    let capturedSystemPrompt = '';
-    mockedQuery.mockImplementationOnce(({ options }: { options: { systemPrompt: string } }) => {
-      capturedSystemPrompt = options.systemPrompt;
-      return sdkResponse('{"agent":"claude","reason":"r"}');
-    });
+  it('omits shared-context block from the CLI routing prompt when sharedContext is empty', async () => {
+    const child = fakeClaudeProcess('{"agent":"claude","reason":"r"}');
+    const { chooseFacilitatorAgent } = await importFacilitatorWithCli(child);
 
     await chooseFacilitatorAgent('hi', allReady, '');
 
-    expect(capturedSystemPrompt).not.toContain('Recent conversation context');
+    expect(child.stdin.end.mock.calls[0][0]).not.toContain('Recent conversation context');
   });
 
-  it('keeps the facilitator system prompt ASCII-safe for extension-host logs', async () => {
-    let capturedSystemPrompt = '';
-    mockedQuery.mockImplementationOnce(({ options }: { options: { systemPrompt: string } }) => {
-      capturedSystemPrompt = options.systemPrompt;
-      return sdkResponse('{"agent":"codex","reason":"run tests"}');
-    });
+  it('keeps the facilitator CLI prompt ASCII-safe for extension-host logs', async () => {
+    const child = fakeClaudeProcess('{"agent":"codex","reason":"run tests"}');
+    const { chooseFacilitatorAgent } = await importFacilitatorWithCli(child);
 
     await chooseFacilitatorAgent('run the tests', allReady);
 
-    expect(capturedSystemPrompt).toContain('codex: execution - running tests, scripts, terminal commands, file edits');
-    expect(capturedSystemPrompt).not.toMatch(/[^\x00-\x7F]/);
-  });
-
-  it('uses the real node executable when routing inside the VS Code extension host', async () => {
-    const originalExecPath = process.execPath;
-    const originalElectron = Object.getOwnPropertyDescriptor(process.versions, 'electron');
-    Object.defineProperty(process.versions, 'electron', {
-      configurable: true,
-      value: '32.0.0',
-    });
-    let execPathDuringQuery = '';
-    mockedFindNode.mockClear();
-    mockedQuery.mockImplementationOnce(() => {
-      execPathDuringQuery = process.execPath;
-      return sdkResponse('{"agent":"claude","reason":"code review"}');
-    });
-
-    try {
-      await chooseFacilitatorAgent('review this', allReady);
-    } finally {
-      if (originalElectron) {
-        Object.defineProperty(process.versions, 'electron', originalElectron);
-      } else {
-        delete (process.versions as { electron?: string }).electron;
-      }
-    }
-
-    expect(mockedFindNode).toHaveBeenCalledTimes(1);
-    expect(execPathDuringQuery).toBe('C:\\node.exe');
-    expect(process.execPath).toBe(originalExecPath);
+    const prompt = child.stdin.end.mock.calls[0][0];
+    expect(prompt).toContain('codex: execution - running tests, scripts, terminal commands, file edits');
+    expect(prompt).not.toMatch(/[^\x00-\x7F]/);
   });
 });

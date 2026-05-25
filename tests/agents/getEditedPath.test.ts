@@ -6,7 +6,6 @@ vi.mock('vscode', () => ({
   },
 }));
 
-vi.mock('@anthropic-ai/claude-agent-sdk', () => ({ query: vi.fn() }));
 vi.mock('node:child_process', () => ({
   spawn: vi.fn(),
   execSync: vi.fn().mockReturnValue('/fake/npm/root\n'),

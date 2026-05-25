@@ -33,9 +33,9 @@ The working rule is: agents can work together without losing context, stomping e
 Veyra shells out through the local agent CLIs/adapters already configured on your machine:
 
 - Node.js with the `node` command on PATH, required when Veyra launches JS bundle paths from the VS Code extension host.
-- Claude through `@anthropic-ai/claude-agent-sdk`.
+- Claude through the local Claude CLI (`npm install -g @anthropic-ai/claude-code`, then run `claude` or `claude /login` to authenticate).
 - Codex through the local Codex CLI integration (`npm install -g @openai/codex`, then `codex login`).
-- Gemini through the local Gemini CLI integration (`npm install -g @google/gemini-cli`, then run `gemini` once to complete OAuth).
+- Gemini through the Google provider path. New consumer setups should use Antigravity CLI (`agy`) from https://antigravity.google/cli; legacy Gemini CLI (`npm install -g @google/gemini-cli`, then run `gemini` once) remains a fallback for existing/API-key users.
 
 Use the account, API key, or subscription setup required by each vendor's CLI. Veyra does not replace those credentials; it coordinates the agents inside VS Code.
 
@@ -151,7 +151,7 @@ Example workspace settings:
 
 Run `Veyra: Check agent status` before starting an autonomous workflow. If Codex or Gemini is missing, inaccessible, or misconfigured, the status warning offers CLI path configuration directly.
 
-On Windows, `Veyra: Configure Codex/Gemini CLI paths` can detect native CLI executables, PATH npm shims, or npm global CLI bundles and save the needed `veyra.codexCliPath` / `veyra.geminiCliPath` workspace settings. If a backend reports `Node.js missing`, install Node.js so the `node` command is on PATH, or point Codex/Gemini at native executable paths instead of JS bundle paths.
+On Windows, `Veyra: Configure Codex/Gemini CLI paths` can detect native CLI executables, PATH npm shims, npm global CLI bundles, and the standard Antigravity install. It saves `veyra.codexCliPath`, `veyra.antigravityCliPath`, and the legacy `veyra.geminiCliPath` workspace settings when available. If a backend reports `Node.js missing`, install Node.js so the `node` command is on PATH, or point Codex/Gemini at native executable paths instead of JS bundle paths.
 
 ## Using Veyra As A Language Model
 
@@ -208,7 +208,8 @@ Rollback refuses when automatic checkpoint files changed after the agent dispatc
 - `veyra.checkpoints.maxFileBytes`: max file size snapshotted for checkpoint rollback.
 - `veyra.checkpoints.maxCount`: max checkpoint count before pruning older snapshots.
 - `veyra.codexCliPath`: optional absolute path to the Codex CLI JS bundle, native executable, or Windows npm shim. Paths ending in `codex.cmd`, `codex.bat`, or `codex.ps1` are resolved to the underlying JS bundle before launch.
-- `veyra.geminiCliPath`: optional absolute path to the Gemini CLI JS bundle, native executable, or Windows npm shim. Paths ending in `gemini.cmd`, `gemini.bat`, or `gemini.ps1` are resolved to the underlying JS bundle before launch.
+- `veyra.antigravityCliPath`: optional absolute path to the Antigravity CLI native executable, usually `agy.exe` on Windows or `agy` on macOS/Linux.
+- `veyra.geminiCliPath`: optional legacy fallback path to the Gemini CLI JS bundle, native executable, or Windows npm shim. Paths ending in `gemini.cmd`, `gemini.bat`, or `gemini.ps1` are resolved to the underlying JS bundle before launch.
 - `veyra.sharedContextWindow`: number of recent messages sent to later agents.
 - `veyra.workflow.template`: optional prompt lens for `/review`, `/debate`, `/consensus`, `/implement`, and the matching Language Model workflow entries.
 - `veyra.agentRoles.claude`, `veyra.agentRoles.codex`, `veyra.agentRoles.gemini`: optional workspace role customization appended to the matching agent's Veyra role preamble.
@@ -259,7 +260,7 @@ The live suite checks each backend individually, runs a read-only all-agent Veyr
 The npm script first refuses to run unless `VEYRA_RUN_LIVE=1` is set, then runs `verify:live-ready` before any paid prompts. The `.live.test.ts` suites repeat the readiness guard internally so direct Vitest live-test invocations stop before prompt execution when readiness is incomplete.
 In PowerShell, `$env:VEYRA_RUN_LIVE = '1'` stays set for the current terminal session until you remove it or close the shell.
 
-If Windows npm global package paths are inaccessible from the VS Code extension host, Veyra first uses direct native `codex.exe` or `gemini.exe` executables found on PATH, then recognized PATH npm shims such as `codex.cmd` and `gemini.ps1`. Veyra skips stale PATH shims whose derived JS bundle targets are missing and falls back to `npm root -g`. If those are not available, point Veyra at explicit JS bundle, native executable, or npm shim paths in settings:
+If Windows npm global package paths are inaccessible from the VS Code extension host, Veyra first uses direct native `codex.exe`, `agy.exe`, or `gemini.exe` executables found on PATH, then the standard Antigravity install, then recognized PATH npm shims such as `codex.cmd` and `gemini.ps1`. Veyra skips stale PATH shims whose derived JS bundle targets are missing and falls back to `npm root -g`. If those are not available, point Veyra at explicit JS bundle, native executable, or npm shim paths in settings:
 
 ```text
 Veyra: Configure Codex/Gemini CLI paths
@@ -272,6 +273,7 @@ Use the underlying JS bundle paths, native executables, or Windows npm shim path
 ```json
 {
   "veyra.codexCliPath": "C:\\Users\\<you>\\AppData\\Roaming\\npm\\node_modules\\@openai\\codex\\bin\\codex.js",
+  "veyra.antigravityCliPath": "C:\\Users\\<you>\\AppData\\Local\\agy\\bin\\agy.exe",
   "veyra.geminiCliPath": "C:\\Users\\<you>\\AppData\\Roaming\\npm\\node_modules\\@google\\gemini-cli\\bundle\\gemini.js"
 }
 ```
@@ -280,6 +282,7 @@ For shell readiness and live-test commands, either keep those workspace settings
 
 ```powershell
 $env:VEYRA_CODEX_CLI_PATH = 'C:\Users\<you>\AppData\Roaming\npm\node_modules\@openai\codex\bin\codex.js'
+$env:VEYRA_ANTIGRAVITY_CLI_PATH = 'C:\Users\<you>\AppData\Local\agy\bin\agy.exe'
 $env:VEYRA_GEMINI_CLI_PATH = 'C:\Users\<you>\AppData\Roaming\npm\node_modules\@google\gemini-cli\bundle\gemini.js'
 ```
 

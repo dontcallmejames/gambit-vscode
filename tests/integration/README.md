@@ -1,12 +1,12 @@
 # Live integration tests
 
-These tests run against the **real** CLIs/SDKs using your subscription auth.
+These tests run against the **real** local agent CLIs using your subscription auth.
 
 ## Prerequisites
 - Node.js installed so the `node` command is on PATH for npm/Vitest and JS-bundle CLI paths
-- Claude Code logged in: `claude /login`
+- Claude Code installed (`npm install -g @anthropic-ai/claude-code`) and authenticated by running `claude` or `claude /login`
 - Codex CLI installed and logged in: `npm install -g @openai/codex`, then `codex login`
-- Gemini CLI installed and logged in: `npm install -g @google/gemini-cli`, then run `gemini` once and complete OAuth
+- Google provider CLI installed and authenticated: prefer Antigravity CLI from https://antigravity.google/cli, then run `agy` once if sign-in is needed. Legacy Gemini CLI remains a fallback for existing/API-key users (`npm install -g @google/gemini-cli`, then run `gemini` once).
 
 ## Run
 
@@ -50,19 +50,21 @@ npm run manual:extension-host-check
 
 That final manual check is still required before the goal can be marked complete.
 
-On Windows, Veyra first uses native `codex.exe` and `gemini.exe` executables on PATH, then recognized PATH npm shims such as `codex.cmd` and `gemini.ps1`, then falls back to `npm root -g` package probes. For PATH shims, missing derived bundle targets are skipped so stale shim entries do not block a valid npm-root package probe. If that package tree is inaccessible from the shell, set explicit JS bundle paths, native executables, or Windows npm shim paths through workspace settings or environment variables first. Native executable paths do not need the JS-bundle Node launcher.
+On Windows, Veyra first uses native `codex.exe`, `agy.exe`, and `gemini.exe` executables on PATH, then the standard Antigravity install, then recognized PATH npm shims such as `codex.cmd` and `gemini.ps1`, then falls back to `npm root -g` package probes for legacy JS-bundle CLIs. For PATH shims, missing derived bundle targets are skipped so stale shim entries do not block a valid npm-root package probe. If that package tree is inaccessible from the shell, set explicit JS bundle paths, native executables, or Windows npm shim paths through workspace settings or environment variables first. Native executable paths do not need the JS-bundle Node launcher.
 
 Recognized npm shim paths such as `codex.cmd`, `codex.ps1`, `gemini.cmd`, and `gemini.ps1` are resolved to the underlying JS bundle before readiness and runtime launch, so Veyra still invokes Codex and Gemini without a shell.
 
 ```json
 {
   "veyra.codexCliPath": "C:\\Users\\<you>\\AppData\\Roaming\\npm\\node_modules\\@openai\\codex\\bin\\codex.js",
+  "veyra.antigravityCliPath": "C:\\Users\\<you>\\AppData\\Local\\agy\\bin\\agy.exe",
   "veyra.geminiCliPath": "C:\\Users\\<you>\\AppData\\Roaming\\npm\\node_modules\\@google\\gemini-cli\\bundle\\gemini.js"
 }
 ```
 
 ```powershell
 $env:VEYRA_CODEX_CLI_PATH = 'C:\Users\<you>\AppData\Roaming\npm\node_modules\@openai\codex\bin\codex.js'
+$env:VEYRA_ANTIGRAVITY_CLI_PATH = 'C:\Users\<you>\AppData\Local\agy\bin\agy.exe'
 $env:VEYRA_GEMINI_CLI_PATH = 'C:\Users\<you>\AppData\Roaming\npm\node_modules\@google\gemini-cli\bundle\gemini.js'
 ```
 

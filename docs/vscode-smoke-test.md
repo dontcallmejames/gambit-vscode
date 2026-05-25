@@ -8,8 +8,8 @@ For the broader active-goal audit, evidence checklist, and remaining live-backen
 
 - VS Code `1.118.0` or newer.
 - Node.js with the `node` command on PATH, required for JS bundle CLI paths and Extension Host launches.
-- Claude, Codex, and Gemini CLIs/accounts configured locally if you want to run live agent prompts.
-- If Windows npm global package paths are inaccessible from the extension host, run `Veyra: Configure Codex/Gemini CLI paths` or set `veyra.codexCliPath` and `veyra.geminiCliPath` to the JS bundle paths, native executables, or Windows npm shim paths. Veyra auto-detects native PATH executables first, then recognized PATH npm shims such as `codex.cmd` and `gemini.ps1`; shim paths are resolved to the underlying JS bundle before launch. Veyra skips stale PATH shims whose derived bundle targets are missing and falls back to `npm root -g`.
+- Claude, Codex, and Gemini/Google-provider CLIs/accounts configured locally if you want to run live agent prompts. New Google-provider setups should use Antigravity CLI (`agy`) from https://antigravity.google/cli; legacy Gemini CLI remains a fallback for existing/API-key users.
+- If Windows npm global package paths are inaccessible from the extension host, run `Veyra: Configure Codex/Gemini CLI paths` or set `veyra.codexCliPath`, `veyra.antigravityCliPath`, and the legacy `veyra.geminiCliPath` to the JS bundle paths, native executables, or Windows npm shim paths. Veyra auto-detects native PATH executables first, then the standard Antigravity install, then recognized PATH npm shims such as `codex.cmd` and `gemini.ps1`; shim paths are resolved to the underlying JS bundle before launch. Veyra skips stale PATH shims whose derived bundle targets are missing and falls back to `npm root -g`.
 - `npm run build` has completed, or you will use the `Run Extension` launch configuration in `.vscode/launch.json`, whose `npm: build` prelaunch task builds first.
 
 ## Launch
@@ -58,7 +58,7 @@ If anything fails, collect:
 1. Run `Veyra: Check agent status`.
 2. Confirm it reports statuses for Claude, Codex, and Gemini.
 3. Run `Veyra: Copy Diagnostic Report` and confirm the clipboard text includes `veyra.openPanel: registered`.
-4. If Codex or Gemini reports inaccessible, misconfigured, or Node.js missing on Windows, run `Veyra: Configure Codex/Gemini CLI paths`. If detection cannot inspect the package tree, choose `Enter paths manually` and paste JS bundle paths, native executable paths, or npm shim paths such as `codex.cmd` and `gemini.ps1`. For Node.js missing, install Node.js or switch to native executable paths, then rerun `Veyra: Check agent status`.
+4. If Codex or Gemini reports inaccessible, misconfigured, or Node.js missing on Windows, run `Veyra: Configure Codex/Gemini CLI paths`. If detection cannot inspect the package tree, choose `Enter paths manually` and paste JS bundle paths, native executable paths, Antigravity `agy.exe`, or npm shim paths such as `codex.cmd` and `gemini.ps1`. For Node.js missing, install Node.js or switch to native executable paths, then rerun `Veyra: Check agent status`.
 5. Run `Veyra: Open View`.
 6. Confirm it reveals the Veyra docked view with the same three agent statuses.
 

@@ -259,7 +259,91 @@ Support realistic build, test, and debug loops from inside VS Code.
 
 The current agent CLIs can already run commands in some flows. This milestone is specifically about native VS Code terminal ergonomics and safer user control.
 
-## 10. Milestone 6: Later Parity Candidates
+## 10. Milestone 6: Provider Adapter Migration
+
+### Goal
+
+Keep Veyra aligned with the agent CLIs the user actually wants to trust: Claude CLI for Claude, Codex CLI for Codex, and Antigravity CLI as the successor path for Gemini.
+
+### Ship
+
+- Replace Claude's primary `@anthropic-ai/claude-agent-sdk` path with a Claude CLI-first adapter.
+- Remove the Anthropic agent SDK dependency once Claude CLI streaming, tool events, edit detection, cancellation, and write-approval behavior are covered by tests.
+- Keep Claude CLI command resolution simple and explicit:
+  - prefer `claude` / `claude.exe` on PATH
+  - add a `VEYRA_CLAUDE_CLI_PATH` / `veyra.claudeCliPath` override only if real tester environments need it
+  - keep `claude -p --output-format stream-json --verbose --permission-mode ...` as the initial non-interactive contract
+- Introduce an Antigravity CLI adapter to replace the Gemini CLI runtime path while preserving the existing Veyra agent identity as `gemini` unless product naming changes later.
+- Detect Antigravity CLI before Gemini CLI during transition, with a clear fallback and warning while Gemini CLI still works.
+- Rename settings, diagnostics, and setup guidance carefully:
+  - add Antigravity-specific path/settings support
+  - keep temporary compatibility for `VEYRA_GEMINI_CLI_PATH` / `veyra.geminiCliPath`
+  - update readiness guidance so users know Gemini CLI consumer access stops serving requests after Google's published transition date
+- Capture and surface backend-reported model metadata where Antigravity exposes it, especially the Gemini 3.5 Flash default.
+
+### Non-goals
+
+- No attempt to preserve the Anthropic SDK as a parallel default once the Claude CLI path is proven stable.
+- No claim that Antigravity CLI is a drop-in Gemini CLI replacement until its non-interactive JSON/streaming contract is verified.
+- No rename from `@gemini` to `@antigravity` in the first migration unless user testing shows that the visible label is misleading.
+- No automatic migration of user config files outside Veyra's own VS Code settings.
+
+### Success criteria
+
+- Claude dispatches use Claude CLI only, with no package dependency on `@anthropic-ai/claude-agent-sdk`.
+- Antigravity CLI can run the third-agent review role with streamed text, tool calls/results, edit detection, cancellation, and read-only/write-capable behavior equivalent to the current Gemini adapter.
+- Existing Veyra workflows still route through Claude, Codex, and the Google agent path without changing the user's common prompts.
+- Diagnostics clearly distinguish Claude CLI, Codex CLI, Antigravity CLI, and legacy Gemini CLI fallback.
+- The README, setup guide, smoke docs, live readiness, and Marketplace copy no longer point new users at deprecated Gemini CLI setup as the primary path.
+
+### Design notes
+
+This is now a near-term maintenance and trust milestone, not a later parity feature. The current Claude code already contains a CLI fallback, so the Claude change is mostly deleting the SDK-first branch, removing dependency surface, and strengthening CLI tests. The Google change is riskier: Antigravity CLI needs a verified non-interactive mode and event stream before it can replace Gemini CLI safely.
+
+## 11. Milestone 7: Output Polish And Provider Transparency
+
+### Goal
+
+Make Veyra's output easier to read during large reviews and make the underlying agent model choices visible enough that users know what they are trusting.
+
+### Ship
+
+- Render Markdown in the docked Veyra view instead of showing raw `#`, `*`, table, and code-fence syntax as plain text.
+- Preserve important coding affordances while rendering:
+  - fenced code blocks
+  - inline code
+  - headings
+  - bullets and numbered lists
+  - tables where practical
+  - links and workspace file references
+- Keep tool-call cards, file-edit notices, checkpoints, and pending-change actions visually distinct from rendered agent prose.
+- Add model/provider transparency:
+  - document that Claude, Codex, and Gemini currently use their local CLI or SDK defaults unless Veyra passes an explicit model option
+  - show CLI/provider versions in diagnostics where available
+  - surface any reported model name from backend stream metadata when the CLI exposes it
+  - add optional model override settings only where the underlying provider supports a stable non-interactive flag or setting
+
+### Non-goals
+
+- No arbitrary HTML rendering from agent output.
+- No custom Markdown dialect beyond common GitHub-style Markdown affordances unless needed for VS Code compatibility.
+- No hardcoded vendor model promises when Veyra cannot prove the actual model selected by the local CLI.
+- No local-model runtime in this milestone; this is transparency over the existing Claude, Codex, and Gemini paths.
+
+### Success criteria
+
+- Large `/review`, `/debate`, `/consensus`, and `/implement` responses are scan-friendly in the docked Veyra view.
+- Users no longer see raw Markdown control characters when the agent meant headings, lists, or code blocks.
+- Diagnostics and docs clearly explain whether Veyra is using local CLI defaults, a configured override, or a backend-reported model.
+- The same response remains safe to display even when an agent outputs malformed Markdown or untrusted link text.
+
+### Design notes
+
+This should be treated as a trust and comprehension feature, not cosmetic polish. Veyra's multi-agent reviews can become long quickly; raw Markdown makes good reasoning look noisy and unprofessional. The renderer should be conservative and safe, but the default reading experience should feel like a real review document.
+
+Model transparency belongs in the same milestone because output quality and user trust are linked. Users should not have to guess whether a provider is using a default, a workspace override, or a backend-selected model.
+
+## 12. Milestone 8: Later Parity Candidates
 
 These features are valuable but should be deferred until after the v1.0 spine is useful.
 
@@ -283,7 +367,7 @@ Useful for teams, but Veyra already has a local editor-first story. PR generatio
 
 Useful if lexical retrieval cannot find the right context often enough. It should be measured against real failures before becoming required infrastructure.
 
-## 11. Sequencing
+## 13. Sequencing
 
 Recommended order:
 
@@ -293,7 +377,9 @@ Recommended order:
 4. Checkpoints and rollback.
 5. Workflow intelligence.
 6. Terminal awareness.
-7. Later parity candidates.
+7. Provider adapter migration.
+8. Output polish and provider transparency.
+9. Later parity candidates.
 
 The first three implementation plans should be separate:
 
@@ -303,7 +389,7 @@ The first three implementation plans should be separate:
 
 Splitting them keeps each plan reviewable and reduces the risk of changing too many extension surfaces at once.
 
-## 12. Risks
+## 14. Risks
 
 ### Retrieval quality may disappoint without embeddings
 
@@ -321,11 +407,23 @@ Mitigation: compare current workspace state against checkpoint metadata before r
 
 Mitigation: add facilitator synthesis and structured review categories instead of simply increasing agent output.
 
+### Provider CLI contracts may shift under Veyra
+
+Mitigation: prefer documented non-interactive streaming modes, keep adapter parsing isolated per provider, and add focused live-readiness checks before replacing Gemini CLI with Antigravity CLI by default.
+
+### Long reviews may be hard to read if Markdown is not rendered
+
+Mitigation: render agent Markdown safely in the docked Veyra view while keeping tool calls, file edits, and action controls as structured UI elements.
+
+### Users may assume Veyra chose exact vendor models
+
+Mitigation: document that current providers use local CLI or SDK defaults unless an explicit override is configured, and surface backend-reported model metadata when available.
+
 ### Roadmap may drift into full competitor parity
 
 Mitigation: use the v1.0 thesis as a scope guard. Features that do not improve workspace context, edit trust, or multi-agent workflow quality move out of v1.0.
 
-## 13. Open Product Decisions
+## 15. Open Product Decisions
 
 These decisions should be made during implementation planning, not blocked here:
 
@@ -334,8 +432,12 @@ These decisions should be made during implementation planning, not blocked here:
 - Whether the first rollback implementation uses Git where available or a Veyra-managed snapshot format everywhere.
 - Final names for diff and checkpoint commands.
 - Whether workflow templates live in VS Code settings, a `veyra.md` section, or a separate workspace config file.
+- Whether the visible Google agent label stays `@gemini` while Antigravity CLI powers it, or whether Veyra eventually exposes `@antigravity`.
+- Whether legacy Gemini CLI fallback should be kept after the consumer cutoff or removed completely.
+- Which Markdown renderer should be used in the webview, and how tightly it should sanitize links and generated HTML.
+- Which provider model metadata is reliable enough to expose as "actual model used" versus "configured/default model."
 
-## 14. Definition Of v1.0
+## 16. Definition Of v1.0
 
 Veyra is ready to call v1.0 when:
 
@@ -344,4 +446,3 @@ Veyra is ready to call v1.0 when:
 - It can roll back a write-capable dispatch safely.
 - Its multi-agent workflows produce clearer final recommendations than a single-agent chat loop.
 - Current native chat, Language Model provider, panel, file badge, edit-conflict, commit attribution, packaging, smoke, and live readiness gates remain covered.
-

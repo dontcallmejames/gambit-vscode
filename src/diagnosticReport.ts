@@ -48,9 +48,19 @@ export type DiagnosticReportInput = {
   };
   agents: Record<'claude' | 'codex' | 'gemini', DiagnosticAgentStatus>;
   providers?: ProviderDiagnostics;
+  retrieval?: RetrievalDiagnostic;
   commands: Record<string, boolean>;
   nativeChatRegistrations: string[];
   optionalSurfaceFailures: OptionalSurfaceFailure[];
+};
+
+export type RetrievalDiagnostic = {
+  method: string;
+  maxFiles: number;
+  maxSnippetLines: number;
+  maxFileBytes: number;
+  embeddingReadiness: string;
+  guardrails: string[];
 };
 
 export function formatDiagnosticReport(input: DiagnosticReportInput): string {
@@ -80,6 +90,18 @@ export function formatDiagnosticReport(input: DiagnosticReportInput): string {
           : []),
       ]
     : [];
+  const retrievalLines = input.retrieval
+    ? [
+        '',
+        '## Retrieval Quality',
+        `- Method: ${input.retrieval.method}`,
+        `- Embedding readiness: ${input.retrieval.embeddingReadiness}`,
+        `- Max files: ${input.retrieval.maxFiles}`,
+        `- Max snippet lines: ${input.retrieval.maxSnippetLines}`,
+        `- Max file bytes: ${input.retrieval.maxFileBytes}`,
+        ...input.retrieval.guardrails.map((guardrail) => `- ${guardrail}`),
+      ]
+    : [];
 
   return [
     '# Veyra Diagnostic Report',
@@ -100,6 +122,7 @@ export function formatDiagnosticReport(input: DiagnosticReportInput): string {
     `- Codex: ${formatStatus(input.agents.codex)}`,
     `- Gemini: ${formatStatus(input.agents.gemini)}`,
     ...providerLines,
+    ...retrievalLines,
     '',
     '## Commands',
     ...commandLines,

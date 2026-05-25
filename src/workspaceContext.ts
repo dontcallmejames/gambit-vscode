@@ -32,6 +32,21 @@ export interface WorkspaceContextSelection {
   endLine: number;
 }
 
+export interface WorkspaceContextQuality {
+  method: 'local-lexical';
+  inventoryFileCount: number;
+  candidateFileCount: number;
+  matchedFileCount: number;
+  selectedFileCount: number;
+  omittedMatchedFileCount: number;
+  queryTerms: string[];
+  maxFiles: number;
+  maxSnippetLines: number;
+  maxFileBytes: number;
+  embeddingReadiness: 'inactive';
+  warnings: string[];
+}
+
 export interface WorkspaceContextResult {
   enabled: boolean;
   query: string;
@@ -39,6 +54,7 @@ export interface WorkspaceContextResult {
   attached: AttachedFile[];
   selected: WorkspaceContextSelection[];
   diagnostics: string[];
+  quality: WorkspaceContextQuality;
 }
 
 export interface WorkspaceContextMention {
@@ -179,13 +195,25 @@ export class WorkspaceContextProvider {
       };
     });
 
-    const selected = candidates
+    const matched = candidates
       .filter((candidate): candidate is NonNullable<typeof candidate> => candidate !== null)
-      .sort((a, b) => b.score - a.score || a.file.path.localeCompare(b.file.path))
+      .sort((a, b) => b.score - a.score || a.file.path.localeCompare(b.file.path));
+    const selected = matched
       .slice(0, this.options.maxFiles);
+    const quality = createWorkspaceContextQuality({
+      inventoryFileCount: inventory.files.length,
+      candidateFileCount: candidateFiles.length,
+      matchedFileCount: matched.length,
+      selectedFileCount: selected.length,
+      queryTerms: terms,
+      options: this.options,
+    });
 
     if (selected.length === 0) {
-      return emptyWorkspaceContextResult(true, normalizedQuery, ['No workspace files matched @codebase query.']);
+      return emptyWorkspaceContextResult(true, normalizedQuery, [
+        'No workspace files matched @codebase query.',
+        'Lexical retrieval may miss files that use different names for the same concept; attach known files with @file or refine @codebase query terms.',
+      ], quality);
     }
 
     const selections = selected.map((entry): WorkspaceContextSelection => ({
@@ -205,10 +233,11 @@ export class WorkspaceContextProvider {
     return {
       enabled: true,
       query: normalizedQuery,
-      block: formatWorkspaceContextBlock(normalizedQuery, selected),
+      block: formatWorkspaceContextBlock(normalizedQuery, selected, quality),
       attached,
       selected: selections,
       diagnostics: [],
+      quality,
     };
   }
 
@@ -425,10 +454,20 @@ function formatWorkspaceContextBlock(
     reasons: string[];
     snippet: { text: string; startLine: number; endLine: number; truncated: boolean };
   }>,
+  quality: WorkspaceContextQuality,
 ): string {
   const lines: string[] = [
     '[Workspace context from @codebase]',
     `Query: ${query}`,
+    'Retrieval quality:',
+    '- Method: local lexical search over workspace file names and file text.',
+    `- Evidence: Selected ${quality.selectedFileCount} of ${quality.matchedFileCount} lexical matches from ${quality.inventoryFileCount} indexed workspace files.`,
+    `- Query terms: ${quality.queryTerms.join(', ') || 'none'}.`,
+    `- Prompt budget: max files ${quality.maxFiles}, max snippet lines ${quality.maxSnippetLines}, max file bytes ${quality.maxFileBytes}.`,
+    '- Embedding readiness: inactive; no cloud index, embedding upload, or background embedding job ran.',
+    '- Possible misses: lexical retrieval can miss renamed concepts or files that do not contain the query terms; attach known files with @file.',
+    ...quality.warnings.map((warning) => `- ${warning}`),
+    '',
     'Selected files:',
     ...selected.map((entry) =>
       `- ${entry.file.path} (score ${entry.score}; ${entry.reasons.join(', ') || 'metadata'})`
@@ -455,6 +494,7 @@ function emptyWorkspaceContextResult(
   enabled: boolean,
   query: string,
   diagnostics: string[],
+  quality?: WorkspaceContextQuality,
 ): WorkspaceContextResult {
   return {
     enabled,
@@ -463,6 +503,44 @@ function emptyWorkspaceContextResult(
     attached: [],
     selected: [],
     diagnostics,
+    quality: quality ?? createWorkspaceContextQuality({
+      inventoryFileCount: 0,
+      candidateFileCount: 0,
+      matchedFileCount: 0,
+      selectedFileCount: 0,
+      queryTerms: [],
+      options: { maxFiles: 0, maxSnippetLines: 1, maxFileBytes: 0 },
+    }),
+  };
+}
+
+function createWorkspaceContextQuality(input: {
+  inventoryFileCount: number;
+  candidateFileCount: number;
+  matchedFileCount: number;
+  selectedFileCount: number;
+  queryTerms: string[];
+  options: WorkspaceContextOptions;
+}): WorkspaceContextQuality {
+  const omittedMatchedFileCount = Math.max(input.matchedFileCount - input.selectedFileCount, 0);
+  const warnings = omittedMatchedFileCount > 0
+    ? [
+        `${omittedMatchedFileCount} matching files were omitted by veyra.workspaceContext.maxFiles (${input.options.maxFiles}). Refine @codebase query or attach known files with @file.`,
+      ]
+    : [];
+  return {
+    method: 'local-lexical',
+    inventoryFileCount: input.inventoryFileCount,
+    candidateFileCount: input.candidateFileCount,
+    matchedFileCount: input.matchedFileCount,
+    selectedFileCount: input.selectedFileCount,
+    omittedMatchedFileCount,
+    queryTerms: input.queryTerms,
+    maxFiles: input.options.maxFiles,
+    maxSnippetLines: input.options.maxSnippetLines,
+    maxFileBytes: input.options.maxFileBytes,
+    embeddingReadiness: 'inactive',
+    warnings,
   };
 }
 

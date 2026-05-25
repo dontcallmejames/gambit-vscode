@@ -59,6 +59,17 @@ describe('diagnostic report', () => {
           ],
         },
       },
+      retrieval: {
+        method: 'local lexical',
+        maxFiles: 8,
+        maxSnippetLines: 80,
+        maxFileBytes: 1000000,
+        embeddingReadiness: 'inactive',
+        guardrails: [
+          'No cloud indexing, embedding upload, paid embedding call, or background repository scan.',
+          'Use @file when lexical retrieval misses known files.',
+        ],
+      },
       commands: {
         'veyra.openPanel': true,
         'veyra.copyDiagnosticReport': true,
@@ -87,6 +98,12 @@ describe('diagnostic report', () => {
     expect(report).toContain('Gemini: Antigravity CLI via agy; version 1.0.2; model: local CLI/provider default; not selected by Veyra');
     expect(report).toContain('Local models: informational; provider Ollama; endpoint http://localhost:11434/v1; model llama3.1; active: no');
     expect(report).toContain('Configured target is not used for Claude/Codex/Gemini routing.');
+    expect(report).toContain('## Retrieval Quality');
+    expect(report).toContain('Method: local lexical');
+    expect(report).toContain('Embedding readiness: inactive');
+    expect(report).toContain('Max files: 8');
+    expect(report).toContain('No cloud indexing, embedding upload, paid embedding call, or background repository scan.');
+    expect(report).toContain('Use @file when lexical retrieval misses known files.');
     expect(report).toContain('veyra.openPanel: registered');
     expect(report).toContain('veyra.copyDiagnosticReport: registered');
     expect(report).toContain('veyra.internalMissing: missing');

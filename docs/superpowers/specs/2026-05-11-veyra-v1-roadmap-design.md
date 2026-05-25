@@ -426,6 +426,8 @@ Implementation note: GitHub/PR Workflow Awareness v0.2 keeps the feature local-f
 
 Useful if lexical retrieval cannot find the right context often enough. It should be measured against real failures before becoming required infrastructure.
 
+Implementation note: Retrieval Quality and Embedding Readiness v0.1 improves measurement before adding vectors. `@codebase` remains local lexical retrieval, but context blocks now explain why files were selected, where lexical retrieval may have missed context, and which prompt-budget limits omitted matching files. Diagnostic reports expose retrieval settings and inactive embedding readiness. Guardrails stay explicit: no cloud indexing, no paid embedding calls, and no background repository scans.
+
 ### Workflow replay
 
 Useful for rerunning `/review`, `/consensus`, or `/implement` against a later commit to compare how the agents' opinion changed. It should wait until structured artifacts and session summaries have a stable persisted shape.

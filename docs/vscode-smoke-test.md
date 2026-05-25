@@ -30,6 +30,8 @@ GitHub and CI workflow context also stays local-first in the no-paid smoke path.
 
 Local Model Support v0.1 is diagnostics-only in the no-paid smoke path. `Veyra: Copy Diagnostic Report` can show configured local/self-hosted provider settings, but Veyra keeps Claude, Codex, and Gemini routing unchanged with no automatic model downloads, no hidden server launches, and no background network probing.
 
+Retrieval Quality and Embedding Readiness v0.1 is also local-first in the no-paid smoke path. Unit tests cover local lexical `@codebase` evidence, omitted-match budget warnings, and diagnostic report wording. Veyra performs no cloud indexing, no paid embedding calls, and no background repository scans; embedding readiness is documented as inactive until lexical retrieval misses are measured.
+
 For the interactive end-to-end checklist:
 
 1. Open this repository in VS Code.

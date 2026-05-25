@@ -341,9 +341,33 @@ describe('extension manifest', () => {
 
     const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
     expect(readme).toContain('@codebase');
+    expect(readme).toContain('Retrieval Quality and Embedding Readiness v0.1');
+    expect(readme).toContain('why files were selected');
+    expect(readme).toContain('where lexical retrieval may have missed context');
+    expect(readme).toContain('no cloud indexing');
+    expect(readme).toContain('no paid embedding calls');
+    expect(readme).toContain('no background repository scans');
     expect(readme).toContain('veyra.workspaceContext.maxFiles');
     expect(readme).toContain('veyra.workspaceContext.maxSnippetLines');
     expect(readme).toContain('veyra.workspaceContext.maxFileBytes');
+  });
+
+  it('documents retrieval quality and embedding readiness guardrails', () => {
+    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const changelog = readFileSync(join(process.cwd(), 'CHANGELOG.md'), 'utf8');
+    const audit = readFileSync(join(process.cwd(), 'docs', 'goal-completion-audit.md'), 'utf8');
+    const smokeChecklist = readFileSync(join(process.cwd(), 'docs', 'vscode-smoke-test.md'), 'utf8');
+    const roadmap = readFileSync(join(process.cwd(), 'docs', 'superpowers', 'specs', '2026-05-11-veyra-v1-roadmap-design.md'), 'utf8');
+
+    for (const document of [readme, changelog, audit, smokeChecklist, roadmap]) {
+      expect(document).toContain('Retrieval Quality and Embedding Readiness v0.1');
+      expect(document).toContain('local lexical');
+      expect(document).toContain('no cloud indexing');
+      expect(document).toContain('no background repository scans');
+    }
+    expect(readme).toContain('embedding readiness is inactive');
+    expect(readme).toContain('attach known files with `@file`');
+    expect(changelog).toContain('@codebase retrieval');
   });
 
   it('contributes diff preview commands and settings', () => {

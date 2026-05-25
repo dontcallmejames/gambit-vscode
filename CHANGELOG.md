@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Adds Retrieval Quality and Embedding Readiness v0.1 for `@codebase retrieval`, making local lexical context blocks and diagnostic reports explain why files were selected, which budget limits may omit matches, and why embedding/vector readiness remains inactive: no cloud indexing, no paid embedding calls, and no background repository scans.
+
 ## 1.0.14 - 2026-05-25
 
 - Adds Local Model Support v0.1 as a conservative diagnostics-only configuration surface for local/self-hosted provider targets. Users can record a provider label, endpoint, and model for diagnostic reports while Veyra keeps Claude, Codex, and Gemini routing unchanged, with no automatic model downloads, no hidden server launches, and no background network probing.

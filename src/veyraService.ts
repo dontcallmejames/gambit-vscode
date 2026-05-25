@@ -1009,6 +1009,20 @@ function emptyWorkspaceContextResult(
     attached: [],
     selected: [],
     diagnostics,
+    quality: {
+      method: 'local-lexical',
+      inventoryFileCount: 0,
+      candidateFileCount: 0,
+      matchedFileCount: 0,
+      selectedFileCount: 0,
+      omittedMatchedFileCount: 0,
+      queryTerms: [],
+      maxFiles: 0,
+      maxSnippetLines: 1,
+      maxFileBytes: 0,
+      embeddingReadiness: 'inactive',
+      warnings: [],
+    },
   };
 }
 

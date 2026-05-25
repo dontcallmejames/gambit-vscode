@@ -419,6 +419,7 @@ async function collectDiagnosticReport(
       googleRuntime: configuredGoogleRuntime(),
       localModel: configuredLocalModel(),
     }),
+    retrieval: configuredRetrievalDiagnostics(),
     commands: Object.fromEntries(DIAGNOSTIC_COMMAND_IDS.map((command) => [command, commandSet.has(command)])),
     nativeChatRegistrations,
     optionalSurfaceFailures,
@@ -443,6 +444,21 @@ function configuredLocalModel(): LocalModelConfigurationInput {
     provider: config.get<string>('localModels.provider', ''),
     endpoint: config.get<string>('localModels.endpoint', ''),
     model: config.get<string>('localModels.model', ''),
+  };
+}
+
+function configuredRetrievalDiagnostics() {
+  const config = vscode.workspace.getConfiguration('veyra');
+  return {
+    method: 'local lexical',
+    maxFiles: config.get<number>('workspaceContext.maxFiles', 8),
+    maxSnippetLines: config.get<number>('workspaceContext.maxSnippetLines', 80),
+    maxFileBytes: config.get<number>('workspaceContext.maxFileBytes', 1_000_000),
+    embeddingReadiness: 'inactive',
+    guardrails: [
+      'No cloud indexing, embedding upload, paid embedding call, or background repository scan.',
+      'Lexical retrieval can miss renamed concepts; refine @codebase query terms or use @file for known files.',
+    ],
   };
 }
 

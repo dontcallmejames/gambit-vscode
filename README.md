@@ -36,6 +36,7 @@ The working rule is: agents can work together without losing context, stomping e
 - `Veyra: Prepare PR Package Draft` combines local Git context, pending-change and checkpoint signals, approved verification evidence when recorded, and optional CI/PR output into a structured PR package draft.
 - Provider transparency in diagnostics shows Claude CLI, Codex CLI, and the Google provider path through Antigravity CLI or legacy Gemini fallback, including CLI/provider versions where Veyra can read them safely.
 - Local Model Support v0.1 records local/self-hosted provider targets in settings and diagnostic reports while keeping default provider routing unchanged.
+- Retrieval Quality and Embedding Readiness v0.1 keeps `@codebase` local lexical by default while exposing why files were selected, where lexical retrieval may have missed context, and why embedding readiness is inactive.
 
 ## Requirements
 
@@ -124,6 +125,8 @@ Workflow prompts tell agents to use their available model and CLI capabilities w
 ### Context And Tuning
 
 - Use `@codebase` when you want Veyra to retrieve relevant workspace files without naming them explicitly. The first version uses local lexical search over workspace files and project metadata; it does not upload or build a cloud index.
+- Retrieval Quality and Embedding Readiness v0.1 adds a retrieval-quality block to `@codebase` prompts. It names the local lexical method, query terms, selected-file evidence, prompt budget, omitted matching files, and where lexical retrieval may have missed context.
+- Embedding readiness is inactive. Veyra performs no cloud indexing, no paid embedding calls, and no background repository scans. Refine `@codebase` query terms or attach known files with `@file` when lexical search misses something obvious.
 - Set `veyra.workflow.template` when a workspace wants an extra reusable lens such as `architecture-review`, `security-review`, `test-improvement`, `refactor-plan`, or `implementation-with-review`.
 - Use `veyra.agentRoles.claude`, `veyra.agentRoles.codex`, and `veyra.agentRoles.gemini` for workspace role customization. Non-empty values are appended to that agent's Veyra role preamble only.
 

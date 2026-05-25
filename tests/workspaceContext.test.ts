@@ -81,12 +81,47 @@ describe('WorkspaceContextProvider', () => {
     expect(result.block).toContain('[Workspace context from @codebase]');
     expect(result.block).toContain('Query: review auth session token flow');
     expect(result.block).toContain('Selected files:');
+    expect(result.block).toContain('Retrieval quality:');
+    expect(result.block).toContain('Method: local lexical search over workspace file names and file text.');
+    expect(result.block).toContain('Embedding readiness: inactive; no cloud index, embedding upload, or background embedding job ran.');
+    expect(result.block).toContain('Possible misses: lexical retrieval can miss renamed concepts or files that do not contain the query terms; attach known files with @file.');
     expect(result.block).toContain('src/auth/session.ts');
     expect(result.block).toContain('[Context file: src/auth/session.ts');
     expect(result.block).toContain('createSession');
     expect(result.block).toContain('[/Workspace context]');
     expect(result.attached.some((file) => file.path === 'src/auth/session.ts')).toBe(true);
     expect(result.attached.find((file) => file.path === 'src/auth/session.ts')?.truncated).toBe(false);
+    expect(result.quality).toMatchObject({
+      method: 'local-lexical',
+      selectedFileCount: result.selected.length,
+      maxFiles: 3,
+      maxSnippetLines: 8,
+      maxFileBytes: 100_000,
+      embeddingReadiness: 'inactive',
+    });
+  });
+
+  it('reports matching files omitted by the @codebase prompt budget', async () => {
+    const root = tempWorkspace();
+    writeFile(root, 'src/auth/controller.ts', 'export const authController = true;\n');
+    writeFile(root, 'src/auth/session.ts', 'export const authSession = true;\n');
+    writeFile(root, 'src/auth/tokens.ts', 'export const authToken = true;\n');
+
+    const provider = new WorkspaceContextProvider(root, {
+      maxFiles: 1,
+      maxSnippetLines: 5,
+      maxFileBytes: 100_000,
+    });
+    const result = await provider.retrieve('auth');
+
+    expect(result.selected).toHaveLength(1);
+    expect(result.quality.matchedFileCount).toBe(3);
+    expect(result.quality.omittedMatchedFileCount).toBe(2);
+    expect(result.quality.warnings).toContain(
+      '2 matching files were omitted by veyra.workspaceContext.maxFiles (1). Refine @codebase query or attach known files with @file.',
+    );
+    expect(result.block).toContain('Selected 1 of 3 lexical matches');
+    expect(result.block).toContain('2 matching files were omitted by veyra.workspaceContext.maxFiles (1)');
   });
 
   it('ignores generated and dependency directories', async () => {
@@ -149,6 +184,13 @@ describe('WorkspaceContextProvider', () => {
     expect(result.selected).toEqual([]);
     expect(result.block).toBe('');
     expect(result.diagnostics).toContain('No workspace files matched @codebase query.');
+    expect(result.diagnostics).toContain('Lexical retrieval may miss files that use different names for the same concept; attach known files with @file or refine @codebase query terms.');
+    expect(result.quality).toMatchObject({
+      method: 'local-lexical',
+      matchedFileCount: 0,
+      selectedFileCount: 0,
+      embeddingReadiness: 'inactive',
+    });
   });
 
   it('matches git workspace content case-insensitively during candidate prefiltering', async () => {

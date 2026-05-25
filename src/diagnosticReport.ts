@@ -1,5 +1,5 @@
 import type { AgentStatus } from './types.js';
-import type { ProviderDiagnostics } from './providerDiagnostics.js';
+import type { CliProviderDiagnostics, ProviderDiagnostics } from './providerDiagnostics.js';
 
 export const DIAGNOSTIC_COMMAND_IDS = [
   'veyra.openPanel',
@@ -75,6 +75,9 @@ export function formatDiagnosticReport(input: DiagnosticReportInput): string {
         formatProviderLine(input.providers.claude),
         formatProviderLine(input.providers.codex),
         formatProviderLine(input.providers.gemini),
+        ...(input.providers.localModel
+          ? formatLocalModelLines(input.providers.localModel)
+          : []),
       ]
     : [];
 
@@ -112,8 +115,15 @@ export function formatDiagnosticReport(input: DiagnosticReportInput): string {
   ].join('\n');
 }
 
-function formatProviderLine(provider: ProviderDiagnostics[keyof ProviderDiagnostics]): string {
+function formatProviderLine(provider: CliProviderDiagnostics[keyof CliProviderDiagnostics]): string {
   return `- ${provider.provider}: ${provider.runtime} via ${provider.command}; version ${provider.version}; model: ${provider.model}`;
+}
+
+function formatLocalModelLines(localModel: ProviderDiagnostics['localModel']): string[] {
+  return [
+    `- Local models: ${localModel.status}; provider ${localModel.provider}; endpoint ${localModel.endpoint}; model ${localModel.model}; active: ${localModel.active ? 'yes' : 'no'}`,
+    ...localModel.notes.map((note) => `  - ${note}`),
+  ];
 }
 
 function formatStatus(status: DiagnosticAgentStatus): string {

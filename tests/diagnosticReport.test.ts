@@ -46,6 +46,18 @@ describe('diagnostic report', () => {
           version: '1.0.2',
           model: 'local CLI/provider default; not selected by Veyra',
         },
+        localModel: {
+          status: 'informational',
+          active: false,
+          provider: 'Ollama',
+          endpoint: 'http://localhost:11434/v1',
+          model: 'llama3.1',
+          notes: [
+            'Local-model support v0.1 is informational only.',
+            'Configured target is not used for Claude/Codex/Gemini routing.',
+            'Veyra does not download models, launch servers, or probe endpoints.',
+          ],
+        },
       },
       commands: {
         'veyra.openPanel': true,
@@ -73,6 +85,8 @@ describe('diagnostic report', () => {
     expect(report).toContain('Claude: Claude CLI via claude; version 1.2.3; model: local CLI/provider default; not selected by Veyra');
     expect(report).toContain('Codex: Codex CLI via codex; version 0.42.0; model: local CLI/provider default; not selected by Veyra');
     expect(report).toContain('Gemini: Antigravity CLI via agy; version 1.0.2; model: local CLI/provider default; not selected by Veyra');
+    expect(report).toContain('Local models: informational; provider Ollama; endpoint http://localhost:11434/v1; model llama3.1; active: no');
+    expect(report).toContain('Configured target is not used for Claude/Codex/Gemini routing.');
     expect(report).toContain('veyra.openPanel: registered');
     expect(report).toContain('veyra.copyDiagnosticReport: registered');
     expect(report).toContain('veyra.internalMissing: missing');

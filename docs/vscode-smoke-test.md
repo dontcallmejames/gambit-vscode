@@ -28,6 +28,8 @@ Browser testing awareness also stays local-first in the no-paid smoke path. Unit
 
 GitHub and CI workflow context also stays local-first in the no-paid smoke path. Unit tests cover `Veyra: Summarize Git Status`, which uses read-only Git commands to summarize branch/upstream state, sanitized remotes, dirty-tree files, and the latest commit. Unit tests also cover `Veyra: Review CI/PR Output`, which combines explicit user-provided CI or PR output with the same read-only Git context for a draft PR summary and PR readiness checklist. `Veyra: Prepare PR Package Draft` adds a fuller prepare PR package draft path with local Git state, pending-change and checkpoint evidence, approved verification evidence when recorded, optional CI/PR output, a changed-file explanation, verification evidence, unresolved blockers, and exact follow-up commands. The flows provide GitHub PR and CI follow-up guidance with no hidden network automation and no automatic pushes; they do not run push, pull, merge, rebase, reset, clean, GitHub CLI, API, or CI commands.
 
+Local Model Support v0.1 is diagnostics-only in the no-paid smoke path. `Veyra: Copy Diagnostic Report` can show configured local/self-hosted provider settings, but Veyra keeps Claude, Codex, and Gemini routing unchanged with no automatic model downloads, no hidden server launches, and no background network probing.
+
 For the interactive end-to-end checklist:
 
 1. Open this repository in VS Code.

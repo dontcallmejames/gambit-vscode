@@ -30,6 +30,8 @@ The 2026-05-25 GitHub/PR Workflow Awareness v0.2 pass adds `Veyra: Prepare PR Pa
 
 The 2026-05-25 Browser Testing Awareness v0.1 pass adds `Veyra: Review Browser/Test Output`. The command accepts explicit user-provided Playwright, Cypress, Vitest UI, browser console, network, screenshot-note, URL-note, and reproduction text, combines it with local project command hints, and asks agents for Browser/Test Summary, Reproduction Evidence, User-Visible Risk, Likely Cause, Verification Gaps, and Suggested Follow-up Commands sections. It preserves the local-first guardrails: no hidden browser launch, no network scraping, no automatic test reruns, no file edits, no Git operations, and no command execution without separate approval.
 
+The 2026-05-25 Local Model Support v0.1 pass adds a conservative diagnostics-only surface for local/self-hosted provider targets. Users can record mode, provider label, endpoint, and model settings for diagnostic reports, but the feature remains inactive for runtime dispatch: no automatic model downloads, no hidden server launches, no background network probing, and no replacement of Claude, Codex, or Gemini routing.
+
 ## Prompt-to-Artifact Checklist
 
 | Prompt requirement | Concrete artifact evidence | Verification gate | Status |

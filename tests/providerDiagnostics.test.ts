@@ -35,6 +35,8 @@ describe('provider diagnostics', () => {
     });
     expect(diagnostics.gemini.model).toContain('local CLI/provider default');
     expect(diagnostics.gemini.model).not.toMatch(/Gemini 3\.5 Flash/);
+    expect(diagnostics.localModel.status).toBe('disabled');
+    expect(diagnostics.localModel.notes.join(' ')).toContain('Claude/Codex/Gemini routing unchanged');
   });
 
   it('falls back to legacy Gemini transparency when Antigravity is not selected', () => {
@@ -52,5 +54,27 @@ describe('provider diagnostics', () => {
       version: 'unavailable',
     });
     expect(diagnostics.gemini.model).toContain('not selected by Veyra');
+  });
+
+  it('adds local-model transparency when a self-hosted target is configured', () => {
+    const diagnostics = collectProviderDiagnostics({
+      googleRuntime: 'antigravity',
+      runVersion: () => 'ok',
+      localModel: {
+        mode: 'informational',
+        provider: 'LM Studio',
+        endpoint: 'http://127.0.0.1:1234/v1',
+        model: 'qwen-coder',
+      },
+    });
+
+    expect(diagnostics.localModel).toMatchObject({
+      status: 'informational',
+      active: false,
+      provider: 'LM Studio',
+      endpoint: 'http://127.0.0.1:1234/v1',
+      model: 'qwen-coder',
+    });
+    expect(diagnostics.localModel.notes.join(' ')).toContain('not used for Claude/Codex/Gemini routing');
   });
 });

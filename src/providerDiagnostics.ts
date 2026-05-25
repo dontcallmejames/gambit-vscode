@@ -2,6 +2,11 @@ import { accessSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import {
+  collectLocalModelDiagnostics,
+  type LocalModelConfigurationInput,
+  type LocalModelDiagnostic,
+} from './localModelSupport.js';
 
 export type GoogleRuntimeSelection = 'antigravity' | 'legacy-gemini';
 
@@ -13,12 +18,17 @@ export type ProviderDiagnostic = {
   model: string;
 };
 
-export type ProviderDiagnostics = Record<'claude' | 'codex' | 'gemini', ProviderDiagnostic>;
+export type CliProviderDiagnostics = Record<'claude' | 'codex' | 'gemini', ProviderDiagnostic>;
+
+export type ProviderDiagnostics = CliProviderDiagnostics & {
+  localModel: LocalModelDiagnostic;
+};
 
 type VersionRunner = (command: string, args: string[]) => string;
 
 export function collectProviderDiagnostics(options: {
   googleRuntime?: GoogleRuntimeSelection;
+  localModel?: LocalModelConfigurationInput;
   runVersion?: VersionRunner;
 } = {}): ProviderDiagnostics {
   const googleRuntime = options.googleRuntime ?? detectGoogleRuntime();
@@ -47,6 +57,7 @@ export function collectProviderDiagnostics(options: {
       version: safeVersion(runVersion, googleCommand),
       model: 'local CLI/provider default; not selected by Veyra',
     },
+    localModel: collectLocalModelDiagnostics(options.localModel),
   };
 }
 

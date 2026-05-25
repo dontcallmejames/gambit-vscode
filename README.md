@@ -35,6 +35,7 @@ The working rule is: agents can work together without losing context, stomping e
 - `Veyra: Review CI/PR Output` combines copied CI or PR output with local Git context for a draft PR summary and readiness checklist.
 - `Veyra: Prepare PR Package Draft` combines local Git context, pending-change and checkpoint signals, approved verification evidence when recorded, and optional CI/PR output into a structured PR package draft.
 - Provider transparency in diagnostics shows Claude CLI, Codex CLI, and the Google provider path through Antigravity CLI or legacy Gemini fallback, including CLI/provider versions where Veyra can read them safely.
+- Local Model Support v0.1 records local/self-hosted provider targets in settings and diagnostic reports while keeping default provider routing unchanged.
 
 ## Requirements
 
@@ -175,6 +176,8 @@ On Windows, `Veyra: Configure Codex/Gemini CLI paths` can detect native CLI exec
 - Veyra renders agent Markdown safely in the docked view, so headings, lists, code blocks, blockquotes, links, and tables become readable prose while arbitrary HTML remains escaped as text.
 - Veyra does not hardcode vendor model promises. Claude, Codex, and Gemini use local CLI/provider defaults unless a provider exposes reliable backend model metadata or a stable local override setting.
 - `Veyra: Copy Diagnostic Report` includes provider transparency for Claude CLI, Codex CLI, Antigravity CLI or legacy Gemini fallback, and CLI/provider versions where available.
+- Local Model Support v0.1 is diagnostics only for local/self-hosted targets. Set `veyra.localModels.mode` to `informational`, then fill `veyra.localModels.provider`, `veyra.localModels.endpoint`, and `veyra.localModels.model` to include the target in diagnostic reports.
+- Local Model Support v0.1 does not replace Claude, Codex, or Gemini routing. Veyra performs no automatic model downloads, no hidden server launches, and no background network probing.
 
 ## Using Veyra As A Language Model
 
@@ -249,6 +252,10 @@ Rollback refuses when automatic checkpoint files changed after the agent dispatc
 - `veyra.codexCliPath`: optional absolute path to the Codex CLI JS bundle, native executable, or Windows npm shim. Paths ending in `codex.cmd`, `codex.bat`, or `codex.ps1` are resolved to the underlying JS bundle before launch.
 - `veyra.antigravityCliPath`: optional absolute path to the Antigravity CLI native executable, usually `agy.exe` on Windows or `agy` on macOS/Linux.
 - `veyra.geminiCliPath`: optional legacy fallback path to the Gemini CLI JS bundle, native executable, or Windows npm shim. Paths ending in `gemini.cmd`, `gemini.bat`, or `gemini.ps1` are resolved to the underlying JS bundle before launch.
+- `veyra.localModels.mode`: `disabled` or `informational` for diagnostics-only local/self-hosted provider target reporting.
+- `veyra.localModels.provider`: optional local/self-hosted provider label for diagnostic reports.
+- `veyra.localModels.endpoint`: optional `http://` or `https://` local/self-hosted endpoint for diagnostic reports.
+- `veyra.localModels.model`: optional local/self-hosted model name for diagnostic reports.
 - `veyra.sharedContextWindow`: number of recent messages sent to later agents.
 - `veyra.workflow.template`: optional prompt lens for `/review`, `/debate`, `/consensus`, `/implement`, and the matching Language Model workflow entries.
 - `veyra.agentRoles.claude`, `veyra.agentRoles.codex`, `veyra.agentRoles.gemini`: optional workspace role customization appended to the matching agent's Veyra role preamble.

@@ -414,6 +414,8 @@ Implementation note: Browser Testing Awareness v0.1 keeps the feature local-firs
 
 Useful for privacy-sensitive teams and cost control. It should come after the adapter and workflow surfaces stabilize.
 
+Implementation note: Local Model Support v0.1 keeps this conservative and diagnostics-only. It lets users record a local/self-hosted provider label, endpoint, and model in settings and diagnostic reports, validates obvious configuration mistakes, and explicitly avoids runtime routing changes: no automatic model downloads, no hidden server launches, no background network probing, and no replacement of Claude, Codex, or Gemini routing.
+
 ### GitHub and GitLab workflows
 
 Useful for teams, but Veyra already has a local editor-first story. PR generation, CI inspection, and issue integration can follow once local change safety is mature.

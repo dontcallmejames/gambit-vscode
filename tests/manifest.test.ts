@@ -57,7 +57,7 @@ describe('extension manifest', () => {
     expect(manifest.name).toBe('veyra-vscode');
     expect(manifest.displayName).toBe('Veyra');
     expect(manifestRecord.private).toBeUndefined();
-    expect(manifest.version).toBe('1.0.13');
+    expect(manifest.version).toBe('1.0.14');
     expect(manifest.preview).toBe(false);
     expect(manifest.license).toBe('SEE LICENSE IN LICENSE.txt');
     expect(manifest.repository).toEqual({
@@ -399,6 +399,35 @@ describe('extension manifest', () => {
     expect(readme).toContain('Not run');
   });
 
+  it('contributes conservative local-model support settings', () => {
+    const properties = manifest.contributes.configuration.properties;
+
+    expect(properties['veyra.localModels.mode']).toMatchObject({
+      type: 'string',
+      enum: ['disabled', 'informational'],
+      default: 'disabled',
+    });
+    expect(properties['veyra.localModels.mode'].description).toContain('diagnostics and documentation only');
+    expect(properties['veyra.localModels.mode'].description).toContain('does not replace Claude, Codex, or Gemini routing');
+    expect(properties['veyra.localModels.provider']).toMatchObject({
+      type: 'string',
+      default: '',
+    });
+    expect(properties['veyra.localModels.endpoint']).toMatchObject({
+      type: 'string',
+      default: '',
+    });
+    const endpointPattern = new RegExp(properties['veyra.localModels.endpoint'].pattern);
+    expect(endpointPattern.test('')).toBe(true);
+    expect(endpointPattern.test('http://localhost:11434/v1')).toBe(true);
+    expect(endpointPattern.test('https://models.example.test/v1')).toBe(true);
+    expect(endpointPattern.test('file:///tmp/model')).toBe(false);
+    expect(properties['veyra.localModels.model']).toMatchObject({
+      type: 'string',
+      default: '',
+    });
+  });
+
   it('contributes workflow template and workspace role customization settings', () => {
     const properties = manifest.contributes.configuration.properties;
     const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
@@ -523,6 +552,27 @@ describe('extension manifest', () => {
     expect(readme).toContain('Veyra renders agent Markdown safely');
     expect(readme).toContain('Veyra does not hardcode vendor model promises');
     expect(readme).toContain('CLI/provider versions');
+  });
+
+  it('documents Local Model Support v0.1 guardrails', () => {
+    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const changelog = readFileSync(join(process.cwd(), 'CHANGELOG.md'), 'utf8');
+    const audit = readFileSync(join(process.cwd(), 'docs', 'goal-completion-audit.md'), 'utf8');
+    const smokeChecklist = readFileSync(join(process.cwd(), 'docs', 'vscode-smoke-test.md'), 'utf8');
+    const roadmap = readFileSync(join(process.cwd(), 'docs', 'superpowers', 'specs', '2026-05-11-veyra-v1-roadmap-design.md'), 'utf8');
+
+    for (const document of [readme, changelog, audit, smokeChecklist, roadmap]) {
+      expect(document).toContain('Local Model Support v0.1');
+      expect(document).toContain('local/self-hosted');
+      expect(document).toContain('no automatic model downloads');
+      expect(document).toContain('no hidden server launches');
+      expect(document).toContain('no background network probing');
+    }
+    expect(readme).toContain('veyra.localModels.mode');
+    expect(readme).toContain('veyra.localModels.endpoint');
+    expect(readme).toContain('veyra.localModels.model');
+    expect(readme).toContain('diagnostics only');
+    expect(readme).toContain('does not replace Claude, Codex, or Gemini routing');
   });
 
   it('documents the Mission Control timeline presentation slice', () => {

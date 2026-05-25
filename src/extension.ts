@@ -15,6 +15,7 @@ import { registerTerminalAwarenessCommands } from './terminalAwareness.js';
 import { registerGitWorkflowAwarenessCommands } from './gitWorkflowAwareness.js';
 import { registerBrowserTestingAwarenessCommands } from './browserTestingAwareness.js';
 import { revealVeyraView, VeyraViewProvider, VEYRA_VIEW_ID } from './veyraView.js';
+import type { LocalModelConfigurationInput } from './localModelSupport.js';
 import {
   DIAGNOSTIC_COMMAND_IDS,
   formatDiagnosticReport,
@@ -46,6 +47,10 @@ Veyra coordinates Claude, Codex, and Gemini through their local authenticated to
 Run \`Veyra: Check agent status\` from the Command Palette. All three agents should report ready before starting \`@veyra /review\`, \`@veyra /debate\`, \`@veyra /consensus\`, or \`@veyra /implement\`.
 
 On Windows, run \`Veyra: Configure Codex/Gemini CLI paths\` to detect native executables or npm global CLI bundle paths and save them to workspace settings. If detection cannot inspect the package tree, choose \`Enter paths manually\` and paste the JS bundle paths, native executable paths, or npm shim paths such as \`codex.cmd\` and \`gemini.ps1\`. Veyra resolves npm shim paths to the underlying JS bundle before launch. New Google-provider setups should point \`veyra.antigravityCliPath\` at \`agy.exe\`; \`veyra.geminiCliPath\` remains available as a legacy fallback.
+
+## Local/Self-Hosted Models
+
+Local Model Support v0.1 is diagnostics and documentation only. You can record a local/self-hosted target with \`veyra.localModels.mode\`, \`veyra.localModels.provider\`, \`veyra.localModels.endpoint\`, and \`veyra.localModels.model\`, then inspect it in \`Veyra: Copy Diagnostic Report\`. This does not replace Claude, Codex, or Gemini routing. Veyra performs no automatic model downloads, no hidden server launches, and no background network probing.
 
 ## Preview Quickstart
 
@@ -410,7 +415,10 @@ async function collectDiagnosticReport(
       folderSchemes: [...new Set(workspaceFolders.map((folder) => folder.uri.scheme ?? 'unknown'))],
     },
     agents: { claude, codex, gemini },
-    providers: collectProviderDiagnostics({ googleRuntime: configuredGoogleRuntime() }),
+    providers: collectProviderDiagnostics({
+      googleRuntime: configuredGoogleRuntime(),
+      localModel: configuredLocalModel(),
+    }),
     commands: Object.fromEntries(DIAGNOSTIC_COMMAND_IDS.map((command) => [command, commandSet.has(command)])),
     nativeChatRegistrations,
     optionalSurfaceFailures,
@@ -426,6 +434,16 @@ function configuredGoogleRuntime(): GoogleRuntimeSelection | undefined {
     || config.get<string>('geminiCliPath', '').trim();
   if (gemini) return 'legacy-gemini';
   return undefined;
+}
+
+function configuredLocalModel(): LocalModelConfigurationInput {
+  const config = vscode.workspace.getConfiguration('veyra');
+  return {
+    mode: config.get<string>('localModels.mode', 'disabled'),
+    provider: config.get<string>('localModels.provider', ''),
+    endpoint: config.get<string>('localModels.endpoint', ''),
+    model: config.get<string>('localModels.model', ''),
+  };
 }
 
 async function safeStatus(check: () => Promise<AgentStatus>): Promise<DiagnosticAgentStatus> {

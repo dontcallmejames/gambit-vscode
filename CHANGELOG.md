@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 1.0.14 - 2026-05-25
+
+- Adds Local Model Support v0.1 as a conservative diagnostics-only configuration surface for local/self-hosted provider targets. Users can record a provider label, endpoint, and model for diagnostic reports while Veyra keeps Claude, Codex, and Gemini routing unchanged, with no automatic model downloads, no hidden server launches, and no background network probing.
+
 ## 1.0.13 - 2026-05-25
 
 - Adds Browser Testing Awareness v0.1 with `Veyra: Review Browser/Test Output`, a local-first browser/frontend test review prompt for pasted Playwright, Cypress, Vitest UI, console, network, screenshot-note, URL-note, and reproduction evidence. It produces browser/test artifact-card headings while preserving explicit approval semantics: no hidden browser launch, network scraping, test reruns, file edits, Git operations, or command execution.

@@ -2,7 +2,7 @@
   "name": "veyra-vscode",
   "displayName": "Veyra",
   "description": "Veyra coordinates Claude, Codex, and Gemini through VS Code Chat and the Language Model provider.",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "publisher": "dontcallmejames",
   "preview": false,
   "license": "SEE LICENSE IN LICENSE.txt",
@@ -358,6 +358,32 @@
           "pattern": "^$|(^|[\\\\/])([gG][eE][mM][iI][nN][iI]\\.([jJ][sS]|[eE][xX][eE]|[cC][mM][dD]|[bB][aA][tT]|[pP][sS]1)|[gG][eE][mM][iI][nN][iI])$",
           "patternErrorMessage": "Use a path ending in gemini.js, gemini.exe, gemini, gemini.cmd, gemini.bat, or gemini.ps1.",
           "description": "Optional absolute path to the Gemini CLI JS bundle, native executable such as gemini.exe, or Windows npm shim. Shim paths such as gemini.cmd are resolved to the underlying JS bundle before launch. Environment variable VEYRA_GEMINI_CLI_PATH takes precedence."
+        },
+        "veyra.localModels.mode": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "informational"
+          ],
+          "default": "disabled",
+          "description": "Local Model Support v0.1 mode. This is diagnostics and documentation only; it records a local/self-hosted target but does not replace Claude, Codex, or Gemini routing."
+        },
+        "veyra.localModels.provider": {
+          "type": "string",
+          "default": "",
+          "description": "Optional label for a local/self-hosted provider target, such as Ollama, LM Studio, or OpenAI-compatible. This is reported in diagnostics only."
+        },
+        "veyra.localModels.endpoint": {
+          "type": "string",
+          "default": "",
+          "pattern": "^$|^https?://[^\\s]+$",
+          "patternErrorMessage": "Use an http:// or https:// endpoint, such as http://localhost:11434/v1.",
+          "description": "Optional local/self-hosted provider endpoint recorded for diagnostics. Veyra does not probe this endpoint, launch a server, or send prompts to it in v0.1."
+        },
+        "veyra.localModels.model": {
+          "type": "string",
+          "default": "",
+          "description": "Optional model name for the configured local/self-hosted provider target. This is reported in diagnostics only and does not affect default provider routing."
         },
         "veyra.sharedContextWindow": {
           "type": "number",

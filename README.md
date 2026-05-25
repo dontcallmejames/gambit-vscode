@@ -96,10 +96,11 @@ When no direct agent is chosen, `@veyra` asks the facilitator to route the work 
 ### Workflow Modes
 
 - `/review`, `/debate`, and `/consensus` are read-only. Veyra tells agents not to edit files and suppresses automatic edit approval for those dispatches.
-- `/review` asks each agent for findings, including `Blocking issues`, missing tests, and follow-up suggestions, then Gemini ends with a `Veyra Synthesis`.
+- `/review` asks each agent for `Summary`, `Blocking issues`, `Advisory risks`, `Missing tests`, and `Follow-up suggestions`; empty categories use `None found`.
+- Gemini ends `/review` with a `Veyra Synthesis` covering recommendation, blocking issues, advisory risks, missing tests, follow-up suggestions, and next action.
 - `/debate` compares approaches and ends with a `Recommended approach`.
 - `/consensus` turns competing positions into a concrete decision.
-- `/implement` is the write-capable workflow: Claude frames the approach, Codex changes code and tests, then Gemini reviews the result and ends with a `Handoff Summary`.
+- `/implement` is the write-capable workflow: Claude frames the approach, Codex changes code and tests, then Gemini reviews the result and ends with a `Handoff Summary`. If verification did not run, the handoff says `Not run`.
 
 Workflow prompts tell agents to use their available model and CLI capabilities while still following read-only or edit-permitted instructions. Broad implementation requests should proceed from reasonable assumptions instead of becoming brainstorming or approval checkpoints; agents should stop only for unsafe or impossible next actions.
 

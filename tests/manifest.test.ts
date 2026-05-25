@@ -373,8 +373,13 @@ describe('extension manifest', () => {
 
     expect(readme).toContain('Veyra Synthesis');
     expect(readme).toContain('Blocking issues');
+    expect(readme).toContain('Advisory risks');
+    expect(readme).toContain('Missing tests');
+    expect(readme).toContain('Follow-up suggestions');
+    expect(readme).toContain('None found');
     expect(readme).toContain('Recommended approach');
     expect(readme).toContain('Handoff Summary');
+    expect(readme).toContain('Not run');
   });
 
   it('contributes workflow template and workspace role customization settings', () => {

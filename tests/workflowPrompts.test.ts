@@ -21,6 +21,34 @@ describe('veyraWorkflowPrompt', () => {
     expect(prompt).toContain('Check the migration.');
   });
 
+  it('requires a stable review intelligence outline and complete final synthesis', () => {
+    const prompt = veyraWorkflowPrompt('review', 'Review the auth flow.');
+
+    expect(prompt).toContain('Each agent must use this exact Markdown outline:');
+    expect(prompt).toContain('Summary');
+    expect(prompt).toContain('Blocking issues');
+    expect(prompt).toContain('Advisory risks');
+    expect(prompt).toContain('Missing tests');
+    expect(prompt).toContain('Follow-up suggestions');
+    expect(prompt).toContain('Use "None found" for any empty category.');
+    expect(prompt).toContain('Ground each finding in file paths, lines, commands, or observed behavior when available.');
+    expect(prompt).toContain('Gemini must end with this exact Veyra Synthesis outline:');
+    expect(prompt).toContain('Recommendation');
+    expect(prompt).toContain('Next action');
+
+    const synthesis = prompt.slice(prompt.indexOf('Gemini must end with this exact Veyra Synthesis outline:'));
+    for (const heading of [
+      'Recommendation',
+      'Blocking issues',
+      'Advisory risks',
+      'Missing tests',
+      'Follow-up suggestions',
+      'Next action',
+    ]) {
+      expect(synthesis).toContain(heading);
+    }
+  });
+
   it('assigns model-strength roles in debate workflows without permitting edits', () => {
     const prompt = veyraWorkflowPrompt('debate', 'Pick a refactor path.');
 
@@ -73,7 +101,9 @@ describe('veyraWorkflowPrompt', () => {
     expect(prompt).toContain('What changed');
     expect(prompt).toContain('Verification status');
     expect(prompt).toContain('Remaining risks');
+    expect(prompt).toContain('Follow-up suggestions');
     expect(prompt).toContain('Recommended next action');
+    expect(prompt).toContain('Use "Not run" when verification was not executed.');
     expect(prompt).toContain('After implementation, use [Post-implement verification suggestions] when present to recommend the most relevant verification command.');
     expect(prompt).toContain('Do not run verification commands unless the user explicitly approves the exact command.');
     expect(prompt).not.toContain('clarify the approach');

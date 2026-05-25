@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Tightens Workflow Intelligence v0.1 prompts so `/review` uses stable finding categories and Gemini ends with a fuller `Veyra Synthesis`.
+
 ## 1.0.2 - 2026-05-25
 
 - Adds `Veyra: Run Verification Command` for approved, visible verification runs with captured terminal output routed back into Veyra.

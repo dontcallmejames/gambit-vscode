@@ -2,7 +2,7 @@
   "name": "veyra-vscode",
   "displayName": "Veyra",
   "description": "Veyra coordinates Claude, Codex, and Gemini through VS Code Chat and the Language Model provider.",
-  "version": "1.0.15",
+  "version": "1.0.16",
   "publisher": "dontcallmejames",
   "preview": false,
   "license": "SEE LICENSE IN LICENSE.txt",

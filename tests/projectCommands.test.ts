@@ -29,6 +29,11 @@ describe('project command hints', () => {
       ['typecheck', 'npm run typecheck', 'package.json#scripts.typecheck'],
       ['lint', 'npm run lint', 'package.json#scripts.lint'],
     ]);
+    expect(result.hints.map((hint) => [hint.label, hint.script])).toEqual([
+      ['test', 'vitest run'],
+      ['typecheck', 'tsc --noEmit'],
+      ['lint', 'eslint .'],
+    ]);
   });
 
   it('uses lockfiles to choose the package manager command prefix', async () => {

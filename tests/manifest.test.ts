@@ -414,11 +414,16 @@ describe('extension manifest', () => {
       expect(normalized).toContain('project command hints');
       expect(normalized).toContain('post-implement verification suggestions');
       expect(normalized).toContain('approve the exact command');
+      expect(normalized).toContain('run verification command');
+      expect(normalized).toContain('captured output');
       expect(document).toContain('Do not run');
     }
     expect(commands.get('veyra.diagnoseTerminalOutput')).toBe('Veyra: Diagnose Terminal Output');
+    expect(commands.get('veyra.runVerificationCommand')).toBe('Veyra: Run Verification Command');
     expect(manifest.activationEvents).toContain('onCommand:veyra.diagnoseTerminalOutput');
+    expect(manifest.activationEvents).toContain('onCommand:veyra.runVerificationCommand');
     expect(readme).toContain('Veyra: Diagnose Terminal Output');
+    expect(readme).toContain('Veyra: Run Verification Command');
     expect(readme).toContain('copied or pasted terminal output');
     expect(readme).toContain('does not read terminal scrollback directly');
   });
@@ -496,6 +501,7 @@ describe('extension manifest', () => {
       'veyra.showLiveValidationGuide',
       'veyra.configureCliPaths',
       'veyra.diagnoseTerminalOutput',
+      'veyra.runVerificationCommand',
       'veyra.installCommitHook',
       'veyra.uninstallCommitHook',
       'veyra.showCommitHookSnippet',
@@ -514,6 +520,7 @@ describe('extension manifest', () => {
     expect(manifest.activationEvents).toContain('onCommand:veyra.showLiveValidationGuide');
     expect(manifest.activationEvents).toContain('onCommand:veyra.configureCliPaths');
     expect(manifest.activationEvents).toContain('onCommand:veyra.diagnoseTerminalOutput');
+    expect(manifest.activationEvents).toContain('onCommand:veyra.runVerificationCommand');
   });
 
   it('activates and contributes every native chat participant', () => {

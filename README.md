@@ -114,6 +114,7 @@ Workflow prompts tell agents to use their available model and CLI capabilities w
 - Run `Veyra: Diagnose Terminal Output` to diagnose copied or pasted terminal output in the docked Veyra view. VS Code does not expose arbitrary terminal scrollback to extensions, so Veyra does not read terminal scrollback directly.
 - Veyra detects project command hints from local package metadata, such as `npm test`, `npm run typecheck`, or `npm run build`.
 - For `/implement`, Veyra adds post-implement verification suggestions so agents can recommend a likely follow-up command after edits.
+- Run `Veyra: Run Verification Command` to choose a detected test, typecheck, lint, build, check, or verify command, approve the exact command, then route the captured output (stdout/stderr as rendered by the terminal) and exit status back into Veyra as terminal context.
 - Do not run suggested commands unless the user explicitly asks or approves. Agents must ask the user to approve the exact command before running verification.
 
 ### Setup Checks

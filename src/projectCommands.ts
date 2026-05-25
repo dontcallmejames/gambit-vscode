@@ -7,6 +7,7 @@ export interface ProjectCommandHint {
   label: string;
   command: string;
   source: string;
+  script?: string;
 }
 
 export interface ProjectCommandHintsResult {
@@ -57,6 +58,7 @@ export async function detectProjectCommandHints(workspacePath: string): Promise<
       label: scriptName,
       command: packageScriptCommand(packageManager, scriptName),
       source: `package.json#scripts.${scriptName}`,
+      script: scripts[scriptName] as string,
     }));
 
   return { packageManager, hints };

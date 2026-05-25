@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Adds `Veyra: Run Verification Command` for approved, visible verification runs with captured terminal output routed back into Veyra.
+
 ## 1.0.1
 
 - Adds `Veyra: Diagnose Terminal Output` for routing copied or pasted terminal output into a read-only Veyra diagnosis prompt.

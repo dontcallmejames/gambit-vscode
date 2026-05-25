@@ -55,6 +55,13 @@ export const COMMAND_DISCOVERY_ITEMS: AutocompleteItem[] = [
   },
   {
     kind: 'command',
+    token: '/ci',
+    label: 'Veyra: Review CI/PR Output',
+    desc: 'review copied CI or PR output',
+    command: 'veyra.reviewCiWorkflowOutput',
+  },
+  {
+    kind: 'command',
     token: '/checkpoint',
     label: 'Veyra: Create Checkpoint',
     desc: 'save a recovery point',

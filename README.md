@@ -26,6 +26,7 @@ The working rule is: agents can work together without losing context, stomping e
 - Terminal selections and project command hints are included as prompt context for safer build, test, and debug follow-up.
 - `Veyra: Diagnose Terminal Output` routes copied or pasted terminal output into a read-only Veyra diagnosis prompt.
 - `Veyra: Summarize Git Status` routes local branch, remote, dirty-tree, and recent commit context into Veyra for GitHub and CI follow-up.
+- `Veyra: Review CI/PR Output` combines copied CI or PR output with local Git context for a draft PR summary and readiness checklist.
 
 ## Requirements
 
@@ -98,7 +99,7 @@ When no direct agent is chosen, `@veyra` asks the facilitator to route the work 
 
 Type `@` in the docked Veyra composer to mention Claude, Codex, Gemini, or all agents.
 
-Type `/` in the docked Veyra composer to discover workflow shortcuts and common command-palette actions, including `/review`, `/debate`, `/consensus`, `/implement`, `Veyra: Open Pending Changes`, `Veyra: Run Verification Command`, `Veyra: Summarize Git Status`, `Veyra: Create Checkpoint`, `Veyra: Roll Back Latest Checkpoint`, `Veyra: Check agent status`, and `Veyra: Copy Diagnostic Report`.
+Type `/` in the docked Veyra composer to discover workflow shortcuts and common command-palette actions, including `/review`, `/debate`, `/consensus`, `/implement`, `Veyra: Open Pending Changes`, `Veyra: Run Verification Command`, `Veyra: Summarize Git Status`, `Veyra: Review CI/PR Output`, `Veyra: Create Checkpoint`, `Veyra: Roll Back Latest Checkpoint`, `Veyra: Check agent status`, and `Veyra: Copy Diagnostic Report`.
 
 ### Workflow Modes
 
@@ -141,8 +142,10 @@ Example workspace settings:
 
 - Run `Veyra: Summarize Git Status` to send a read-only Git workflow context block into the docked Veyra view.
 - Veyra uses read-only Git commands to summarize branch/upstream state, sanitized remotes, dirty-tree files, and the latest commit.
-- The summary can help agents suggest GitHub PR and CI follow-up, but there is no hidden network automation and no automatic pushes.
-- Veyra does not run `git push`, `git pull`, merge, rebase, reset, clean, GitHub CLI, or CI commands from this flow.
+- Run `Veyra: Review CI/PR Output` after copying CI logs, PR review notes, GitHub status text, or check output. Veyra combines that explicit user-provided output with the same local Git context.
+- The CI/PR review asks agents for a draft PR summary, PR readiness checklist, CI findings, and exact follow-up command suggestions.
+- These flows can help agents suggest GitHub PR and CI follow-up, but there is no hidden network automation and no automatic pushes.
+- Veyra does not run `git push`, `git pull`, merge, rebase, reset, clean, GitHub CLI, API, or CI commands from these flows.
 
 ### Setup Checks
 

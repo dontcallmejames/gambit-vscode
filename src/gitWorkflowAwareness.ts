@@ -4,12 +4,14 @@ import type {
   VeyraDispatchEventSink,
   VeyraDispatchRequest,
 } from './veyraService.js';
+import { prepareTerminalOutputForPrompt } from './terminalAwareness.js';
 
 const execFileAsync = promisify(execFile);
 const GIT_COMMAND_TIMEOUT_MS = 10_000;
 const GIT_COMMAND_MAX_BUFFER_BYTES = 1024 * 1024;
 
 export const SUMMARIZE_GIT_STATUS_COMMAND = 'veyra.summarizeGitStatus';
+export const REVIEW_CI_WORKFLOW_OUTPUT_COMMAND = 'veyra.reviewCiWorkflowOutput';
 
 export type GitWorkflowCommandRunner = (
   workspacePath: string,
@@ -51,9 +53,20 @@ export interface GitWorkflowApi {
   commands: {
     registerCommand(command: string, callback: (...args: unknown[]) => unknown): { dispose(): void };
   };
+  env: {
+    clipboard: {
+      readText(): Thenable<string>;
+    };
+  };
   window: {
     showErrorMessage(message: string): Thenable<string | undefined> | unknown;
     showInformationMessage(message: string): Thenable<string | undefined> | unknown;
+    showInputBox(options: {
+      title?: string;
+      prompt?: string;
+      placeHolder?: string;
+      ignoreFocusOut?: boolean;
+    }): Thenable<string | undefined>;
     showWarningMessage(message: string): Thenable<string | undefined> | unknown;
   };
 }
@@ -65,46 +78,66 @@ export function registerGitWorkflowAwarenessCommands(
   dispatchToView?: (text: string) => Promise<boolean>,
   commandRunner: GitWorkflowCommandRunner = runGitCommand,
 ): { dispose(): void } {
-  return api.commands.registerCommand(SUMMARIZE_GIT_STATUS_COMMAND, async () => {
-    const registration = getRegistration();
-    if (!registration) {
-      api.window.showErrorMessage('Veyra requires an open workspace folder.');
-      return;
-    }
+  const disposables = [
+    api.commands.registerCommand(SUMMARIZE_GIT_STATUS_COMMAND, async () => {
+      const registration = getRegistration();
+      if (!registration) {
+        api.window.showErrorMessage('Veyra requires an open workspace folder.');
+        return;
+      }
 
-    let context: GitWorkflowContext | null;
-    try {
-      context = await collectGitWorkflowContext(registration.workspacePath, commandRunner);
-    } catch (err) {
-      api.window.showWarningMessage(`Veyra Git status summary failed: ${errorMessage(err)}`);
-      return;
-    }
-
-    if (!context) {
-      api.window.showInformationMessage('No Git repository found for this workspace.');
-      return;
-    }
-
-    await revealVeyraView();
-    const prompt = formatGitWorkflowPrompt(context);
-    if (await dispatchToView?.(prompt)) {
-      return;
-    }
-
-    try {
-      await registration.service.dispatch(
-        {
-          text: prompt,
-          source: 'panel',
-          cwd: registration.workspacePath,
-          readOnly: true,
-        },
-        () => undefined,
+      const context = await collectContextForCommand(
+        api,
+        registration.workspacePath,
+        commandRunner,
+        'Veyra Git status summary failed',
       );
-    } catch (err) {
-      api.window.showWarningMessage(`Veyra Git workflow dispatch failed: ${errorMessage(err)}`);
-    }
-  });
+      if (!context) return;
+
+      await dispatchGitWorkflowPrompt(
+        api,
+        registration,
+        revealVeyraView,
+        formatGitWorkflowPrompt(context),
+        dispatchToView,
+      );
+    }),
+    api.commands.registerCommand(REVIEW_CI_WORKFLOW_OUTPUT_COMMAND, async () => {
+      const registration = getRegistration();
+      if (!registration) {
+        api.window.showErrorMessage('Veyra requires an open workspace folder.');
+        return;
+      }
+
+      const output = await explicitCiPrOutput(api);
+      if (!output.trim()) {
+        api.window.showInformationMessage('No CI or PR output provided.');
+        return;
+      }
+
+      const context = await collectContextForCommand(
+        api,
+        registration.workspacePath,
+        commandRunner,
+        'Veyra CI/PR workflow review failed',
+      );
+      if (!context) return;
+
+      await dispatchGitWorkflowPrompt(
+        api,
+        registration,
+        revealVeyraView,
+        formatGitWorkflowReviewPrompt(context, output),
+        dispatchToView,
+      );
+    }),
+  ];
+
+  return {
+    dispose(): void {
+      for (const disposable of disposables) disposable.dispose();
+    },
+  };
 }
 
 export async function collectGitWorkflowContext(
@@ -136,6 +169,38 @@ export async function collectGitWorkflowContext(
 }
 
 export function formatGitWorkflowPrompt(context: GitWorkflowContext): string {
+  return [
+    '@veyra /review Review this GitHub and CI workflow context.',
+    '',
+    'Suggest PR and CI follow-up only from this local Git evidence. Do not claim remote PR or CI state unless the user provides it.',
+    'Do not run git push, git pull, merge, rebase, reset, clean, or GitHub/CI network commands.',
+    'If a network command or destructive git command would help, suggest the exact command and wait for explicit approval.',
+    '',
+    ...formatGitWorkflowContextBlock(context),
+  ].join('\n');
+}
+
+export function formatGitWorkflowReviewPrompt(context: GitWorkflowContext, userProvidedOutput: string): string {
+  const ciOutput = sanitizeUserProvidedWorkflowOutput(userProvidedOutput);
+  return [
+    '@veyra /review Review this GitHub PR and CI readiness context.',
+    '',
+    'Use only the local git context and explicit user-provided CI or PR output below.',
+    'Produce a Draft PR summary, PR readiness checklist, CI findings, and suggested follow-up commands.',
+    'Do not claim live remote PR or CI state unless it appears in the user-provided output.',
+    'Do not run git push, git pull, merge, rebase, reset, clean, GitHub CLI, API, or CI commands.',
+    'If follow-up would help, recommend exact follow-up commands and wait for explicit approval.',
+    '',
+    ...formatGitWorkflowContextBlock(context),
+    '',
+    '[CI/PR context]',
+    'Source: Explicit user-provided CI or PR output',
+    ciOutput,
+    '[/CI/PR context]',
+  ].join('\n');
+}
+
+function formatGitWorkflowContextBlock(context: GitWorkflowContext): string[] {
   const remoteLines = context.remotes.length > 0
     ? context.remotes.map((remote) => `Remote: ${remote.name} ${remote.url} (${remote.purposes.join(', ')})`)
     : ['Remote: none detected'];
@@ -145,12 +210,6 @@ export function formatGitWorkflowPrompt(context: GitWorkflowContext): string {
   const upstream = context.upstream || 'none';
 
   return [
-    '@veyra /review Review this GitHub and CI workflow context.',
-    '',
-    'Suggest PR and CI follow-up only from this local Git evidence. Do not claim remote PR or CI state unless the user provides it.',
-    'Do not run git push, git pull, merge, rebase, reset, clean, or GitHub/CI network commands.',
-    'If a network command or destructive git command would help, suggest the exact command and wait for explicit approval.',
-    '',
     '[Git workflow context]',
     'Source: Explicit user-triggered local git status summary',
     `Branch: ${context.branch}`,
@@ -163,7 +222,85 @@ export function formatGitWorkflowPrompt(context: GitWorkflowContext): string {
     'Changed files:',
     ...dirtyLines,
     '[/Git workflow context]',
-  ].join('\n');
+  ];
+}
+
+async function collectContextForCommand(
+  api: GitWorkflowApi,
+  workspacePath: string,
+  commandRunner: GitWorkflowCommandRunner,
+  failurePrefix: string,
+): Promise<GitWorkflowContext | null> {
+  let context: GitWorkflowContext | null;
+  try {
+    context = await collectGitWorkflowContext(workspacePath, commandRunner);
+  } catch (err) {
+    api.window.showWarningMessage(`${failurePrefix}: ${errorMessage(err)}`);
+    return null;
+  }
+
+  if (!context) {
+    api.window.showInformationMessage('No Git repository found for this workspace.');
+    return null;
+  }
+
+  return context;
+}
+
+async function dispatchGitWorkflowPrompt(
+  api: GitWorkflowApi,
+  registration: GitWorkflowRegistration,
+  revealVeyraView: () => Thenable<unknown> | Promise<unknown>,
+  prompt: string,
+  dispatchToView?: (text: string) => Promise<boolean>,
+): Promise<void> {
+  await revealVeyraView();
+  if (await dispatchToView?.(prompt)) {
+    return;
+  }
+
+  try {
+    await registration.service.dispatch(
+      {
+        text: prompt,
+        source: 'panel',
+        cwd: registration.workspacePath,
+        readOnly: true,
+      },
+      () => undefined,
+    );
+  } catch (err) {
+    api.window.showWarningMessage(`Veyra Git workflow dispatch failed: ${errorMessage(err)}`);
+  }
+}
+
+async function explicitCiPrOutput(api: GitWorkflowApi): Promise<string> {
+  let clipboardText = '';
+  try {
+    clipboardText = await api.env.clipboard.readText();
+  } catch {
+    clipboardText = '';
+  }
+  if (clipboardText.trim()) return clipboardText;
+
+  return await api.window.showInputBox({
+    title: 'Review CI/PR output',
+    prompt: 'Paste CI logs, PR review notes, GitHub status output, or copied check details to send to Veyra.',
+    placeHolder: 'Paste copied CI or PR output here',
+    ignoreFocusOut: true,
+  }) ?? '';
+}
+
+function sanitizeUserProvidedWorkflowOutput(output: string): string {
+  return redactSecrets(prepareTerminalOutputForPrompt(output));
+}
+
+function redactSecrets(value: string): string {
+  return value
+    .replace(/\b(https?:\/\/)([^:\s/@]+(?::[^@\s/]*)?)@/gi, '$1')
+    .replace(/\bAuthorization:\s*(?:Bearer|token)\s+\S+/gi, 'Authorization: [redacted]')
+    .replace(/\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9_]{8,}\b/g, '[redacted-token]')
+    .replace(/\bgithub_pat_[A-Za-z0-9_]{8,}\b/g, '[redacted-token]');
 }
 
 function parseGitStatus(rawStatus: string): {

@@ -426,9 +426,11 @@ describe('extension manifest', () => {
     expect(commands.get('veyra.diagnoseTerminalOutput')).toBe('Veyra: Diagnose Terminal Output');
     expect(commands.get('veyra.runVerificationCommand')).toBe('Veyra: Run Verification Command');
     expect(commands.get('veyra.summarizeGitStatus')).toBe('Veyra: Summarize Git Status');
+    expect(commands.get('veyra.reviewCiWorkflowOutput')).toBe('Veyra: Review CI/PR Output');
     expect(manifest.activationEvents).toContain('onCommand:veyra.diagnoseTerminalOutput');
     expect(manifest.activationEvents).toContain('onCommand:veyra.runVerificationCommand');
     expect(manifest.activationEvents).toContain('onCommand:veyra.summarizeGitStatus');
+    expect(manifest.activationEvents).toContain('onCommand:veyra.reviewCiWorkflowOutput');
     expect(readme).toContain('Veyra: Diagnose Terminal Output');
     expect(readme).toContain('Veyra: Run Verification Command');
     expect(readme).toContain('copied or pasted terminal output');
@@ -445,13 +447,19 @@ describe('extension manifest', () => {
 
       expect(normalized).toContain('github and ci workflow context');
       expect(normalized).toContain('summarize git status');
+      expect(normalized).toContain('review ci/pr output');
+      expect(normalized).toContain('draft pr summary');
+      expect(normalized).toContain('pr readiness checklist');
       expect(normalized).toContain('no hidden network');
       expect(normalized).toContain('no automatic pushes');
       expect(normalized).toContain('read-only git');
     }
     expect(commands.get('veyra.summarizeGitStatus')).toBe('Veyra: Summarize Git Status');
+    expect(commands.get('veyra.reviewCiWorkflowOutput')).toBe('Veyra: Review CI/PR Output');
     expect(manifest.activationEvents).toContain('onCommand:veyra.summarizeGitStatus');
+    expect(manifest.activationEvents).toContain('onCommand:veyra.reviewCiWorkflowOutput');
     expect(readme).toContain('Veyra: Summarize Git Status');
+    expect(readme).toContain('Veyra: Review CI/PR Output');
   });
 
   it('documents docked composer command discovery', () => {
@@ -462,6 +470,7 @@ describe('extension manifest', () => {
     expect(readme).toContain('Veyra: Open Pending Changes');
     expect(readme).toContain('Veyra: Run Verification Command');
     expect(readme).toContain('Veyra: Summarize Git Status');
+    expect(readme).toContain('Veyra: Review CI/PR Output');
     expect(readme).toContain('Veyra: Roll Back Latest Checkpoint');
     expect(readme).toContain('Veyra: Copy Diagnostic Report');
   });
@@ -541,6 +550,7 @@ describe('extension manifest', () => {
       'veyra.diagnoseTerminalOutput',
       'veyra.runVerificationCommand',
       'veyra.summarizeGitStatus',
+      'veyra.reviewCiWorkflowOutput',
       'veyra.installCommitHook',
       'veyra.uninstallCommitHook',
       'veyra.showCommitHookSnippet',
@@ -561,6 +571,7 @@ describe('extension manifest', () => {
     expect(manifest.activationEvents).toContain('onCommand:veyra.diagnoseTerminalOutput');
     expect(manifest.activationEvents).toContain('onCommand:veyra.runVerificationCommand');
     expect(manifest.activationEvents).toContain('onCommand:veyra.summarizeGitStatus');
+    expect(manifest.activationEvents).toContain('onCommand:veyra.reviewCiWorkflowOutput');
   });
 
   it('activates and contributes every native chat participant', () => {

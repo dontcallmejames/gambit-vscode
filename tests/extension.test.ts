@@ -368,6 +368,7 @@ describe('activate', () => {
       'veyra.diagnoseTerminalOutput',
       'veyra.runVerificationCommand',
       'veyra.summarizeGitStatus',
+      'veyra.reviewCiWorkflowOutput',
       'veyra.installCommitHook',
       'veyra.uninstallCommitHook',
       'veyra.showCommitHookSnippet',

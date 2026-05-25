@@ -32,6 +32,7 @@ describe('MentionAutocomplete', () => {
       'Veyra: Open Pending Changes',
       'Veyra: Run Verification Command',
       'Veyra: Summarize Git Status',
+      'Veyra: Review CI/PR Output',
       'Veyra: Create Checkpoint',
       'Veyra: Roll Back Latest Checkpoint',
       'Veyra: Check agent status',
@@ -46,6 +47,9 @@ describe('MentionAutocomplete', () => {
     ]);
     expect(autocompleteItemsForToken('/git').map((item) => item.label)).toEqual([
       'Veyra: Summarize Git Status',
+    ]);
+    expect(autocompleteItemsForToken('/ci').map((item) => item.label)).toEqual([
+      'Veyra: Review CI/PR Output',
     ]);
   });
 

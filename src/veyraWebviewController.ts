@@ -19,6 +19,7 @@ const WEBVIEW_COMMAND_ACTIONS = new Set<VeyraCommandActionId>([
   'veyra.openPendingChanges',
   'veyra.runVerificationCommand',
   'veyra.summarizeGitStatus',
+  'veyra.reviewCiWorkflowOutput',
   'veyra.createCheckpoint',
   'veyra.rollbackLatestCheckpoint',
   'veyra.checkStatus',

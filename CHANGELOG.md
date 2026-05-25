@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.11 - 2026-05-25
+
 - Adds Workflow Replay v0.1 in the docked Veyra view, letting users prepare a visible composer draft for the latest `/review`, `/debate`, `/consensus`, or `/implement` workflow with prior agent participation noted while keeping reruns manual.
 
 ## 1.0.10 - 2026-05-25

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.4 - 2026-05-25
+
 - Documents and verifies workspace workflow template and per-agent role customization across Veyra surfaces.
 
 ## 1.0.3 - 2026-05-25

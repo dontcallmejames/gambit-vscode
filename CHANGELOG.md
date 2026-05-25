@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.3 - 2026-05-25
+
 - Adds docked composer autocomplete for slash workflows and common Veyra command-palette actions.
 - Tightens Workflow Intelligence v0.1 prompts so `/review` uses stable finding categories and Gemini ends with a fuller `Veyra Synthesis`.
 

@@ -26,6 +26,8 @@ The 2026-05-25 Trust Center v0.1 pass adds a persistent trust surface above the 
 
 The 2026-05-25 Workflow Replay v0.1 pass adds a manual replay preparation surface to the docked view. It identifies the latest `/review`, `/debate`, `/consensus`, or `/implement` workflow from existing session messages, summarizes the captured prompt and agents that participated, and fills the composer with a fresh visible replay request. Replay does not mutate prior transcript entries, silently dispatch agents, run terminal commands, replay tool calls, or roll back files.
 
+The 2026-05-25 GitHub/PR Workflow Awareness v0.2 pass adds `Veyra: Prepare PR Package Draft`. The command reuses the read-only Git context path, folds in pending-change and checkpoint evidence, includes approved verification evidence when recorded in the workspace session, accepts optional copied or pasted CI/PR output, and asks agents for structured PR Summary, Changed File Explanation, Risk Checklist, Verification Evidence, Unresolved Blockers, and Suggested Follow-up Commands sections. It preserves the local-first guardrails: no hidden network calls, no GitHub API writes, no automatic PR creation, no CI reruns, and no push/pull/merge/rebase/reset/clean actions.
+
 ## Prompt-to-Artifact Checklist
 
 | Prompt requirement | Concrete artifact evidence | Verification gate | Status |

@@ -363,10 +363,12 @@ describe('VeyraWebviewController', () => {
     await onDidReceive({ kind: 'run-command', command: 'veyra.runVerificationCommand' });
     await onDidReceive({ kind: 'run-command', command: 'veyra.summarizeGitStatus' });
     await onDidReceive({ kind: 'run-command', command: 'veyra.reviewCiWorkflowOutput' });
+    await onDidReceive({ kind: 'run-command', command: 'veyra.preparePrPackageDraft' });
 
     expect((vscode as any).commands.executeCommand).toHaveBeenCalledWith('veyra.runVerificationCommand');
     expect((vscode as any).commands.executeCommand).toHaveBeenCalledWith('veyra.summarizeGitStatus');
     expect((vscode as any).commands.executeCommand).toHaveBeenCalledWith('veyra.reviewCiWorkflowOutput');
+    expect((vscode as any).commands.executeCommand).toHaveBeenCalledWith('veyra.preparePrPackageDraft');
   });
 
   it('refuses unknown command-discovery actions from the webview composer', async () => {

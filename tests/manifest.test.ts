@@ -465,18 +465,24 @@ describe('extension manifest', () => {
       expect(normalized).toContain('github and ci workflow context');
       expect(normalized).toContain('summarize git status');
       expect(normalized).toContain('review ci/pr output');
+      expect(normalized).toContain('prepare pr package draft');
       expect(normalized).toContain('draft pr summary');
+      expect(normalized).toContain('changed-file explanation');
       expect(normalized).toContain('pr readiness checklist');
+      expect(normalized).toContain('verification evidence');
       expect(normalized).toContain('no hidden network');
       expect(normalized).toContain('no automatic pushes');
       expect(normalized).toContain('read-only git');
     }
     expect(commands.get('veyra.summarizeGitStatus')).toBe('Veyra: Summarize Git Status');
     expect(commands.get('veyra.reviewCiWorkflowOutput')).toBe('Veyra: Review CI/PR Output');
+    expect(commands.get('veyra.preparePrPackageDraft')).toBe('Veyra: Prepare PR Package Draft');
     expect(manifest.activationEvents).toContain('onCommand:veyra.summarizeGitStatus');
     expect(manifest.activationEvents).toContain('onCommand:veyra.reviewCiWorkflowOutput');
+    expect(manifest.activationEvents).toContain('onCommand:veyra.preparePrPackageDraft');
     expect(readme).toContain('Veyra: Summarize Git Status');
     expect(readme).toContain('Veyra: Review CI/PR Output');
+    expect(readme).toContain('Veyra: Prepare PR Package Draft');
   });
 
   it('documents docked composer command discovery', () => {
@@ -488,6 +494,7 @@ describe('extension manifest', () => {
     expect(readme).toContain('Veyra: Run Verification Command');
     expect(readme).toContain('Veyra: Summarize Git Status');
     expect(readme).toContain('Veyra: Review CI/PR Output');
+    expect(readme).toContain('Veyra: Prepare PR Package Draft');
     expect(readme).toContain('Veyra: Roll Back Latest Checkpoint');
     expect(readme).toContain('Veyra: Copy Diagnostic Report');
   });
@@ -614,6 +621,7 @@ describe('extension manifest', () => {
       'veyra.runVerificationCommand',
       'veyra.summarizeGitStatus',
       'veyra.reviewCiWorkflowOutput',
+      'veyra.preparePrPackageDraft',
       'veyra.installCommitHook',
       'veyra.uninstallCommitHook',
       'veyra.showCommitHookSnippet',
@@ -635,6 +643,7 @@ describe('extension manifest', () => {
     expect(manifest.activationEvents).toContain('onCommand:veyra.runVerificationCommand');
     expect(manifest.activationEvents).toContain('onCommand:veyra.summarizeGitStatus');
     expect(manifest.activationEvents).toContain('onCommand:veyra.reviewCiWorkflowOutput');
+    expect(manifest.activationEvents).toContain('onCommand:veyra.preparePrPackageDraft');
   });
 
   it('activates and contributes every native chat participant', () => {

@@ -416,6 +416,8 @@ Useful for privacy-sensitive teams and cost control. It should come after the ad
 
 Useful for teams, but Veyra already has a local editor-first story. PR generation, CI inspection, and issue integration can follow once local change safety is mature.
 
+Implementation note: GitHub/PR Workflow Awareness v0.2 keeps the feature local-first by adding `Veyra: Prepare PR Package Draft` instead of creating or mutating remote PRs. It combines read-only Git state, pending-change and checkpoint evidence, approved verification evidence when Veyra can read it, and optional user-provided CI/PR output. The expected artifact sections are PR Summary, Changed File Explanation, Risk Checklist, Verification Evidence, Unresolved Blockers, and Suggested Follow-up Commands. It still forbids hidden network calls, GitHub API writes, automatic PR creation, CI reruns, and push/pull/merge/rebase/reset/clean actions.
+
 ### Embedding or vector retrieval
 
 Useful if lexical retrieval cannot find the right context often enough. It should be measured against real failures before becoming required infrastructure.

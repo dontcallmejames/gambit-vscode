@@ -29,6 +29,7 @@ export type TrustCenterSnapshot = {
   verificationState: TrustCenterVerificationState | null;
   gitWorkflowPresent: boolean;
   ciPrWorkflowPresent: boolean;
+  prPackageWorkflowPresent: boolean;
   latestPendingChangeSet: DispatchChangeSetSummary | null;
   latestAvailableCheckpoint: CheckpointSummary | null;
   pendingFiles: DispatchChangeSetFileSummary[];
@@ -56,6 +57,9 @@ export function buildTrustCenterSnapshot(state: WebviewState): TrustCenterSnapsh
   const ciPrWorkflowPresent = messages.some((message) =>
     message.role === 'user' && message.text.includes('[CI/PR context]')
   );
+  const prPackageWorkflowPresent = messages.some((message) =>
+    message.role === 'user' && message.text.includes('[PR package context]')
+  );
   const pendingChangeCount = pendingChangeSets.reduce((total, changeSet) => total + pendingFiles(changeSet).length, 0);
   const checkpointCount = checkpoints.length;
   const editConflictCount = recentConflicts.length;
@@ -68,7 +72,8 @@ export function buildTrustCenterSnapshot(state: WebviewState): TrustCenterSnapsh
       || fileEditCount > 0
       || verificationState !== null
       || gitWorkflowPresent
-      || ciPrWorkflowPresent,
+      || ciPrWorkflowPresent
+      || prPackageWorkflowPresent,
     pendingChangeCount,
     pendingChangeSetCount: pendingChangeSets.length,
     checkpointCount,
@@ -77,6 +82,7 @@ export function buildTrustCenterSnapshot(state: WebviewState): TrustCenterSnapsh
     verificationState,
     gitWorkflowPresent,
     ciPrWorkflowPresent,
+    prPackageWorkflowPresent,
     latestPendingChangeSet,
     latestAvailableCheckpoint: checkpoints[0] ?? null,
     pendingFiles: latestPendingChangeSet ? pendingFiles(latestPendingChangeSet) : [],

@@ -21,6 +21,7 @@ export function TrustCenter({ snapshot, send }: TrustCenterProps) {
           {snapshot.verificationState && <span>{`verification ${snapshot.verificationState}`}</span>}
           {snapshot.gitWorkflowPresent && <span>Git context</span>}
           {snapshot.ciPrWorkflowPresent && <span>CI/PR context</span>}
+          {snapshot.prPackageWorkflowPresent && <span>PR package</span>}
           {snapshot.editConflictCount > 0 && <span>{plural(snapshot.editConflictCount, 'edit conflict')}</span>}
         </div>
       </div>
@@ -113,6 +114,7 @@ export function TrustCenter({ snapshot, send }: TrustCenterProps) {
             <CommandButton command="veyra.runVerificationCommand" send={send}>Run verification</CommandButton>
             <CommandButton command="veyra.summarizeGitStatus" send={send}>Summarize Git</CommandButton>
             <CommandButton command="veyra.reviewCiWorkflowOutput" send={send}>Review CI/PR</CommandButton>
+            <CommandButton command="veyra.preparePrPackageDraft" send={send}>Prepare PR draft</CommandButton>
             <CommandButton command="veyra.copyDiagnosticReport" send={send}>Copy diagnostics</CommandButton>
           </div>
         </section>

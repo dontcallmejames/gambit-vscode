@@ -6,7 +6,13 @@ export type WorkflowArtifactSectionId =
   | 'missing-tests'
   | 'follow-up-suggestions'
   | 'next-action'
-  | 'handoff-summary';
+  | 'handoff-summary'
+  | 'pr-summary'
+  | 'changed-file-explanation'
+  | 'risk-checklist'
+  | 'verification-evidence'
+  | 'unresolved-blockers'
+  | 'suggested-follow-up-commands';
 
 export type WorkflowArtifactTone = 'neutral' | 'positive' | 'warning' | 'danger' | 'test' | 'action';
 
@@ -95,6 +101,48 @@ const SECTION_DEFINITIONS: SectionDefinition[] = [
     chip: 'Handoff',
     tone: 'neutral',
     aliases: ['handoff summary', 'handoff'],
+  },
+  {
+    id: 'pr-summary',
+    title: 'PR Summary',
+    chip: 'PR',
+    tone: 'positive',
+    aliases: ['pr summary', 'draft pr summary', 'pull request summary'],
+  },
+  {
+    id: 'changed-file-explanation',
+    title: 'Changed File Explanation',
+    chip: 'Files',
+    tone: 'neutral',
+    aliases: ['changed file explanation', 'changed-file explanation', 'changed files', 'changed-file explanations'],
+  },
+  {
+    id: 'risk-checklist',
+    title: 'Risk Checklist',
+    chip: 'Risks',
+    tone: 'warning',
+    aliases: ['risk checklist', 'pr readiness checklist', 'readiness checklist'],
+  },
+  {
+    id: 'verification-evidence',
+    title: 'Verification Evidence',
+    chip: 'Verify',
+    tone: 'test',
+    aliases: ['verification evidence', 'verification', 'test evidence'],
+  },
+  {
+    id: 'unresolved-blockers',
+    title: 'Unresolved Blockers',
+    chip: 'Blockers',
+    tone: 'danger',
+    aliases: ['unresolved blockers', 'unresolved blockers or questions', 'open blockers'],
+  },
+  {
+    id: 'suggested-follow-up-commands',
+    title: 'Suggested Follow-up Commands',
+    chip: 'Commands',
+    tone: 'action',
+    aliases: ['suggested follow-up commands', 'suggested follow up commands', 'follow-up commands', 'follow up commands'],
   },
 ];
 

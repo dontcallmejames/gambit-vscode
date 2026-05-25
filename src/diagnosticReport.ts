@@ -11,6 +11,7 @@ export const DIAGNOSTIC_COMMAND_IDS = [
   'veyra.openPendingChanges',
   'veyra.summarizeGitStatus',
   'veyra.reviewCiWorkflowOutput',
+  'veyra.preparePrPackageDraft',
   'veyra.acceptPendingChanges',
   'veyra.rejectPendingChanges',
   'veyra.acceptPendingChangeFile',

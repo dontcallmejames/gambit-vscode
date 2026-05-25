@@ -108,6 +108,7 @@ describe("buildTrustCenterSnapshot", () => {
     expect(snapshot.verificationState).toBeNull();
     expect(snapshot.gitWorkflowPresent).toBe(false);
     expect(snapshot.ciPrWorkflowPresent).toBe(false);
+    expect(snapshot.prPackageWorkflowPresent).toBe(false);
   });
 
   it("derives trust signals from existing session messages", () => {
@@ -133,6 +134,8 @@ describe("buildTrustCenterSnapshot", () => {
           "Source: Explicit user-triggered local git status summary",
           "[CI/PR context]",
           "Source: Explicit user-provided CI or PR output",
+          "[PR package context]",
+          "Source: Explicit user-triggered local PR package draft",
         ].join("\n"),
       ),
     });
@@ -152,6 +155,7 @@ describe("buildTrustCenterSnapshot", () => {
     expect(snapshot.verificationState).toBe("passed");
     expect(snapshot.gitWorkflowPresent).toBe(true);
     expect(snapshot.ciPrWorkflowPresent).toBe(true);
+    expect(snapshot.prPackageWorkflowPresent).toBe(true);
   });
 
   it("uses the latest change-set notice so resolved inline notices do not drift", () => {
@@ -179,7 +183,7 @@ describe("TrustCenter", () => {
     state = reduce(state, { kind: "system-message", message: editConflictNotice() });
     state = reduce(state, {
       kind: "user-message-appended",
-      message: userMessage("Source: Approved Veyra verification command\nExit status: 1\n[Git workflow context]\n[CI/PR context]"),
+      message: userMessage("Source: Approved Veyra verification command\nExit status: 1\n[Git workflow context]\n[CI/PR context]\n[PR package context]"),
     });
     const sent: FromWebview[] = [];
     const vnode = TrustCenter({
@@ -194,6 +198,7 @@ describe("TrustCenter", () => {
     expect(text).toContain("verification failed");
     expect(text).toContain("Git context");
     expect(text).toContain("CI/PR context");
+    expect(text).toContain("PR package");
     expect(text).toContain("1 edit conflict");
 
     clickButton(vnode, "Open pending changes");
@@ -207,6 +212,7 @@ describe("TrustCenter", () => {
     clickButton(vnode, "Run verification");
     clickButton(vnode, "Summarize Git");
     clickButton(vnode, "Review CI/PR");
+    clickButton(vnode, "Prepare PR draft");
     clickButton(vnode, "Copy diagnostics");
 
     expect(sent).toEqual([
@@ -221,6 +227,7 @@ describe("TrustCenter", () => {
       { kind: "run-command", command: "veyra.runVerificationCommand" },
       { kind: "run-command", command: "veyra.summarizeGitStatus" },
       { kind: "run-command", command: "veyra.reviewCiWorkflowOutput" },
+      { kind: "run-command", command: "veyra.preparePrPackageDraft" },
       { kind: "run-command", command: "veyra.copyDiagnosticReport" },
     ]);
   });
@@ -238,6 +245,7 @@ describe("TrustCenter", () => {
     clickButton(vnode, "Run verification");
     clickButton(vnode, "Summarize Git");
     clickButton(vnode, "Review CI/PR");
+    clickButton(vnode, "Prepare PR draft");
     clickButton(vnode, "Copy diagnostics");
 
     expect(sent).toEqual([
@@ -245,6 +253,7 @@ describe("TrustCenter", () => {
       { kind: "run-command", command: "veyra.runVerificationCommand" },
       { kind: "run-command", command: "veyra.summarizeGitStatus" },
       { kind: "run-command", command: "veyra.reviewCiWorkflowOutput" },
+      { kind: "run-command", command: "veyra.preparePrPackageDraft" },
       { kind: "run-command", command: "veyra.copyDiagnosticReport" },
     ]);
   });

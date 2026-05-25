@@ -32,6 +32,7 @@ The working rule is: agents can work together without losing context, stomping e
 - `Veyra: Diagnose Terminal Output` routes copied or pasted terminal output into a read-only Veyra diagnosis prompt.
 - `Veyra: Summarize Git Status` routes local branch, remote, dirty-tree, and recent commit context into Veyra for GitHub and CI follow-up.
 - `Veyra: Review CI/PR Output` combines copied CI or PR output with local Git context for a draft PR summary and readiness checklist.
+- `Veyra: Prepare PR Package Draft` combines local Git context, pending-change and checkpoint signals, approved verification evidence when recorded, and optional CI/PR output into a structured PR package draft.
 - Provider transparency in diagnostics shows Claude CLI, Codex CLI, and the Google provider path through Antigravity CLI or legacy Gemini fallback, including CLI/provider versions where Veyra can read them safely.
 
 ## Requirements
@@ -105,7 +106,7 @@ When no direct agent is chosen, `@veyra` asks the facilitator to route the work 
 
 Type `@` in the docked Veyra composer to mention Claude, Codex, Gemini, or all agents.
 
-Type `/` in the docked Veyra composer to discover workflow shortcuts and common command-palette actions, including `/review`, `/debate`, `/consensus`, `/implement`, `Veyra: Open Pending Changes`, `Veyra: Run Verification Command`, `Veyra: Summarize Git Status`, `Veyra: Review CI/PR Output`, `Veyra: Create Checkpoint`, `Veyra: Roll Back Latest Checkpoint`, `Veyra: Check agent status`, and `Veyra: Copy Diagnostic Report`.
+Type `/` in the docked Veyra composer to discover workflow shortcuts and common command-palette actions, including `/review`, `/debate`, `/consensus`, `/implement`, `Veyra: Open Pending Changes`, `Veyra: Run Verification Command`, `Veyra: Summarize Git Status`, `Veyra: Review CI/PR Output`, `Veyra: Prepare PR Package Draft`, `Veyra: Create Checkpoint`, `Veyra: Roll Back Latest Checkpoint`, `Veyra: Check agent status`, and `Veyra: Copy Diagnostic Report`.
 
 ### Workflow Modes
 
@@ -150,6 +151,8 @@ Example workspace settings:
 - Veyra uses read-only Git commands to summarize branch/upstream state, sanitized remotes, dirty-tree files, and the latest commit.
 - Run `Veyra: Review CI/PR Output` after copying CI logs, PR review notes, GitHub status text, or check output. Veyra combines that explicit user-provided output with the same local Git context.
 - The CI/PR review asks agents for a draft PR summary, PR readiness checklist, CI findings, and exact follow-up command suggestions.
+- Run `Veyra: Prepare PR Package Draft` when you want a fuller local-first PR package. It asks for a draft PR summary, changed-file explanation, risk checklist, verification evidence, unresolved blockers, and exact follow-up commands.
+- The PR package draft uses optional copied or pasted CI/PR output, local Git state, pending-change and checkpoint signals, and any approved verification results Veyra can read from the current workspace session.
 - These flows can help agents suggest GitHub PR and CI follow-up, but there is no hidden network automation and no automatic pushes.
 - Veyra does not run `git push`, `git pull`, merge, rebase, reset, clean, GitHub CLI, API, or CI commands from these flows.
 
@@ -206,7 +209,7 @@ The docked Veyra view includes a compact Trust Center above the transcript. It d
 - Pending changes show the same open diff, accept, reject, and per-file actions as the inline change-set notice.
 - Checkpoints expose manual checkpoint creation and latest-checkpoint rollback.
 - Verification status is shown only after an explicitly approved Veyra verification command reports an exit status.
-- Git and CI/PR context appears only when you run the explicit Veyra Git or CI/PR review commands.
+- Git, CI/PR, and PR package context appears only when you run the explicit Veyra Git, CI/PR review, or PR package draft commands.
 - File edits and edit conflicts remain visible and open the related workspace file.
 
 ### Workflow Replay

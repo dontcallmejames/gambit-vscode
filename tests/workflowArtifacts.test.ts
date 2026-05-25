@@ -62,6 +62,40 @@ describe('workflow artifact parsing', () => {
     ]);
   });
 
+  it('detects PR package draft sections as artifact cards', () => {
+    const result = parseWorkflowArtifactBlocks([
+      '## PR Summary',
+      'Ship the parser fix.',
+      '',
+      '## Changed File Explanation',
+      '- `src/parser.ts`: parser implementation.',
+      '',
+      '## Risk Checklist',
+      '- Migration risk: low.',
+      '',
+      '## Verification Evidence',
+      '- `npm run verify` passed.',
+      '',
+      '## Unresolved Blockers',
+      'None.',
+      '',
+      '## Suggested Follow-up Commands',
+      '- `git status --short`',
+    ].join('\n'));
+
+    const sections = result.blocks.filter((block) => block.kind === 'section');
+
+    expect(result.hasArtifacts).toBe(true);
+    expect(sections.map((section) => section.title)).toEqual([
+      'PR Summary',
+      'Changed File Explanation',
+      'Risk Checklist',
+      'Verification Evidence',
+      'Unresolved Blockers',
+      'Suggested Follow-up Commands',
+    ]);
+  });
+
   it('falls back to plain Markdown when no known artifact sections exist', () => {
     const result = parseWorkflowArtifactBlocks([
       '## Ordinary Review',

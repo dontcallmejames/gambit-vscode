@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Adds GitHub/PR Workflow Awareness v0.2 with `Veyra: Prepare PR Package Draft`, a local-first PR package prompt that combines read-only Git context, pending-change and checkpoint evidence, approved verification evidence when recorded, and optional CI/PR output into structured artifact-card sections without hidden network calls or automatic Git/GitHub actions.
+
 ## 1.0.11 - 2026-05-25
 
 - Adds Workflow Replay v0.1 in the docked Veyra view, letting users prepare a visible composer draft for the latest `/review`, `/debate`, `/consensus`, or `/implement` workflow with prior agent participation noted while keeping reruns manual.

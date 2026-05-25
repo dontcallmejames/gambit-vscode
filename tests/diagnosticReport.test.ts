@@ -87,6 +87,7 @@ describe('diagnostic report', () => {
     expect(DIAGNOSTIC_COMMAND_IDS).toContain('veyra.copyDiagnosticReport');
     expect(DIAGNOSTIC_COMMAND_IDS).toContain('veyra.summarizeGitStatus');
     expect(DIAGNOSTIC_COMMAND_IDS).toContain('veyra.reviewCiWorkflowOutput');
+    expect(DIAGNOSTIC_COMMAND_IDS).toContain('veyra.preparePrPackageDraft');
     expect(DIAGNOSTIC_COMMAND_IDS).toContain('veyra.acceptPendingChangeFile');
     expect(DIAGNOSTIC_COMMAND_IDS).toContain('veyra.rejectPendingChangeFile');
   });

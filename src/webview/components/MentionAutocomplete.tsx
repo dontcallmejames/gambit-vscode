@@ -62,6 +62,13 @@ export const COMMAND_DISCOVERY_ITEMS: AutocompleteItem[] = [
   },
   {
     kind: 'command',
+    token: '/pr-package',
+    label: 'Veyra: Prepare PR Package Draft',
+    desc: 'draft PR summary and readiness evidence',
+    command: 'veyra.preparePrPackageDraft',
+  },
+  {
+    kind: 'command',
     token: '/checkpoint',
     label: 'Veyra: Create Checkpoint',
     desc: 'save a recovery point',
@@ -124,10 +131,12 @@ export function autocompleteItemsForToken(token: string): AutocompleteItem[] {
   const normalized = token.toLowerCase();
   const bare = normalized.replace(/^[@/]/, '');
   return candidates.filter((item) => {
-    const searchText = isSlash
-      ? `${item.token} ${item.label} ${item.kind === 'command' ? item.command : ''}`.toLowerCase()
-      : `${item.token} ${item.label}`.toLowerCase();
-    return searchText.includes(normalized) || (bare.length > 0 && searchText.includes(bare));
+    const tokenText = item.token.toLowerCase();
+    const commandText = item.kind === 'command' ? item.command.toLowerCase() : '';
+    const labelText = item.label.replace(/\//gu, ' ').toLowerCase();
+    return tokenText.includes(normalized)
+      || commandText.includes(normalized)
+      || (bare.length >= 3 && labelText.includes(bare));
   });
 }
 

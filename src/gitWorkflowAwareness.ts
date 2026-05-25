@@ -4,6 +4,11 @@ import type {
   VeyraDispatchEventSink,
   VeyraDispatchRequest,
 } from './veyraService.js';
+import type {
+  CheckpointSummary,
+  DispatchChangeSetSummary,
+  SessionMessage,
+} from './shared/protocol.js';
 import { prepareTerminalOutputForPrompt } from './terminalAwareness.js';
 
 const execFileAsync = promisify(execFile);
@@ -12,6 +17,7 @@ const GIT_COMMAND_MAX_BUFFER_BYTES = 1024 * 1024;
 
 export const SUMMARIZE_GIT_STATUS_COMMAND = 'veyra.summarizeGitStatus';
 export const REVIEW_CI_WORKFLOW_OUTPUT_COMMAND = 'veyra.reviewCiWorkflowOutput';
+export const PREPARE_PR_PACKAGE_DRAFT_COMMAND = 'veyra.preparePrPackageDraft';
 
 export type GitWorkflowCommandRunner = (
   workspacePath: string,
@@ -46,7 +52,27 @@ export interface GitWorkflowRegistration {
   workspacePath: string;
   service: {
     dispatch(request: VeyraDispatchRequest, emit: VeyraDispatchEventSink): Promise<void>;
+    loadSession?(): Promise<{ version: 1; messages: SessionMessage[] }>;
+    listPendingChangeSets?(): Promise<DispatchChangeSetSummary[]>;
+    listCheckpoints?(): Promise<CheckpointSummary[]>;
   };
+}
+
+export interface PrPackageVerificationResult {
+  command: string;
+  exitStatus: string;
+  source: string;
+}
+
+export interface PrPackageEvidence {
+  pendingChangeSets: DispatchChangeSetSummary[];
+  checkpoints: CheckpointSummary[];
+  verificationResults: PrPackageVerificationResult[];
+}
+
+export interface PrPackageDraftPromptInput {
+  userProvidedOutput?: string;
+  evidence?: PrPackageEvidence;
 }
 
 export interface GitWorkflowApi {
@@ -131,6 +157,35 @@ export function registerGitWorkflowAwarenessCommands(
         dispatchToView,
       );
     }),
+    api.commands.registerCommand(PREPARE_PR_PACKAGE_DRAFT_COMMAND, async () => {
+      const registration = getRegistration();
+      if (!registration) {
+        api.window.showErrorMessage('Veyra requires an open workspace folder.');
+        return;
+      }
+
+      const output = await optionalCiPrOutput(api);
+      const context = await collectContextForCommand(
+        api,
+        registration.workspacePath,
+        commandRunner,
+        'Veyra PR package draft failed',
+      );
+      if (!context) return;
+
+      const evidence = await collectPrPackageEvidence(registration.service).catch((err) => {
+        api.window.showWarningMessage(`Veyra PR package evidence collection failed: ${errorMessage(err)}`);
+        return emptyPrPackageEvidence();
+      });
+
+      await dispatchGitWorkflowPrompt(
+        api,
+        registration,
+        revealVeyraView,
+        formatPrPackageDraftPrompt(context, { userProvidedOutput: output, evidence }),
+        dispatchToView,
+      );
+    }),
   ];
 
   return {
@@ -198,6 +253,64 @@ export function formatGitWorkflowReviewPrompt(context: GitWorkflowContext, userP
     ciOutput,
     '[/CI/PR context]',
   ].join('\n');
+}
+
+export function formatPrPackageDraftPrompt(
+  context: GitWorkflowContext,
+  input: PrPackageDraftPromptInput = {},
+): string {
+  const evidence = input.evidence ?? emptyPrPackageEvidence();
+  const ciOutput = sanitizeUserProvidedWorkflowOutput(input.userProvidedOutput ?? '');
+  const ciPrLines = ciOutput.trim()
+    ? [
+        'Source: Explicit user-provided CI or PR output',
+        ciOutput,
+      ]
+    : [
+        'Source: No user-provided CI or PR output',
+        'No explicit CI or PR output was provided.',
+      ];
+
+  return [
+    '@veyra /review Prepare a local-first GitHub PR package draft.',
+    '',
+    'Use only local Git evidence, Veyra trust evidence, and explicit user-provided CI/PR output.',
+    'Do not claim live remote PR, review, branch protection, or CI state unless it appears in the user-provided output.',
+    'Do not run git push, git pull, merge, rebase, reset, clean, GitHub CLI, API, CI commands, or create a PR.',
+    'If follow-up would help, suggest exact follow-up commands and wait for explicit approval before any command runs.',
+    '',
+    'Produce exactly these Markdown headings in the final answer so the docked view can render artifact cards:',
+    '## PR Summary',
+    '## Changed File Explanation',
+    '## Risk Checklist',
+    '## Verification Evidence',
+    '## Unresolved Blockers',
+    '## Suggested Follow-up Commands',
+    '',
+    ...formatGitWorkflowContextBlock(context),
+    '',
+    ...formatPrPackageContextBlock(evidence),
+    '',
+    '[CI/PR context]',
+    ...ciPrLines,
+    '[/CI/PR context]',
+  ].join('\n');
+}
+
+export async function collectPrPackageEvidence(
+  service: GitWorkflowRegistration['service'],
+): Promise<PrPackageEvidence> {
+  const [pendingChangeSets, checkpoints, session] = await Promise.all([
+    service.listPendingChangeSets?.() ?? Promise.resolve([]),
+    service.listCheckpoints?.() ?? Promise.resolve([]),
+    service.loadSession?.() ?? Promise.resolve({ version: 1 as const, messages: [] }),
+  ]);
+
+  return {
+    pendingChangeSets: pendingChangeSets.slice(0, 5),
+    checkpoints: checkpoints.slice(0, 5),
+    verificationResults: approvedVerificationResults(session.messages).slice(0, 5),
+  };
 }
 
 function formatGitWorkflowContextBlock(context: GitWorkflowContext): string[] {
@@ -289,6 +402,80 @@ async function explicitCiPrOutput(api: GitWorkflowApi): Promise<string> {
     placeHolder: 'Paste copied CI or PR output here',
     ignoreFocusOut: true,
   }) ?? '';
+}
+
+async function optionalCiPrOutput(api: GitWorkflowApi): Promise<string> {
+  let clipboardText = '';
+  try {
+    clipboardText = await api.env.clipboard.readText();
+  } catch {
+    clipboardText = '';
+  }
+  if (clipboardText.trim()) return clipboardText;
+
+  return await api.window.showInputBox({
+    title: 'Prepare PR package draft',
+    prompt: 'Optional: paste CI logs, PR review notes, GitHub status text, or check output to include.',
+    placeHolder: 'Optional CI/PR output',
+    ignoreFocusOut: true,
+  }) ?? '';
+}
+
+function formatPrPackageContextBlock(evidence: PrPackageEvidence): string[] {
+  const pendingLines = evidence.pendingChangeSets.length > 0
+    ? evidence.pendingChangeSets.map((changeSet) => {
+        const files = changeSet.files.map((file) => file.path).join(', ') || 'no files';
+        return `- ${changeSet.id} ${changeSet.status} ${formatFileCount(changeSet.fileCount)}: ${files}`;
+      })
+    : [];
+  const checkpointLines = evidence.checkpoints.length > 0
+    ? evidence.checkpoints.map((checkpoint) =>
+        `- ${checkpoint.id} ${checkpoint.status} ${checkpoint.source} "${checkpoint.label}" for ${formatFileCount(checkpoint.fileCount)}`
+      )
+    : [];
+  const verificationLines = evidence.verificationResults.length > 0
+    ? evidence.verificationResults.map((result) => `- ${result.command} -> exit ${result.exitStatus}`)
+    : [];
+
+  return [
+    '[PR package context]',
+    'Source: Explicit user-triggered local PR package draft',
+    evidence.pendingChangeSets.length > 0 ? 'Pending change sets:' : 'Pending change sets: none recorded',
+    ...pendingLines,
+    evidence.checkpoints.length > 0 ? 'Checkpoints:' : 'Checkpoints: none recorded',
+    ...checkpointLines,
+    evidence.verificationResults.length > 0 ? 'Approved verification results:' : 'Approved verification results: none recorded',
+    ...verificationLines,
+    '[/PR package context]',
+  ];
+}
+
+function formatFileCount(fileCount: number): string {
+  return `${fileCount} ${fileCount === 1 ? 'file' : 'files'}`;
+}
+
+function approvedVerificationResults(messages: SessionMessage[]): PrPackageVerificationResult[] {
+  const results: PrPackageVerificationResult[] = [];
+  for (const message of [...messages].reverse()) {
+    if (message.role !== 'user') continue;
+    if (!message.text.includes('Source: Approved Veyra verification command')) continue;
+    const command = message.text.match(/^Command:\s*(.+)$/im)?.[1]?.trim() || 'unknown command';
+    const exitStatus = message.text.match(/^Exit status:\s*(.+)$/im)?.[1]?.trim() || 'unknown';
+    results.push({
+      command,
+      exitStatus,
+      source: 'Approved Veyra verification command',
+    });
+  }
+  return results;
+}
+
+function emptyPrPackageEvidence(): PrPackageEvidence {
+  return {
+    pendingChangeSets: [],
+    checkpoints: [],
+    verificationResults: [],
+  };
 }
 
 function sanitizeUserProvidedWorkflowOutput(output: string): string {

@@ -15,8 +15,9 @@ This roadmap uses a **Context + Trust Spine**:
 1. Add enough workspace context for real repositories.
 2. Add diff and checkpoint controls so multi-agent edits feel safe.
 3. Deepen Veyra's unique multi-agent review, debate, and implementation workflows once context and trust are in place.
+4. Make the orchestration visible enough that Veyra feels like a professional workflow surface, not just a transcript.
 
-Autocomplete, browser testing, local models, and Git hosting workflows are deferred until after this spine is useful.
+Inline autocomplete, browser testing, local models, deep Git hosting workflows, cost meters, auto-rollback, and workflow replay are deferred until after this spine and presentation layer are useful.
 
 ## 2. Product Positioning
 
@@ -345,9 +346,57 @@ Model transparency belongs in the same milestone because output quality and user
 
 Implementation note: this provider transparency pass renders agent Markdown safely and reports Claude CLI, Codex CLI, and Antigravity CLI or legacy Gemini CLI fallback diagnostics without hardcoded model promises.
 
-## 12. Milestone 8: Later Parity Candidates
+## 12. Milestone 8: Presentation Layer And Mission Control
 
-These features are valuable but should be deferred until after the v1.0 spine is useful.
+### Goal
+
+Turn Veyra's docked view from a chat transcript into a visible engineering workflow dashboard. Users should be able to see what the agents are doing, what artifact they produced, and what trust controls are available without scrolling through every bubble.
+
+### Ship
+
+- Mission Control timeline:
+  - show the workflow lane for Claude, Codex, and Gemini
+  - show queued, active, completed, failed, cancelled, and waiting states
+  - show current floor holder, recent tool activity, pending change count, checkpoint state, and verification state where available
+  - derive the first version from existing webview/session events instead of adding a separate orchestration pipeline
+- Structured workflow artifact cards:
+  - render known Veyra sections such as `Veyra Synthesis`, `Recommendation`, `Blocking issues`, `Advisory risks`, `Missing tests`, `Follow-up suggestions`, `Next action`, and `Handoff Summary` as polished cards
+  - use severity chips, collapsible sections, and file/workspace links where the output already contains trustworthy references
+  - keep the raw rendered Markdown available as fallback and avoid treating parsed headings as authoritative facts
+- Trust Center:
+  - consolidate pending changes, checkpoints, file edits, edit conflicts, verification suggestions, and CI/PR review actions into one persistent inspectable surface
+  - route accept, reject, open diff, rollback, and verification actions through the same command paths already used by inline notices
+  - distinguish "agent said this is safe" from "Veyra observed this test/check/result"
+- Theme and accessibility polish:
+  - ensure the timeline, cards, and Trust Center work in dark, light, and high-contrast themes
+  - reuse contributed agent colors and VS Code theme variables instead of hardcoded tints
+  - keep the docked view dense and work-focused rather than marketing-styled
+
+### Non-goals
+
+- No cost or token meters until the provider CLIs expose reliable, comparable usage data.
+- No hidden terminal execution or fully autonomous verification loop. The Trust Center should build on the existing explicit verification runner and approval semantics.
+- No auto-rollback on verification failure in the first version. Rollback should remain explicit because restoring files is high-trust behavior.
+- No workflow replay in the first version. It is a good v1.1 candidate after sessions and artifact cards have a stable shape.
+- No second source of truth for pending changes, checkpoints, or conflicts. The new surface must derive from existing session state and command handlers.
+
+### Success criteria
+
+- A user can glance at the docked view during `/review`, `/debate`, `/consensus`, or `/implement` and understand which agent is active, which agents are queued or complete, and what trust actions are pending.
+- Final workflow outputs feel like professional engineering artifacts rather than long chat bubbles.
+- Pending changes, checkpoints, conflicts, and verification follow-up are discoverable from one place without removing the inline notices.
+- Light theme and high-contrast users can read and operate the same controls.
+- Existing smoke, package, local verification, and live-readiness gates remain covered.
+
+### Design notes
+
+This is the next "wow factor" milestone because it makes Veyra's core differentiator visible. The underlying value is already present: multi-agent sequencing, floor changes, streamed tool activity, checkpoint notices, pending change ledgers, verification commands, and CI/PR context. The first implementation should be mostly webview-side derivation over those streams.
+
+The order should be: Mission Control timeline first, structured artifact cards second, Trust Center third. Timeline has the smallest blast radius and the biggest immediate perceived value. Artifact cards build naturally on the safe Markdown renderer from Milestone 7. Trust Center is larger and should reuse the visual language established by the first two slices.
+
+## 13. Milestone 9: Later Parity Candidates
+
+These features are valuable but should be deferred until after the v1.0 spine and presentation layer are useful.
 
 ### Inline autocomplete
 
@@ -369,7 +418,19 @@ Useful for teams, but Veyra already has a local editor-first story. PR generatio
 
 Useful if lexical retrieval cannot find the right context often enough. It should be measured against real failures before becoming required infrastructure.
 
-## 13. Sequencing
+### Workflow replay
+
+Useful for rerunning `/review`, `/consensus`, or `/implement` against a later commit to compare how the agents' opinion changed. It should wait until structured artifacts and session summaries have a stable persisted shape.
+
+### Cost and token meters
+
+Useful for enterprise budgeting, but provider CLIs do not expose consistent enough token and cost metadata today. Do not block the presentation layer on this.
+
+### Auto-rollback on verification failure
+
+Useful in theory, but too easy to make scary. It should stay out of the roadmap until rollback warnings, Trust Center state, and verification result provenance are very mature.
+
+## 14. Sequencing
 
 Recommended order:
 
@@ -381,7 +442,8 @@ Recommended order:
 6. Terminal awareness.
 7. Provider adapter migration.
 8. Output polish and provider transparency.
-9. Later parity candidates.
+9. Presentation layer and Mission Control.
+10. Later parity candidates.
 
 The first three implementation plans should be separate:
 
@@ -391,7 +453,7 @@ The first three implementation plans should be separate:
 
 Splitting them keeps each plan reviewable and reduces the risk of changing too many extension surfaces at once.
 
-## 14. Risks
+## 15. Risks
 
 ### Retrieval quality may disappoint without embeddings
 
@@ -421,11 +483,23 @@ Mitigation: render agent Markdown safely in the docked Veyra view while keeping 
 
 Mitigation: document that current providers use local CLI or SDK defaults unless an explicit override is configured, and surface backend-reported model metadata when available.
 
+### Presentation polish could add UI complexity without adding trust
+
+Mitigation: keep Mission Control, artifact cards, and Trust Center dense, work-focused, and derived from existing evidence. Avoid decorative chrome that does not answer "what is happening, what changed, and what can I do safely?"
+
+### Structured artifact cards may misrepresent agent prose
+
+Mitigation: treat parsed Markdown sections as view hints only. Keep the raw rendered Markdown available, tolerate malformed sections, and never execute actions based solely on an agent heading or badge.
+
+### Trust Center could duplicate or drift from inline notices
+
+Mitigation: derive Trust Center state from the same system messages, change-set summaries, checkpoint summaries, and command handlers as the current inline controls.
+
 ### Roadmap may drift into full competitor parity
 
 Mitigation: use the v1.0 thesis as a scope guard. Features that do not improve workspace context, edit trust, or multi-agent workflow quality move out of v1.0.
 
-## 15. Open Product Decisions
+## 16. Open Product Decisions
 
 These decisions should be made during implementation planning, not blocked here:
 
@@ -438,8 +512,12 @@ These decisions should be made during implementation planning, not blocked here:
 - Whether legacy Gemini CLI fallback should be kept after the consumer cutoff or removed completely.
 - Which Markdown renderer should be used in the webview, and how tightly it should sanitize links and generated HTML.
 - Which provider model metadata is reliable enough to expose as "actual model used" versus "configured/default model."
+- What the Mission Control timeline should show in its compact default state versus expanded detail state.
+- Which workflow artifact sections should become structured cards first, and how much malformed or extra Markdown should remain plain prose.
+- Whether Trust Center should be an expandable header section inside the existing Veyra view or a separate contributed VS Code view.
+- What evidence is strong enough for Trust Center verification badges, especially when output comes from agents versus observed terminal/CI results.
 
-## 16. Definition Of v1.0
+## 17. Definition Of v1.0
 
 Veyra is ready to call v1.0 when:
 

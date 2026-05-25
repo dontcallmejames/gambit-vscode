@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.5 - 2026-05-25
+
 - Adds `Veyra: Review CI/PR Output` for local-first PR readiness guidance from copied CI or PR output plus sanitized Git context.
 
 ## 1.0.4 - 2026-05-25

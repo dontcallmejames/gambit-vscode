@@ -242,6 +242,63 @@ body {
   color: inherit;
   text-decoration: none;
 }
+.workflow-artifacts {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.workflow-artifact-card {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--vscode-editorWidget-background, rgba(255,255,255,0.05));
+  overflow: hidden;
+  white-space: normal;
+}
+.workflow-artifact-card-head {
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+  user-select: none;
+}
+.workflow-artifact-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+.workflow-artifact-chip {
+  margin-left: auto;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--vscode-descriptionForeground, inherit);
+  background: rgba(255,255,255,0.04);
+}
+.workflow-artifact-card-body {
+  border-top: 1px solid var(--border);
+  padding: 7px 8px;
+}
+.workflow-artifact-tone-positive {
+  box-shadow: inset 2px 0 0 var(--ok-color);
+}
+.workflow-artifact-tone-danger {
+  box-shadow: inset 2px 0 0 var(--error-color);
+}
+.workflow-artifact-tone-warning {
+  box-shadow: inset 2px 0 0 #ffce85;
+}
+.workflow-artifact-tone-test {
+  box-shadow: inset 2px 0 0 var(--vscode-progressBar-background, #4daafc);
+}
+.workflow-artifact-tone-action {
+  box-shadow: inset 2px 0 0 var(--vscode-focusBorder, #4daafc);
+}
 .thinking-line {
   font-style: italic;
   opacity: 0.7;

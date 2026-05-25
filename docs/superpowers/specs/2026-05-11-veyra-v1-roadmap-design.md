@@ -394,7 +394,7 @@ This is the next "wow factor" milestone because it makes Veyra's core differenti
 
 The order should be: Mission Control timeline first, structured artifact cards second, Trust Center third. Timeline has the smallest blast radius and the biggest immediate perceived value. Artifact cards build naturally on the safe Markdown renderer from Milestone 7. Trust Center is larger and should reuse the visual language established by the first two slices.
 
-Implementation note: the first Presentation Layer slice adds the compact Mission Control timeline, derived from existing webview/session events, while deferring structured artifact cards and Trust Center work to later slices.
+Implementation note: the first Presentation Layer slice adds the compact Mission Control timeline, derived from existing webview/session events. The second slice adds Structured Workflow Artifact Cards v0.1 for known Veyra output sections while preserving safe Markdown fallback for malformed or unknown prose. Trust Center work remains deferred to a later slice.
 
 ## 13. Milestone 9: Later Parity Candidates
 

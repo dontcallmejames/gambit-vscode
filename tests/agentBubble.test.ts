@@ -10,6 +10,39 @@ vi.mock('preact/hooks', () => ({
 }));
 
 describe('AgentBubble edited files', () => {
+  it('renders known workflow artifact sections as cards without hiding tool activity or file chips', () => {
+    const send = vi.fn();
+    const vnode = AgentBubbleModule.AgentBubble({
+      message: {
+        id: 'm1',
+        role: 'agent',
+        agentId: 'gemini',
+        text: [
+          '## Veyra Synthesis',
+          '',
+          '- The implementation is ready.',
+          '',
+          '## Next action',
+          '',
+          'Run `npm run verify`.',
+        ].join('\n'),
+        toolEvents: [
+          { kind: 'call', name: 'Read', input: { path: 'src/parser.ts' }, timestamp: 1 },
+        ],
+        editedFiles: ['src/parser.ts'],
+        timestamp: 1,
+        status: 'complete',
+      },
+      streaming: false,
+      settings: { toolCallRenderStyle: 'compact' },
+      send,
+    });
+
+    expect(findByClass(vnode, 'workflow-artifact-card')).toHaveLength(2);
+    expect(findByClass(vnode, 'tool-activity-summary')).toHaveLength(1);
+    expect(findByClass(vnode, 'edited-file-chip')).toHaveLength(1);
+  });
+
   it('renders agent prose as Markdown without swallowing compact tool activity or file chips', () => {
     const send = vi.fn();
     const vnode = AgentBubbleModule.AgentBubble({

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Adds Structured Workflow Artifact Cards v0.1 in the docked Veyra view, rendering known workflow sections such as Veyra Synthesis, Recommendation, Blocking issues, Missing tests, Next action, and Handoff Summary as dense expandable cards while preserving safe Markdown fallback.
+
 ## 1.0.8 - 2026-05-25
 
 - Collapses compact provider tool activity into one expandable summary so busy agents no longer fill the transcript with repeated command cards, while keeping verbose raw tool cards available for debugging.

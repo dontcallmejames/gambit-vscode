@@ -20,6 +20,8 @@ The 2026-05-25 1.0.6 output polish and provider transparency pass renders agent 
 
 The 2026-05-25 1.0.7 Presentation Layer pass adds a compact Mission Control timeline at the top of the docked Veyra view. It derives Claude, Codex, and Gemini stages from existing webview/session events, shows queued, active, complete, failed, cancelled, and waiting states, and surfaces current floor, recent tool activity, pending file count, available checkpoint count, and approved verification status without adding a second orchestration source of truth.
 
+The 2026-05-25 Structured Workflow Artifact Cards pass adds dense expandable cards for known Veyra output sections in the docked view. It detects sections such as Veyra Synthesis, Recommendation, Blocking issues, Advisory risks, Missing tests, Follow-up suggestions, Next action, and Handoff Summary on the webview side, renders each section through the existing safe Markdown renderer, and leaves malformed or unknown prose as normal Markdown.
+
 ## Prompt-to-Artifact Checklist
 
 | Prompt requirement | Concrete artifact evidence | Verification gate | Status |

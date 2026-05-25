@@ -1,8 +1,8 @@
 import { h } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { AgentMessage, FromWebview, InProgressMessage, Settings, ToolEvent } from '../../shared/protocol.js';
-import { MarkdownProse } from './MarkdownProse.js';
 import { ToolCallCard } from './ToolCallCard.js';
+import { WorkflowArtifactCards } from './WorkflowArtifactCards.js';
 
 interface Props {
   message: AgentMessage | InProgressMessage;
@@ -165,7 +165,7 @@ export function AgentBubble({ message, streaming, settings, send }: Props) {
       {isThinking ? (
         <div class="thinking-line">{verb} <BrailleSpinner agentId={message.agentId} /></div>
       ) : (
-        <MarkdownProse text={message.text} send={send} />
+        <WorkflowArtifactCards text={message.text} send={send} />
       )}
       {message.toolEvents.length > 0 && <ToolEvents events={message.toolEvents} renderStyle={settings.toolCallRenderStyle} />}
       <EditedFilesRow editedFiles={editedFiles} send={send} />

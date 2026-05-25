@@ -523,6 +523,21 @@ describe('extension manifest', () => {
     expect(readme).toContain('queued, active, complete, failed, cancelled, and waiting');
   });
 
+  it('documents the structured workflow artifact cards presentation slice', () => {
+    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const changelog = readFileSync(join(process.cwd(), 'CHANGELOG.md'), 'utf8');
+    const audit = readFileSync(join(process.cwd(), 'docs', 'goal-completion-audit.md'), 'utf8');
+    const roadmap = readFileSync(join(process.cwd(), 'docs', 'superpowers', 'specs', '2026-05-11-veyra-v1-roadmap-design.md'), 'utf8');
+
+    for (const document of [readme, changelog, audit, roadmap]) {
+      expect(document).toContain('Structured Workflow Artifact Cards');
+      expect(document).toContain('Veyra Synthesis');
+      expect(document).toContain('Handoff Summary');
+    }
+    expect(readme).toContain('blocking issues');
+    expect(changelog).toContain('safe Markdown fallback');
+  });
+
   it('contributes checkpoint commands and settings', () => {
     const properties = manifest.contributes.configuration.properties;
     const commands = new Map(manifest.contributes.commands.map((command) => [command.command, command.title]));

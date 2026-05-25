@@ -16,6 +16,7 @@ interface Props {
   floorHolder: AgentId | null;
   status: Record<AgentId, AgentStatus>;
   veyraMdPresent: boolean;
+  draft?: { id: number; text: string } | null;
 }
 
 const AGENT_TOKENS = new Set(['@claude', '@gpt', '@codex', '@chatgpt', '@gemini', '@all']);
@@ -80,12 +81,19 @@ function shouldOpenAutocomplete(token: string): boolean {
     || (token.startsWith('@') && !token.includes('/') && !token.includes('.'));
 }
 
-export function Composer({ send, floorHolder, status, veyraMdPresent }: Props) {
-  const [text, setText] = useState('');
+export function Composer({ send, floorHolder, status, veyraMdPresent, draft = null }: Props) {
+  const [text, setText] = useState(draft?.text ?? '');
   const [autocomplete, setAutocomplete] = useState<{ open: boolean; token: string; activeIndex: number }>({
     open: false, token: '', activeIndex: 0,
   });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!draft) return;
+    setText(draft.text);
+    setAutocomplete((a) => ({ ...a, open: false }));
+    textareaRef.current?.focus();
+  }, [draft?.id]);
 
   useEffect(() => {
     const token = currentAutocompleteToken(text);

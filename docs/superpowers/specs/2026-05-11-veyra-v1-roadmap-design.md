@@ -424,6 +424,8 @@ Useful if lexical retrieval cannot find the right context often enough. It shoul
 
 Useful for rerunning `/review`, `/consensus`, or `/implement` against a later commit to compare how the agents' opinion changed. It should wait until structured artifacts and session summaries have a stable persisted shape.
 
+Implementation note: Workflow Replay v0.1 is the first manual version. It derives the latest workflow from existing session messages, summarizes the original workflow command, prompt, and agents that participated, then prepares a fresh docked composer draft. It does not silently dispatch agents, execute terminal work, replay old tool calls, or mutate the original transcript.
+
 ### Cost and token meters
 
 Useful for enterprise budgeting, but provider CLIs do not expose consistent enough token and cost metadata today. Do not block the presentation layer on this.

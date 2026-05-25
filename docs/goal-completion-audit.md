@@ -24,6 +24,8 @@ The 2026-05-25 Structured Workflow Artifact Cards pass adds dense expandable car
 
 The 2026-05-25 Trust Center v0.1 pass adds a persistent trust surface above the docked-view transcript. It derives pending changes, available checkpoints, file edits, edit conflicts, approved verification status, and explicit Git/CI context from the existing webview session stream, then routes open diff, accept/reject, per-file decisions, checkpoint creation, rollback, verification, Git summary, CI/PR review, and diagnostic-copy actions through the same webview command paths used by inline notices. The inline notices remain in the transcript and stay the authoritative per-event evidence.
 
+The 2026-05-25 Workflow Replay v0.1 pass adds a manual replay preparation surface to the docked view. It identifies the latest `/review`, `/debate`, `/consensus`, or `/implement` workflow from existing session messages, summarizes the captured prompt and agents that participated, and fills the composer with a fresh visible replay request. Replay does not mutate prior transcript entries, silently dispatch agents, run terminal commands, replay tool calls, or roll back files.
+
 ## Prompt-to-Artifact Checklist
 
 | Prompt requirement | Concrete artifact evidence | Verification gate | Status |

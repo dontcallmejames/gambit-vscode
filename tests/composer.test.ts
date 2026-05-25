@@ -138,6 +138,46 @@ describe('Composer', () => {
     expect(autocomplete?.props.filter).toBe('/run');
     expect(autocomplete?.props.activeIndex).toBe(0);
   });
+
+  it('seeds the composer from a workflow replay draft without sending automatically', () => {
+    mockedUseState.mockImplementation((initial: unknown) => [initial, vi.fn()]);
+    const send = vi.fn();
+
+    const vnode = Composer({
+      send,
+      floorHolder: null,
+      status: { claude: 'ready', codex: 'ready', gemini: 'ready' },
+      veyraMdPresent: true,
+      draft: { id: 1, text: '@veyra /review replay this workflow' },
+    });
+
+    const textarea = findNode(vnode, 'textarea');
+
+    expect(textarea?.props.value).toBe('@veyra /review replay this workflow');
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it('sends a workflow replay draft through the normal composer send path', () => {
+    mockedUseState.mockImplementation((initial: unknown) => [initial, vi.fn()]);
+    const send = vi.fn();
+
+    const vnode = Composer({
+      send,
+      floorHolder: null,
+      status: { claude: 'ready', codex: 'ready', gemini: 'ready' },
+      veyraMdPresent: true,
+      draft: { id: 1, text: '@veyra /review replay this workflow' },
+    });
+
+    const sendButton = findButtons(vnode).find((button) => collectText(button) === 'Send');
+    expect(sendButton).toBeDefined();
+    sendButton?.props.onClick();
+
+    expect(send).toHaveBeenCalledWith({
+      kind: 'send',
+      text: '@veyra /review replay this workflow',
+    });
+  });
 });
 
 function collectText(vnode: any): string {
@@ -159,4 +199,12 @@ function findNode(vnode: any, type: unknown): any | undefined {
     return undefined;
   }
   return findNode(children, type);
+}
+
+function findButtons(vnode: any): any[] {
+  if (vnode === null || vnode === undefined || typeof vnode !== 'object') return [];
+  const own = vnode.type === 'button' ? [vnode] : [];
+  const children = vnode.props?.children;
+  if (Array.isArray(children)) return own.concat(children.flatMap(findButtons));
+  return own.concat(findButtons(children));
 }

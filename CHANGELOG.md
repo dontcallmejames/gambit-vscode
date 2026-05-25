@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Adds Workflow Replay v0.1 in the docked Veyra view, letting users prepare a visible composer draft for the latest `/review`, `/debate`, `/consensus`, or `/implement` workflow with prior agent participation noted while keeping reruns manual.
+
 ## 1.0.10 - 2026-05-25
 
 - Adds Trust Center v0.1 to the docked Veyra view, deriving pending changes, checkpoints, edit conflicts, file edits, approved verification status, and Git/CI context from the existing session stream while reusing the same diff, accept/reject, checkpoint, verification, Git, CI, and diagnostics actions as inline notices.

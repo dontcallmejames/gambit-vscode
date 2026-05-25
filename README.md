@@ -21,6 +21,7 @@ The working rule is: agents can work together without losing context, stomping e
 - A compact Presentation Layer with a Mission Control timeline that shows Claude, Codex, and Gemini as queued, active, complete, failed, cancelled, and waiting stages.
 - Structured Workflow Artifact Cards for known Veyra sections such as `Veyra Synthesis`, `Recommendation`, blocking issues, missing tests, follow-ups, next actions, and `Handoff Summary`.
 - A Trust Center in the docked view that keeps pending changes, checkpoints, edit conflicts, file edits, approved verification status, and Git/CI context visible without replacing the inline notices.
+- Workflow Replay in the docked view to prepare a fresh composer draft for the latest `/review`, `/debate`, `/consensus`, or `/implement` workflow against the current workspace state.
 - Composer autocomplete in the docked Veyra view for agents, slash workflows, and common Veyra commands.
 - Shared context and file mention support across the Veyra view, native chat, and language model requests.
 - File edit visibility through streamed edit events, file decoration badges, session summaries, and commit attribution.
@@ -207,6 +208,12 @@ The docked Veyra view includes a compact Trust Center above the transcript. It d
 - Verification status is shown only after an explicitly approved Veyra verification command reports an exit status.
 - Git and CI/PR context appears only when you run the explicit Veyra Git or CI/PR review commands.
 - File edits and edit conflicts remain visible and open the related workspace file.
+
+### Workflow Replay
+
+The docked Veyra view can prepare a replay draft for the latest `/review`, `/debate`, `/consensus`, or `/implement` workflow in the session. Replay is manual: Veyra fills the composer with a fresh visible request, notes the original workflow and agents observed last time, and waits for you to edit or send it.
+
+Replay uses the current workspace and Git state. Prior agent replies remain transcript context; they are not treated as proof that files, tests, or risks are unchanged.
 
 ### Checkpoints And Rollback
 

@@ -43,7 +43,7 @@ import type {
 } from './shared/protocol.js';
 import type { AgentChunk, AgentId, AgentStatus } from './types.js';
 
-export type VeyraDispatchSource = 'panel' | 'native-chat' | 'language-model';
+export type VeyraDispatchSource = 'panel' | 'native-chat' | 'language-model' | 'inline-autocomplete';
 export type VeyraForcedTarget = AgentId | 'veyra';
 
 export interface VeyraDispatchRequest {
@@ -268,10 +268,56 @@ export class VeyraSessionService {
       .catch(() => undefined)
       .then(() => {
         if (generation !== this.cancelGeneration) return undefined;
+        if (request.source === 'inline-autocomplete') {
+          return this.runInlineAutocompleteDispatch(request, emit);
+        }
         return this.runDispatch(request, emit);
       });
     this.dispatchQueue = queuedDispatch.then(() => undefined, () => undefined);
     return queuedDispatch;
+  }
+
+  private async runInlineAutocompleteDispatch(
+    request: VeyraDispatchRequest,
+    emit: VeyraDispatchEventSink,
+  ): Promise<void> {
+    const messageIds = new Map<AgentId, string>();
+    for await (const event of this.router.handle(
+      toRoutedInput(request.text, request.forcedTarget),
+      {
+        cwd: request.cwd ?? this.workspacePath,
+        readOnly: true,
+      },
+    )) {
+      if (event.kind === 'dispatch-start') {
+        const messageId = ulid();
+        messageIds.set(event.agentId, messageId);
+        await emit({
+          kind: 'dispatch-start',
+          agentId: event.agentId,
+          messageId,
+          timestamp: Date.now(),
+        });
+      } else if (event.kind === 'chunk') {
+        await emit({
+          kind: 'chunk',
+          agentId: event.agentId,
+          messageId: messageIds.get(event.agentId) ?? ulid(),
+          chunk: event.chunk,
+        });
+      } else if (event.kind === 'routing-needed') {
+        await emit({
+          kind: 'system-message',
+          message: {
+            id: ulid(),
+            role: 'system',
+            kind: 'routing-needed',
+            text: event.text,
+            timestamp: Date.now(),
+          },
+        });
+      }
+    }
   }
 
   private async runLocalResponse(text: string, responseText: string, emit: VeyraDispatchEventSink): Promise<void> {

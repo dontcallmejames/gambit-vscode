@@ -23,6 +23,7 @@ The working rule is: agents can work together without losing context, stomping e
 - A Trust Center in the docked view that keeps pending changes, checkpoints, edit conflicts, file edits, approved verification status, Git/CI context, and browser/test context visible without replacing the inline notices.
 - Workflow Replay in the docked view to prepare a fresh composer draft for the latest `/review`, `/debate`, `/consensus`, or `/implement` workflow against the current workspace state.
 - Composer autocomplete in the docked Veyra view for agents, slash workflows, and common Veyra commands.
+- Inline Autocomplete v0.1 for opt-in, manual editor ghost-text suggestions through a short read-only direct-agent request.
 - Shared context and file mention support across the Veyra view, native chat, and language model requests.
 - File edit visibility through streamed edit events, file decoration badges, session summaries, and commit attribution.
 - Workspace change detection for files modified during an agent turn even when the underlying CLI does not report a write tool.
@@ -110,6 +111,14 @@ When no direct agent is chosen, `@veyra` asks the facilitator to route the work 
 Type `@` in the docked Veyra composer to mention Claude, Codex, Gemini, or all agents.
 
 Type `/` in the docked Veyra composer to discover workflow shortcuts and common command-palette actions, including `/review`, `/debate`, `/consensus`, `/implement`, `Veyra: Open Pending Changes`, `Veyra: Run Verification Command`, `Veyra: Review Browser/Test Output`, `Veyra: Summarize Git Status`, `Veyra: Review CI/PR Output`, `Veyra: Prepare PR Package Draft`, `Veyra: Create Checkpoint`, `Veyra: Roll Back Latest Checkpoint`, `Veyra: Check agent status`, and `Veyra: Copy Diagnostic Report`.
+
+### Inline Autocomplete
+
+Inline Autocomplete v0.1 is off by default. Set `veyra.inlineAutocomplete.enabled` to `true`, then use VS Code's manual inline suggestion trigger when you want Veyra to propose a short editor ghost-text insert.
+
+The provider ignores automatic inline completion triggers, so it does not compete with normal typing or other autocomplete extensions. A manual inline suggestion sends a small local editor context window to the configured direct Veyra agent as a read-only direct-agent request. The prompt asks for insert-only text and forbids command execution, file edits, Markdown wrapping, and explanations.
+
+Tune it with `veyra.inlineAutocomplete.agent`, `veyra.inlineAutocomplete.maxContextLines`, `veyra.inlineAutocomplete.maxSuggestionChars`, and `veyra.inlineAutocomplete.minPrefixChars`.
 
 ### Workflow Modes
 
@@ -262,6 +271,11 @@ Rollback refuses when automatic checkpoint files changed after the agent dispatc
 - `veyra.sharedContextWindow`: number of recent messages sent to later agents.
 - `veyra.workflow.template`: optional prompt lens for `/review`, `/debate`, `/consensus`, `/implement`, and the matching Language Model workflow entries.
 - `veyra.agentRoles.claude`, `veyra.agentRoles.codex`, `veyra.agentRoles.gemini`: optional workspace role customization appended to the matching agent's Veyra role preamble.
+- `veyra.inlineAutocomplete.enabled`: enable opt-in manual editor ghost-text suggestions.
+- `veyra.inlineAutocomplete.agent`: direct Veyra agent used for manual inline autocomplete suggestions.
+- `veyra.inlineAutocomplete.maxContextLines`: max editor context lines sent with a manual inline suggestion request.
+- `veyra.inlineAutocomplete.maxSuggestionChars`: max characters inserted for one inline autocomplete suggestion.
+- `veyra.inlineAutocomplete.minPrefixChars`: minimum non-whitespace prefix characters before requesting a suggestion.
 - `veyra.fileBadges.enabled`: enable file explorer badges for recent agent edits.
 - `veyra.commitSignature.enabled`: write the active dispatch sentinel for commit attribution.
 - `veyra.writeApproval`: whether agent write requests are automatic or delegated to each CLI.

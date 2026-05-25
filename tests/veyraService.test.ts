@@ -143,6 +143,47 @@ describe('VeyraSessionService', () => {
     });
   });
 
+  it('routes inline autocomplete without composing or persisting chat-session context', async () => {
+    const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-inline-'));
+    let capturedPrompt = '';
+    const service = new VeyraSessionService(
+      workspacePath,
+      {
+        claude: agentNoop('claude'),
+        codex: {
+          id: 'codex',
+          status: async () => 'ready',
+          cancel: async () => {},
+          async *send(prompt: string) {
+            capturedPrompt = prompt;
+            yield { type: 'text', text: ' + b' } as AgentChunk;
+            yield { type: 'done' } as AgentChunk;
+          },
+        },
+        gemini: agentNoop('gemini'),
+      },
+      { hangSeconds: 0 },
+    );
+
+    const events: any[] = [];
+    await service.dispatch({
+      source: 'inline-autocomplete',
+      text: '[Inline autocomplete request]\nreturn a<cursor>;',
+      forcedTarget: 'codex',
+      readOnly: true,
+      cwd: workspacePath,
+    }, (event) => {
+      events.push(event);
+    });
+    await service.flush();
+
+    expect(capturedPrompt).toBe('[Inline autocomplete request]\nreturn a<cursor>;');
+    expect(events.map((event) => event.kind)).toContain('dispatch-start');
+    expect(events.filter((event) => event.kind === 'chunk').map((event) => event.chunk.type)).toEqual(['text', 'done']);
+    expect(events.some((event) => event.kind === 'user-message' || event.kind === 'system-message')).toBe(false);
+    expect(fs.existsSync(path.join(workspacePath, '.vscode', 'veyra', 'sessions.json'))).toBe(false);
+  });
+
   it('includes project command hints in dispatched prompts without running them', async () => {
     let codexPrompt = '';
     const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-service-'));

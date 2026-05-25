@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Adds Inline Autocomplete v0.1 as an opt-in manual VS Code inline completion provider. It responds only to explicit inline suggestion invocation, sends a small editor context window to a configured direct Veyra agent as a read-only request, and returns short insert-only ghost text without command execution, file edits, or Markdown explanations.
+
 ## 1.0.15 - 2026-05-25
 
 - Adds Retrieval Quality and Embedding Readiness v0.1 for `@codebase retrieval`, making local lexical context blocks and diagnostic reports explain why files were selected, which budget limits may omit matches, and why embedding/vector readiness remains inactive: no cloud indexing, no paid embedding calls, and no background repository scans.

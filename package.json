@@ -53,6 +53,7 @@
     "Other"
   ],
   "activationEvents": [
+    "onStartupFinished",
     "onCommand:veyra.openPanel",
     "onView:veyra.chatView",
     "onCommand:veyra.checkStatus",
@@ -419,6 +420,42 @@
           "type": "string",
           "default": "",
           "description": "Optional workspace role guidance appended to Gemini's Veyra agent-role preamble."
+        },
+        "veyra.inlineAutocomplete.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable Veyra Inline Autocomplete v0.1. Suggestions are opt-in and respond only to a manual inline suggestion invocation."
+        },
+        "veyra.inlineAutocomplete.agent": {
+          "type": "string",
+          "enum": [
+            "codex",
+            "claude",
+            "gemini"
+          ],
+          "default": "codex",
+          "description": "Direct Veyra agent used for manual inline autocomplete suggestions."
+        },
+        "veyra.inlineAutocomplete.maxContextLines": {
+          "type": "number",
+          "default": 40,
+          "minimum": 5,
+          "maximum": 200,
+          "description": "Maximum editor context lines sent with a manual Veyra inline autocomplete request."
+        },
+        "veyra.inlineAutocomplete.maxSuggestionChars": {
+          "type": "number",
+          "default": 240,
+          "minimum": 20,
+          "maximum": 1000,
+          "description": "Maximum characters Veyra will insert for one inline autocomplete suggestion."
+        },
+        "veyra.inlineAutocomplete.minPrefixChars": {
+          "type": "number",
+          "default": 12,
+          "minimum": 0,
+          "maximum": 200,
+          "description": "Minimum non-whitespace prefix characters before Veyra will request an inline autocomplete suggestion."
         },
         "veyra.fileBadges.enabled": {
           "type": "boolean",

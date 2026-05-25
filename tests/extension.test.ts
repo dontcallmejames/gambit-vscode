@@ -68,6 +68,7 @@ const mocks = vi.hoisted(() => {
     refreshVeyraSessionOptions: vi.fn(),
     registerNativeChatParticipants: vi.fn(),
     registerVeyraLanguageModelProvider: vi.fn(),
+    registerInlineAutocompleteProvider: vi.fn(),
     checkClaude: vi.fn().mockResolvedValue('ready'),
     checkCodex: vi.fn().mockResolvedValue('unauthenticated'),
     checkGemini: vi.fn().mockResolvedValue('not-installed'),
@@ -232,6 +233,7 @@ const mocks = vi.hoisted(() => {
       this.refreshVeyraSessionOptions.mockClear();
       this.registerNativeChatParticipants.mockClear();
       this.registerVeyraLanguageModelProvider.mockClear();
+      this.registerInlineAutocompleteProvider.mockClear();
       this.checkClaude.mockClear();
       this.checkCodex.mockClear();
       this.checkGemini.mockClear();
@@ -331,6 +333,10 @@ vi.mock('../src/languageModelProvider.js', () => ({
   registerVeyraLanguageModelProvider: mocks.registerVeyraLanguageModelProvider,
 }));
 
+vi.mock('../src/inlineAutocomplete.js', () => ({
+  registerInlineAutocompleteProvider: mocks.registerInlineAutocompleteProvider,
+}));
+
 vi.mock('../src/statusChecks.js', () => ({
   checkClaude: mocks.checkClaude,
   checkCodex: mocks.checkCodex,
@@ -415,6 +421,7 @@ describe('activate', () => {
     ]);
     expect(mocks.registerNativeChatParticipants).toHaveBeenCalledWith(ctx, expect.any(Function));
     expect(mocks.registerVeyraLanguageModelProvider).toHaveBeenCalledWith(ctx, expect.any(Function));
+    expect(mocks.registerInlineAutocompleteProvider).toHaveBeenCalledWith(ctx, expect.any(Function));
     expect(mocks.registerFileDecorationProvider).toHaveBeenCalledTimes(1);
   });
 

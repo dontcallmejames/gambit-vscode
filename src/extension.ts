@@ -6,6 +6,7 @@ import { installCommitHook, uninstallCommitHook, COMMIT_HOOK_SNIPPET } from './c
 import { createVeyraSessionService, createSmokeAgents, refreshVeyraSessionOptions, shouldUseSmokeAgents } from './veyraRuntime.js';
 import { nativeChatSmokeResponses, nativeChatWorkflowDiagnostics, registerNativeChatParticipants } from './nativeChat.js';
 import { registerVeyraLanguageModelProvider } from './languageModelProvider.js';
+import { registerInlineAutocompleteProvider } from './inlineAutocomplete.js';
 import { checkClaude, checkCodex, checkGemini, clearStatusCache } from './statusChecks.js';
 import { detectCliBundlePaths } from './cliPathDetection.js';
 import { cliPathMisconfiguration, normalizeCliPathOverride } from './cliPathValidation.js';
@@ -363,6 +364,9 @@ export function activate(context: vscode.ExtensionContext): void {
   }
   registerOptionalSurface('language model provider', () => {
     registerVeyraLanguageModelProvider(context, ensureNativeRegistration);
+  }, optionalSurfaceFailures);
+  registerOptionalSurface('inline autocomplete', () => {
+    registerInlineAutocompleteProvider(context, ensureNativeRegistration);
   }, optionalSurfaceFailures);
 }
 

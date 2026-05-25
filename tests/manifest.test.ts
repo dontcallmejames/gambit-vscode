@@ -370,6 +370,48 @@ describe('extension manifest', () => {
     expect(changelog).toContain('@codebase retrieval');
   });
 
+  it('contributes opt-in inline autocomplete settings and docs', () => {
+    const properties = manifest.contributes.configuration.properties;
+    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const changelog = readFileSync(join(process.cwd(), 'CHANGELOG.md'), 'utf8');
+    const roadmap = readFileSync(join(process.cwd(), 'docs', 'superpowers', 'specs', '2026-05-11-veyra-v1-roadmap-design.md'), 'utf8');
+
+    expect(manifest.activationEvents).toContain('onStartupFinished');
+    expect(properties['veyra.inlineAutocomplete.enabled']).toMatchObject({
+      type: 'boolean',
+      default: false,
+    });
+    expect(properties['veyra.inlineAutocomplete.agent']).toMatchObject({
+      type: 'string',
+      enum: ['codex', 'claude', 'gemini'],
+      default: 'codex',
+    });
+    expect(properties['veyra.inlineAutocomplete.maxContextLines']).toMatchObject({
+      type: 'number',
+      default: 40,
+      minimum: 5,
+      maximum: 200,
+    });
+    expect(properties['veyra.inlineAutocomplete.maxSuggestionChars']).toMatchObject({
+      type: 'number',
+      default: 240,
+      minimum: 20,
+      maximum: 1000,
+    });
+    expect(properties['veyra.inlineAutocomplete.minPrefixChars']).toMatchObject({
+      type: 'number',
+      default: 12,
+      minimum: 0,
+      maximum: 200,
+    });
+    expect(readme).toContain('Inline Autocomplete v0.1');
+    expect(readme).toContain('veyra.inlineAutocomplete.enabled');
+    expect(readme).toContain('manual inline suggestion');
+    expect(readme).toContain('read-only direct-agent request');
+    expect(changelog).toContain('Inline Autocomplete v0.1');
+    expect(roadmap).toContain('Implementation note: Inline Autocomplete v0.1');
+  });
+
   it('contributes diff preview commands and settings', () => {
     const properties = manifest.contributes.configuration.properties;
     const commands = new Map(manifest.contributes.commands.map((command) => [command.command, command.title]));

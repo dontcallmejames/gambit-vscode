@@ -404,6 +404,8 @@ These features are valuable but should be deferred until after the v1.0 spine an
 
 Useful for daily coding parity, but it is expensive to make good and does not directly strengthen Veyra's multi-agent trust promise.
 
+Implementation note: Inline Autocomplete v0.1 keeps this conservative and opt-in. It registers a VS Code inline completion provider that only responds to manual inline suggestion invocation when `veyra.inlineAutocomplete.enabled` is true, sends a small editor context window to one configured direct Veyra agent as a read-only request, and accepts only a short insert-only ghost-text suffix. It deliberately avoids automatic trigger competition, hidden file edits, terminal execution, network scraping, or broad autonomous coding behavior.
+
 ### Browser testing
 
 Useful for frontend workflows, especially visual debugging, but not core to v1.0 unless Veyra narrows its target market to web app development.

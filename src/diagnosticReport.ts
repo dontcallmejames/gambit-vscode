@@ -8,6 +8,7 @@ export const DIAGNOSTIC_COMMAND_IDS = [
   'veyra.showLiveValidationGuide',
   'veyra.configureCliPaths',
   'veyra.openPendingChanges',
+  'veyra.summarizeGitStatus',
   'veyra.acceptPendingChanges',
   'veyra.rejectPendingChanges',
   'veyra.acceptPendingChangeFile',

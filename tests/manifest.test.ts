@@ -420,12 +420,33 @@ describe('extension manifest', () => {
     }
     expect(commands.get('veyra.diagnoseTerminalOutput')).toBe('Veyra: Diagnose Terminal Output');
     expect(commands.get('veyra.runVerificationCommand')).toBe('Veyra: Run Verification Command');
+    expect(commands.get('veyra.summarizeGitStatus')).toBe('Veyra: Summarize Git Status');
     expect(manifest.activationEvents).toContain('onCommand:veyra.diagnoseTerminalOutput');
     expect(manifest.activationEvents).toContain('onCommand:veyra.runVerificationCommand');
+    expect(manifest.activationEvents).toContain('onCommand:veyra.summarizeGitStatus');
     expect(readme).toContain('Veyra: Diagnose Terminal Output');
     expect(readme).toContain('Veyra: Run Verification Command');
     expect(readme).toContain('copied or pasted terminal output');
     expect(readme).toContain('does not read terminal scrollback directly');
+  });
+
+  it('documents GitHub and CI workflow awareness guardrails', () => {
+    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const smokeChecklist = readFileSync(join(process.cwd(), 'docs', 'vscode-smoke-test.md'), 'utf8');
+    const commands = new Map(manifest.contributes.commands.map((command) => [command.command, command.title]));
+
+    for (const document of [readme, smokeChecklist]) {
+      const normalized = document.toLowerCase();
+
+      expect(normalized).toContain('github and ci workflow context');
+      expect(normalized).toContain('summarize git status');
+      expect(normalized).toContain('no hidden network');
+      expect(normalized).toContain('no automatic pushes');
+      expect(normalized).toContain('read-only git');
+    }
+    expect(commands.get('veyra.summarizeGitStatus')).toBe('Veyra: Summarize Git Status');
+    expect(manifest.activationEvents).toContain('onCommand:veyra.summarizeGitStatus');
+    expect(readme).toContain('Veyra: Summarize Git Status');
   });
 
   it('contributes checkpoint commands and settings', () => {
@@ -502,6 +523,7 @@ describe('extension manifest', () => {
       'veyra.configureCliPaths',
       'veyra.diagnoseTerminalOutput',
       'veyra.runVerificationCommand',
+      'veyra.summarizeGitStatus',
       'veyra.installCommitHook',
       'veyra.uninstallCommitHook',
       'veyra.showCommitHookSnippet',
@@ -521,6 +543,7 @@ describe('extension manifest', () => {
     expect(manifest.activationEvents).toContain('onCommand:veyra.configureCliPaths');
     expect(manifest.activationEvents).toContain('onCommand:veyra.diagnoseTerminalOutput');
     expect(manifest.activationEvents).toContain('onCommand:veyra.runVerificationCommand');
+    expect(manifest.activationEvents).toContain('onCommand:veyra.summarizeGitStatus');
   });
 
   it('activates and contributes every native chat participant', () => {

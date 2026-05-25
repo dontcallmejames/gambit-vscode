@@ -62,6 +62,7 @@
     "onCommand:veyra.configureCliPaths",
     "onCommand:veyra.diagnoseTerminalOutput",
     "onCommand:veyra.runVerificationCommand",
+    "onCommand:veyra.summarizeGitStatus",
     "onCommand:veyra.installCommitHook",
     "onCommand:veyra.uninstallCommitHook",
     "onCommand:veyra.showCommitHookSnippet",
@@ -132,6 +133,10 @@
       {
         "command": "veyra.runVerificationCommand",
         "title": "Veyra: Run Verification Command"
+      },
+      {
+        "command": "veyra.summarizeGitStatus",
+        "title": "Veyra: Summarize Git Status"
       },
       {
         "command": "veyra.installCommitHook",

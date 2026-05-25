@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Adds `Veyra: Run Verification Command` for approved, visible verification runs with captured terminal output routed back into Veyra.
+- Adds `Veyra: Summarize Git Status` for local branch, remote, dirty-tree, and latest-commit context with GitHub PR and CI follow-up guidance.
 
 ## 1.0.1
 

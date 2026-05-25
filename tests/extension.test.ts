@@ -367,6 +367,7 @@ describe('activate', () => {
       'veyra.configureCliPaths',
       'veyra.diagnoseTerminalOutput',
       'veyra.runVerificationCommand',
+      'veyra.summarizeGitStatus',
       'veyra.installCommitHook',
       'veyra.uninstallCommitHook',
       'veyra.showCommitHookSnippet',

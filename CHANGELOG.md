@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.15 - 2026-05-25
+
 - Adds Retrieval Quality and Embedding Readiness v0.1 for `@codebase retrieval`, making local lexical context blocks and diagnostic reports explain why files were selected, which budget limits may omit matches, and why embedding/vector readiness remains inactive: no cloud indexing, no paid embedding calls, and no background repository scans.
 
 ## 1.0.14 - 2026-05-25

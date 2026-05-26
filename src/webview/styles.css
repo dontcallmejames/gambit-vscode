@@ -351,6 +351,129 @@ body {
   }
 }
 
+.workflow-history {
+  max-height: 22vh;
+  overflow: auto;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--vscode-sideBar-background, rgba(255,255,255,0.02));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+}
+.workflow-history-head {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.workflow-history-kicker {
+  opacity: 0.65;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  margin-right: 6px;
+}
+.workflow-history-label,
+.workflow-history-command {
+  font-weight: 700;
+}
+.workflow-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.workflow-history-item {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 8px;
+  align-items: center;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--vscode-editorWidget-background, rgba(255,255,255,0.04));
+}
+.workflow-history-main,
+.workflow-history-meta {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.workflow-history-prompt,
+.workflow-history-meta span,
+.workflow-history-muted {
+  min-width: 0;
+  margin: 0;
+  color: var(--vscode-descriptionForeground, inherit);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.workflow-history-command {
+  flex: 0 0 auto;
+}
+.workflow-history-prompt {
+  flex: 1 1 auto;
+}
+.workflow-history-status {
+  flex: 0 0 auto;
+  padding: 1px 5px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--vscode-descriptionForeground, inherit);
+}
+.workflow-history-status-complete {
+  color: var(--ok-color);
+}
+.workflow-history-status-errored,
+.workflow-history-status-cancelled {
+  color: var(--error-color);
+}
+.workflow-history-meta {
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+}
+.workflow-history-meta span {
+  max-width: 180px;
+}
+.workflow-history button {
+  grid-row: 1;
+  grid-column: 2;
+  border: 1px solid var(--vscode-button-border, var(--border));
+  border-radius: 4px;
+  background: var(--vscode-button-secondaryBackground, rgba(255,255,255,0.07));
+  color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+  padding: 3px 8px;
+  font: inherit;
+  cursor: pointer;
+}
+.workflow-history button:hover {
+  background: var(--vscode-button-secondaryHoverBackground, rgba(255,255,255,0.12));
+}
+.workflow-history-active {
+  box-shadow: inset 2px 0 0 var(--vscode-focusBorder, #4daafc);
+}
+.workflow-history-empty {
+  color: var(--vscode-descriptionForeground, inherit);
+}
+@media (max-width: 520px) {
+  .workflow-history-item {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .workflow-history button {
+    grid-row: auto;
+    grid-column: 1;
+    justify-self: flex-start;
+  }
+  .workflow-history-main {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
 .message-list {
   flex: 1;
   overflow-y: auto;

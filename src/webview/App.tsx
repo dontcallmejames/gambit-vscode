@@ -4,9 +4,11 @@ import { initialState, reduce } from './state.js';
 import { buildMissionControlSnapshot } from './missionControl.js';
 import { buildTrustCenterSnapshot } from './trustCenter.js';
 import { buildWorkflowReplaySnapshot } from './workflowReplay.js';
+import { buildWorkflowHistorySnapshot } from './workflowHistory.js';
 import { MissionControlTimeline } from './components/MissionControlTimeline.js';
 import { TrustCenter } from './components/TrustCenter.js';
 import { WorkflowReplayPanel } from './components/WorkflowReplayPanel.js';
+import { WorkflowHistoryPanel } from './components/WorkflowHistoryPanel.js';
 import { MessageList } from './components/MessageList.js';
 import { Composer } from './components/Composer.js';
 import type { FromExtension, FromWebview } from '../shared/protocol.js';
@@ -21,6 +23,7 @@ export function App() {
   const missionControl = buildMissionControlSnapshot(state);
   const trustCenter = buildTrustCenterSnapshot(state);
   const workflowReplay = buildWorkflowReplaySnapshot(state);
+  const workflowHistory = buildWorkflowHistorySnapshot(state);
 
   useEffect(() => {
     const handler = (e: MessageEvent) => dispatch(e.data as FromExtension);
@@ -34,6 +37,10 @@ export function App() {
       <TrustCenter snapshot={trustCenter} send={send} />
       <WorkflowReplayPanel
         snapshot={workflowReplay}
+        onPrepareReplay={(text) => setComposerDraft((draft) => ({ id: (draft?.id ?? 0) + 1, text }))}
+      />
+      <WorkflowHistoryPanel
+        snapshot={workflowHistory}
         onPrepareReplay={(text) => setComposerDraft((draft) => ({ id: (draft?.id ?? 0) + 1, text }))}
       />
       <MessageList session={state.session} inProgress={state.inProgress} settings={state.settings} send={send} />

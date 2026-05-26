@@ -436,6 +436,8 @@ Useful for rerunning `/review`, `/consensus`, or `/implement` against a later co
 
 Implementation note: Workflow Replay v0.1 is the first manual version. It derives the latest workflow from existing session messages, summarizes the original workflow command, prompt, and agents that participated, then prepares a fresh docked composer draft. It does not silently dispatch agents, execute terminal work, replay old tool calls, or mutate the original transcript.
 
+Implementation note: Workflow Artifact History v0.1 extends the replay surface with a compact local-only history of recent completed `/review`, `/debate`, `/consensus`, and `/implement` turns. It derives command, original prompt, participating agents, final artifact headings, pending-change signals, checkpoint signals, approved verification state, and completion status from existing persisted session messages. It creates no separate source of truth and does not perform hidden terminal execution, file edits, Git/GitHub actions, network calls, automatic workflow reruns, or automatic replay.
+
 ### Cost and token meters
 
 Useful for enterprise budgeting, but provider CLIs do not expose consistent enough token and cost metadata today. Do not block the presentation layer on this.

@@ -669,6 +669,23 @@ describe('extension manifest', () => {
     expect(changelog).toContain('safe Markdown fallback');
   });
 
+  it('documents workflow artifact history guardrails', () => {
+    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const changelog = readFileSync(join(process.cwd(), 'CHANGELOG.md'), 'utf8');
+    const roadmap = readFileSync(join(process.cwd(), 'docs', 'superpowers', 'specs', '2026-05-11-veyra-v1-roadmap-design.md'), 'utf8');
+
+    for (const document of [readme, changelog, roadmap]) {
+      expect(document).toContain('Workflow Artifact History v0.1');
+      expect(document).toContain('existing session messages');
+      expect(document).toContain('no separate source of truth');
+    }
+    expect(readme).toContain('local-only');
+    expect(readme).toContain('Prepare replay');
+    expect(readme).toContain('does not create a second source of truth');
+    expect(roadmap).toContain('does not perform hidden terminal execution');
+    expect(changelog).toContain('manual replay preparation');
+  });
+
   it('contributes checkpoint commands and settings', () => {
     const properties = manifest.contributes.configuration.properties;
     const commands = new Map(manifest.contributes.commands.map((command) => [command.command, command.title]));

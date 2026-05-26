@@ -22,6 +22,7 @@ The working rule is: agents can work together without losing context, stomping e
 - Structured Workflow Artifact Cards for known Veyra sections such as `Veyra Synthesis`, `Recommendation`, blocking issues, missing tests, follow-ups, next actions, and `Handoff Summary`.
 - A Trust Center in the docked view that keeps pending changes, checkpoints, edit conflicts, file edits, approved verification status, Git/CI context, and browser/test context visible without replacing the inline notices.
 - Workflow Replay in the docked view to prepare a fresh composer draft for the latest `/review`, `/debate`, `/consensus`, or `/implement` workflow against the current workspace state.
+- Workflow Artifact History v0.1 in the docked view, deriving recent completed workflow summaries from existing session messages with no separate source of truth.
 - Composer autocomplete in the docked Veyra view for agents, slash workflows, and common Veyra commands.
 - Inline Autocomplete v0.1 for opt-in, manual editor ghost-text suggestions through a short read-only direct-agent request.
 - Shared context and file mention support across the Veyra view, native chat, and language model requests.
@@ -240,6 +241,12 @@ The docked Veyra view includes a compact Trust Center above the transcript. It d
 The docked Veyra view can prepare a replay draft for the latest `/review`, `/debate`, `/consensus`, or `/implement` workflow in the session. Replay is manual: Veyra fills the composer with a fresh visible request, notes the original workflow and agents observed last time, and waits for you to edit or send it.
 
 Replay uses the current workspace and Git state. Prior agent replies remain transcript context; they are not treated as proof that files, tests, or risks are unchanged.
+
+### Workflow Artifact History
+
+Workflow Artifact History v0.1 keeps a compact list of recent completed Veyra workflows in the docked view. Each entry summarizes the workflow command, original prompt, participating agents, final artifact headings, pending-change signals, checkpoint signals, approved verification result when present, and completion status.
+
+History is local-only and derived from the persisted session messages Veyra already stores. It does not create a second source of truth, rerun old workflows, replay tool calls, execute commands, edit files, perform Git/GitHub actions, or make network calls. Use `Prepare replay` when you want a visible manual composer draft for a past workflow against the current workspace state.
 
 ### Checkpoints And Rollback
 

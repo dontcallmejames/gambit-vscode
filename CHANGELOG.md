@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Adds Workflow Artifact History v0.1 in the docked Veyra view, deriving local-only summaries of recent completed workflows from existing session messages with command, prompt, participating agents, artifact headings, pending-change/checkpoint/verification signals, completion status, no separate source of truth, and manual replay preparation.
+
 ## 1.0.16 - 2026-05-25
 
 - Adds Inline Autocomplete v0.1 as an opt-in manual VS Code inline completion provider. It responds only to explicit inline suggestion invocation, sends a small editor context window to a configured direct Veyra agent as a read-only request, and returns short insert-only ghost text without command execution, file edits, or Markdown explanations.

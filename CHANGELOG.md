@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.19 - 2026-05-26
+
 - Adds Retrieval Feedback v0.2 as a compact local-only docked panel for the latest `@codebase` run, with visible refined-query drafts, explicit file-mention drafts, and copyable retrieval reports for future batched release notes.
 - Adds README/Marketplace Description Diet v0.1, moving the README front door to product story -> quickstart -> compact feature overview, tightening the Marketplace description, and keeping detailed setup, safety, and command docs available below.
 - Adds README/Docs Split v0.1, keeping README as the Marketplace-friendly front door while moving detailed user workflow and developer verification guidance into packaged docs.

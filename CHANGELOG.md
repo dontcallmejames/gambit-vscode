@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.17 - 2026-05-26
+
 - Adds Workflow Artifact History v0.1 in the docked Veyra view, deriving local-only summaries of recent completed workflows from existing session messages with command, prompt, participating agents, artifact headings, pending-change/checkpoint/verification signals, completion status, no separate source of truth, and manual replay preparation.
 
 ## 1.0.16 - 2026-05-25

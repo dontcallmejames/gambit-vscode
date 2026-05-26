@@ -2,19 +2,33 @@
 
 [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=dontcallmejames.veyra-vscode) | [Source on GitHub](https://github.com/dontcallmejames/veyra-vscode) | [Report an issue](https://github.com/dontcallmejames/veyra-vscode/issues)
 
-Veyra is a VS Code extension that routes project work across Claude, Codex, and Gemini while keeping the shared conversation, file edits, and handoffs visible.
+Veyra is a local-first VS Code extension for developers who want Claude, Codex, and Gemini to work together on one project without losing the thread. It keeps the shared conversation, retrieved context, file edits, verification evidence, and handoffs visible in a docked view.
 
-The working rule is: agents can work together without losing context, stomping each other's edits, or making invisible changes.
+Veyra is not a hosted agent service. It uses the local CLIs you already authenticate, and it does not run hidden commands, does not upload your repository, and does not approve destructive follow-up work on its own.
 
-## What It Adds
+## Quickstart
 
-- Native Chat participants and slash workflows for `@veyra`, `@claude`, `@codex`, and `@gemini`, including `/review`, `/debate`, `/consensus`, and `/implement`.
-- A docked orchestration view with the Presentation Layer, Mission Control timeline, Presentation Density v0.1, Trust Center, Workflows, replay, and Workflow Artifact History v0.1.
-- Structured Workflow Artifact Cards and safe Markdown rendering for review findings, synthesis, recommendations, missing tests, follow-ups, next actions, and handoffs.
-- Workspace context through `@codebase`, `@file` mentions, terminal selections, project command hints, Git/CI context, browser/test notes, and Retrieval Quality and Embedding Readiness v0.1.
-- Edit trust controls for diff preview, pending changes, file badges, edit conflicts, checkpoints, rollback, verification evidence, and commit attribution.
-- Provider routing through local Claude CLI, Codex CLI, and Antigravity or legacy Gemini CLI, with provider transparency and Local Model Support v0.1 diagnostics.
-- Discovery and ergonomics through docked composer autocomplete, Inline Autocomplete v0.1, the `Veyra` Language Model provider, setup checks, and diagnostic reports.
+1. Install or update Veyra, then run `Developer: Reload Window`.
+2. Open a real project folder in VS Code.
+3. Run `Veyra: Open View` to reveal the docked view.
+4. Run `Veyra: Check agent status` and confirm the local Claude CLI, Codex CLI, and Gemini provider path are ready.
+5. If Codex or Gemini needs path recovery on Windows, run `Veyra: Configure Codex/Gemini CLI paths`.
+6. Send `@veyra are you here?` in VS Code Chat. Veyra should answer locally without contacting paid backends.
+7. Start read-only with `@veyra /review @codebase inspect this change for risk`, `/debate`, or `/consensus`; use `/implement` only when you want write-capable agent work.
+8. Inspect write-capable results with `Veyra: Open Pending Changes`, then accept or reject the pending change set.
+
+For a repeatable walkthrough covering setup, read-only workflows, implementation, diff preview, checkpoints, and verification, see `docs/preview-demo-script.md`.
+
+Use `@veyra` in VS Code Chat for lightweight native-chat workflows, or use the docked Veyra view for the full orchestration UI with statuses, checkpoints, Trust Center actions, workflow history, and pending changes.
+
+## Feature Overview
+
+- Multi-agent workflows route `@veyra`, `@claude`, `@codex`, and `@gemini` through `/review`, `/debate`, `/consensus`, and `/implement`.
+- Docked Mission Control, Trust Center, workflow history, replay, and artifact cards keep orchestration visible without turning the transcript into a control panel.
+- Local workspace context comes from `@codebase`, `@file` mentions, terminal selections, project command hints, Git/CI context, browser/test notes, and retrieval feedback.
+- Edit trust controls cover diff preview, pending changes, per-file accept/reject, file badges, edit conflicts, checkpoints, rollback, verification evidence, and commit attribution.
+- Provider routing uses the local Claude CLI, Codex CLI, and Antigravity CLI, with legacy Gemini CLI fallback for existing Google-provider setups.
+- Discovery surfaces include docked composer autocomplete, manual inline suggestions, the `Veyra` Language Model provider, setup checks, and diagnostic reports.
 
 ## Requirements
 
@@ -27,26 +41,9 @@ Veyra shells out through the local agent CLIs/adapters already configured on you
 
 Use the account, API key, or subscription setup required by each vendor's CLI. Veyra does not replace those credentials; it coordinates the agents inside VS Code.
 
-## Tester Quickstart
+## Troubleshooting
 
-1. Install or update to the latest Veyra release that includes the docked view.
-2. Run `Developer: Reload Window` after installing or updating the extension.
-3. Open a real project folder in VS Code. Veyra needs an open workspace before it can route agent work.
-4. Run `Veyra: Open View` from the Command Palette and confirm it reveals the docked Veyra view. The compatibility command id `veyra.openPanel` remains available; it reveals the Veyra view instead of opening a separate editor panel.
-5. Run `Veyra: Check agent status` and confirm Claude, Codex, and Gemini are installed and authenticated for the workflows you want to test.
-6. Run `Veyra: Copy Diagnostic Report` once and keep the copied report handy if anything looks off.
-7. If Codex or Gemini needs path recovery on Windows, run `Veyra: Configure Codex/Gemini CLI paths`.
-8. Open VS Code Chat and send `@veyra are you here?`. Veyra should answer locally without contacting paid backends.
-9. Start with read-only prompts such as `@veyra /review @codebase inspect this change for risk`, `@veyra /debate choose a safe implementation approach`, or `@veyra /consensus decide which option to take`.
-10. Use `@veyra /implement ...` only when you want write-capable agent work, then inspect changes with `Veyra: Open Pending Changes`.
-
-For a repeatable walkthrough covering setup, read-only workflows, implementation, diff preview, checkpoints, and verification, see `docs/preview-demo-script.md`.
-
-Use @veyra in VS Code Chat for lightweight native-chat workflows, or use the docked Veyra view for the full orchestration UI with statuses, checkpoints, and pending changes.
-
-## Tester Troubleshooting
-
-If `Veyra: Open View` reports `command 'veyra.openPanel' not found`, first confirm Veyra is installed and up to date, then run `Developer: Reload Window`. If the command still fails, disable and re-enable Veyra from the Extensions view and retry in a normal workspace folder. A successful run reveals the Veyra view in the VS Code Secondary Side Bar with other agent views such as Codex and Claude.
+If `Veyra: Open View` reports `command 'veyra.openPanel' not found`, first confirm Veyra is installed and up to date, then run `Developer: Reload Window`. The compatibility command id `veyra.openPanel` remains available; it reveals the Veyra view instead of opening a separate editor panel. If the command still fails, disable and re-enable Veyra from the Extensions view and retry in a normal workspace folder. A successful run reveals the Veyra view in the VS Code Secondary Side Bar with other agent views such as Codex and Claude.
 
 For any tester report, please include:
 
@@ -64,7 +61,7 @@ npm install
 npm run build
 ```
 
-Open the folder in VS Code, then press `F5` or run the `Run Extension` launch configuration from `.vscode/launch.json`. The launch config builds first with `npm: build`, then starts an Extension Development Host from `dist/extension.js`. If you package a VSIX with your preferred VS Code extension workflow, build first; `.vscodeignore` keeps the VSIX focused on the bundled runtime instead of local source, tests, scripts, or `node_modules/`.
+Open the folder in VS Code, then press `F5` or run the `Run Extension` launch configuration from `.vscode/launch.json`. The launch config builds first with `npm: build`, then starts an Extension Development Host from `dist/extension.js`. If you package a VSIX with your preferred VS Code extension workflow, build first; the package `files` allowlist keeps the VSIX focused on the bundled runtime instead of local source, tests, scripts, or `node_modules/`.
 
 ## Using Native Chat
 
@@ -107,6 +104,8 @@ Tune it with `veyra.inlineAutocomplete.agent`, `veyra.inlineAutocomplete.maxCont
 - `/implement` is the write-capable workflow: Claude frames the approach, Codex changes code and tests, then Gemini reviews the result and ends with a `Handoff Summary`. If verification did not run, the handoff says `Not run`.
 
 Workflow prompts tell agents to use their available model and CLI capabilities while still following read-only or edit-permitted instructions. Broad implementation requests should proceed from reasonable assumptions instead of becoming brainstorming or approval checkpoints; agents should stop only for unsafe or impossible next actions.
+
+Structured Workflow Artifact Cards render sections such as blocking issues, advisory risks, missing tests, follow-up suggestions, Veyra Synthesis, and Handoff Summary as readable docked-view cards instead of raw transcript blocks.
 
 ### Context And Tuning
 
@@ -205,7 +204,7 @@ Reject refuses to overwrite files that changed after the agent edit. In that cas
 
 ### Trust Center
 
-The docked Veyra view includes a compact Trust Center above the transcript. It derives from the same session messages as the inline notices, so it does not create a second source of truth.
+The docked Veyra view includes a compact Trust Center above the transcript. It is part of the Presentation Layer and derives from the same session messages as the inline notices, so it does not create a second source of truth.
 
 - Mission Control timeline shows Claude, Codex, and Gemini as queued, active, complete, failed, cancelled, and waiting while keeping the top of the view compact.
 - Presentation Density v0.1 keeps Trust Center collapsed by default when there are no urgent actions, while Mission Control chips keep the trust summary and checkpoint count visible.

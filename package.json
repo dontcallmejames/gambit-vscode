@@ -1,7 +1,7 @@
 {
   "name": "veyra-vscode",
   "displayName": "Veyra",
-  "description": "Veyra coordinates Claude, Codex, and Gemini through VS Code Chat and the Language Model provider.",
+  "description": "Local-first Claude, Codex, and Gemini workflows for VS Code Chat, the Language Model API, and a docked trust view.",
   "version": "1.0.18",
   "publisher": "dontcallmejames",
   "preview": false,

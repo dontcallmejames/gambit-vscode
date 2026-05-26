@@ -41,6 +41,9 @@ describe('extension manifest', () => {
     expect(manifest.description).toContain('Gemini');
     expect(manifest.description).toContain('VS Code Chat');
     expect(manifest.description).toContain('Language Model');
+    expect(manifest.description).toContain('Local-first');
+    expect(manifest.description).toContain('docked trust view');
+    expect(manifest.description.length).toBeLessThanOrEqual(140);
     expect(manifest.description).not.toMatch(/chat panel/i);
     expect(manifest.description).not.toMatch(/\bGPT\b/i);
   });
@@ -386,18 +389,60 @@ describe('extension manifest', () => {
 
   it('keeps the README new-user overview compact while preserving detailed setup guidance', () => {
     const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const quickstartIndex = readme.indexOf('## Quickstart');
+    const overviewIndex = readme.indexOf('## Feature Overview');
+    const requirementsIndex = readme.indexOf('## Requirements');
     const overview = readme.slice(
-      readme.indexOf('## What It Adds'),
-      readme.indexOf('## Requirements'),
+      overviewIndex,
+      requirementsIndex,
     );
+    const opening = readme.slice(0, quickstartIndex);
+    const quickstart = readme.slice(quickstartIndex, overviewIndex);
     const topLevelBullets = overview.split(/\r?\n/u).filter((line) => line.startsWith('- '));
+    const quickstartSteps = quickstart.split(/\r?\n/u).filter((line) => /^\d+\./u.test(line));
 
-    expect(topLevelBullets.length).toBeLessThanOrEqual(8);
+    expect(quickstartIndex).toBeGreaterThan(0);
+    expect(overviewIndex).toBeGreaterThan(quickstartIndex);
+    expect(requirementsIndex).toBeGreaterThan(overviewIndex);
+    expect(opening).toContain('local-first');
+    expect(opening).toContain('for developers');
+    expect(opening).toContain('does not run hidden commands');
+    expect(opening).toContain('does not upload your repository');
+    expect(quickstartSteps.length).toBeLessThanOrEqual(8);
+    expect(topLevelBullets.length).toBeLessThanOrEqual(6);
+    expect(overview).not.toMatch(/\bv\d+\.\d+\b/u);
+    expect(overview).not.toMatch(/Retrieval Feedback|Presentation Density|Workflow Artifact History|Inline Autocomplete|Local Model Support/u);
     expect(readme).toContain('## Requirements');
-    expect(readme).toContain('## Tester Quickstart');
+    expect(readme).toContain('## Quickstart');
     expect(readme).toContain('## Using Native Chat');
     expect(readme).toContain('### Context And Tuning');
     expect(readme).toContain('Veyra: Configure Codex/Gemini CLI paths');
+  });
+
+  it('keeps the Marketplace-facing README summary skimmable and trust-focused', () => {
+    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const summary = readme.slice(0, readme.indexOf('## Development'));
+
+    for (const requiredText of [
+      'local-first',
+      'for developers',
+      'Claude CLI',
+      'Codex CLI',
+      'Antigravity CLI',
+      '/review',
+      '/debate',
+      '/consensus',
+      '/implement',
+      'docked',
+      'Trust Center',
+      '@codebase',
+      'does not run hidden commands',
+      'does not upload your repository',
+      'does not approve destructive follow-up work',
+    ]) {
+      expect(summary).toContain(requiredText);
+    }
+    expect(summary).not.toMatch(/\bv0\.[12]\b/u);
   });
 
   it('contributes opt-in inline autocomplete settings and docs', () => {
@@ -1000,8 +1045,8 @@ describe('extension manifest', () => {
     expect(packageVerifier).toContain("'.vscode-test/'");
 
     const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
-    expect(readme).toContain('Tester Quickstart');
-    expect(readme).toContain('Tester Troubleshooting');
+    expect(readme).toContain('## Quickstart');
+    expect(readme).toContain('## Troubleshooting');
     expect(readme).toContain('docs/preview-demo-script.md');
 
     const npmIgnore = readFileSync(join(process.cwd(), '.npmignore'), 'utf8');

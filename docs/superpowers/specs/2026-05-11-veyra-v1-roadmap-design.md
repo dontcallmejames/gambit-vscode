@@ -85,6 +85,8 @@ Make the current preview easy to understand, install, verify, and demo.
 - The extension can still pass the current local, smoke, package, and live-readiness gates.
 - Demo materials show the current differentiator without implying unbuilt features.
 
+Implementation note: README/Marketplace Description Diet v0.1 keeps the Marketplace-facing README front door focused on the product story, quickstart, compact feature overview, required local CLIs, docked trust controls, local-first `@codebase` retrieval, and no-hidden-actions guardrails. Release-by-release feature detail belongs in the changelog and roadmap, not in the first screen a new user has to scan.
+
 ## 5. Milestone 1: Workspace Context
 
 ### Goal

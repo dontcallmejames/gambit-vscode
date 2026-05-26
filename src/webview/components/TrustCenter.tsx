@@ -5,11 +5,13 @@ import type { TrustCenterSnapshot } from '../trustCenter.js';
 type TrustCenterProps = {
   snapshot: TrustCenterSnapshot;
   send: (message: FromWebview) => void;
+  expanded?: boolean;
+  onToggle?: (expanded: boolean) => void;
 };
 
-export function TrustCenter({ snapshot, send }: TrustCenterProps) {
+export function TrustCenter({ snapshot, send, expanded = true, onToggle }: TrustCenterProps) {
   return (
-    <section class={`trust-center ${snapshot.hasSignals ? 'trust-center-active' : 'trust-center-empty'}`} aria-label="Trust Center">
+    <section class={`trust-center ${expanded ? 'trust-center-expanded' : 'trust-center-collapsed'} ${snapshot.hasSignals ? 'trust-center-active' : 'trust-center-empty'}`} aria-label="Trust Center">
       <div class="trust-center-head">
         <div>
           <span class="trust-center-kicker">Trust Center</span>
@@ -25,9 +27,18 @@ export function TrustCenter({ snapshot, send }: TrustCenterProps) {
           {snapshot.browserTestingPresent && <span>browser/test context</span>}
           {snapshot.editConflictCount > 0 && <span>{plural(snapshot.editConflictCount, 'edit conflict')}</span>}
         </div>
+        <button
+          type="button"
+          class="trust-center-toggle"
+          aria-expanded={expanded}
+          aria-controls="veyra-trust-center-body"
+          onClick={() => onToggle?.(!expanded)}
+        >
+          {expanded ? 'Collapse Trust Center' : 'Open Trust Center'}
+        </button>
       </div>
 
-      <div class="trust-center-grid">
+      {expanded && <div id="veyra-trust-center-body" class="trust-center-grid">
         <section class="trust-panel trust-panel-changes">
           <div class="trust-panel-head">
             <span>Pending Changes</span>
@@ -157,7 +168,7 @@ export function TrustCenter({ snapshot, send }: TrustCenterProps) {
             <p class="trust-muted">No recent file edits or conflicts.</p>
           ) : null}
         </section>
-      </div>
+      </div>}
     </section>
   );
 }

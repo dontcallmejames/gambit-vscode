@@ -110,23 +110,39 @@ body {
 .mission-stage-gemini {
   box-shadow: inset 2px 0 0 var(--vscode-veyra-geminiColor, #4a8df0);
 }
-.mission-control-indicators {
+.mission-control-indicators,
+.mission-control-actions {
   min-height: 16px;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
-.mission-control-indicators span {
+.mission-control-indicators span,
+.mission-control-chip {
   padding: 1px 6px;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: rgba(255,255,255,0.04);
   color: var(--vscode-descriptionForeground, inherit);
 }
+.mission-control-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: inherit;
+  cursor: pointer;
+}
+.mission-control-chip:hover,
+.mission-control-chip-active {
+  background: var(--vscode-button-secondaryHoverBackground, rgba(255,255,255,0.12));
+  color: var(--vscode-foreground);
+}
+.mission-control-chip-urgent {
+  border-color: var(--vscode-inputValidation-warningBorder, rgba(255, 184, 74, 0.55));
+  color: var(--vscode-inputValidation-warningForeground, #ffce85);
+}
 
 .trust-center {
-  max-height: 34vh;
-  overflow: auto;
   padding: 8px 10px 9px;
   border-bottom: 1px solid var(--border);
   background: var(--vscode-editorWidget-background, rgba(255,255,255,0.04));
@@ -168,11 +184,21 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.trust-center-toggle {
+  flex: 0 0 auto;
+}
 .trust-center-active {
   box-shadow: inset 2px 0 0 var(--vscode-focusBorder, #4daafc);
 }
 .trust-center-empty {
   color: var(--vscode-descriptionForeground, inherit);
+}
+.trust-center-expanded {
+  max-height: 24vh;
+  overflow: auto;
+}
+.trust-center-collapsed {
+  max-height: none;
 }
 .trust-center-grid {
   display: grid;
@@ -218,7 +244,8 @@ body {
   flex-wrap: wrap;
   gap: 5px;
 }
-.trust-center button {
+.trust-center button,
+.workflow-panel button {
   min-width: 0;
   border: 1px solid var(--vscode-button-border, var(--border));
   border-radius: 4px;
@@ -231,7 +258,8 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.trust-center button:hover {
+.trust-center button:hover,
+.workflow-panel button:hover {
   background: var(--vscode-button-secondaryHoverBackground, rgba(255,255,255,0.12));
 }
 .trust-file-list,
@@ -471,6 +499,134 @@ body {
   .workflow-history-main {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+.workflow-panel {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--vscode-sideBar-background, rgba(255,255,255,0.02));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+}
+.workflow-panel-expanded {
+  max-height: 24vh;
+}
+.workflow-panel-head,
+.workflow-panel-summary,
+.workflow-panel-subhead,
+.workflow-panel-replay,
+.workflow-panel-main,
+.workflow-panel-meta {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.workflow-panel-head,
+.workflow-panel-subhead,
+.workflow-panel-replay {
+  justify-content: space-between;
+}
+.workflow-panel-kicker {
+  opacity: 0.65;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  margin-right: 6px;
+}
+.workflow-panel-label,
+.workflow-panel-subhead span:first-child,
+.workflow-panel-command {
+  font-weight: 700;
+}
+.workflow-panel-summary span,
+.workflow-panel-subhead span:last-child,
+.workflow-panel-muted,
+.workflow-panel-replay p,
+.workflow-panel-prompt,
+.workflow-panel-meta span {
+  min-width: 0;
+  margin: 0;
+  color: var(--vscode-descriptionForeground, inherit);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.workflow-panel-body {
+  max-height: 18vh;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.workflow-panel-latest,
+.workflow-panel-history {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.workflow-panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.workflow-panel-item {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 8px;
+  align-items: center;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--vscode-editorWidget-background, rgba(255,255,255,0.04));
+}
+.workflow-panel-prompt {
+  flex: 1 1 auto;
+}
+.workflow-panel-status {
+  flex: 0 0 auto;
+  padding: 1px 5px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--vscode-descriptionForeground, inherit);
+}
+.workflow-panel-status-complete {
+  color: var(--ok-color);
+}
+.workflow-panel-status-errored,
+.workflow-panel-status-cancelled {
+  color: var(--error-color);
+}
+.workflow-panel-meta {
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.workflow-panel-meta span {
+  max-width: 180px;
+}
+.workflow-panel-item > button {
+  grid-row: 1;
+  grid-column: 2;
+}
+@media (max-width: 520px) {
+  .workflow-panel-head,
+  .workflow-panel-replay,
+  .workflow-panel-main {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .workflow-panel-item {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .workflow-panel-item > button {
+    grid-row: auto;
+    grid-column: 1;
+    justify-self: flex-start;
   }
 }
 

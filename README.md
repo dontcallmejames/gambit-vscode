@@ -19,6 +19,7 @@ The working rule is: agents can work together without losing context, stomping e
 - A VS Code Language Model provider named `Veyra`, with local models for the orchestrator and each direct agent.
 - A docked Veyra view for the full orchestration UI with statuses, checkpoints, and pending changes.
 - A compact Presentation Layer with a Mission Control timeline that shows Claude, Codex, and Gemini as queued, active, complete, failed, cancelled, and waiting stages.
+- Presentation Density v0.1 keeps Mission Control always visible while Trust Center and Workflows open from compact chips instead of permanently filling the transcript.
 - Structured Workflow Artifact Cards for known Veyra sections such as `Veyra Synthesis`, `Recommendation`, blocking issues, missing tests, follow-ups, next actions, and `Handoff Summary`.
 - A Trust Center in the docked view that keeps pending changes, checkpoints, edit conflicts, file edits, approved verification status, Git/CI context, and browser/test context visible without replacing the inline notices.
 - Workflow Replay in the docked view to prepare a fresh composer draft for the latest `/review`, `/debate`, `/consensus`, or `/implement` workflow against the current workspace state.
@@ -230,6 +231,8 @@ Reject refuses to overwrite files that changed after the agent edit. In that cas
 
 The docked Veyra view includes a compact Trust Center above the transcript. It derives from the same session messages as the inline notices, so it does not create a second source of truth.
 
+- Presentation Density v0.1 keeps Trust Center collapsed by default when there are no urgent actions, while Mission Control chips keep the trust summary and checkpoint count visible.
+- Trust Center opens automatically for urgent actionable signals such as pending changes, edit conflicts, or failed approved verification.
 - Pending changes show the same open diff, accept, reject, and per-file actions as the inline change-set notice.
 - Checkpoints expose manual checkpoint creation and latest-checkpoint rollback.
 - Verification status is shown only after an explicitly approved Veyra verification command reports an exit status.
@@ -238,13 +241,13 @@ The docked Veyra view includes a compact Trust Center above the transcript. It d
 
 ### Workflow Replay
 
-The docked Veyra view can prepare a replay draft for the latest `/review`, `/debate`, `/consensus`, or `/implement` workflow in the session. Replay is manual: Veyra fills the composer with a fresh visible request, notes the original workflow and agents observed last time, and waits for you to edit or send it.
+The docked Veyra view can prepare a replay draft for the latest `/review`, `/debate`, `/consensus`, or `/implement` workflow in the session. Replay lives in the collapsible Workflows panel with recent workflow history, so it stays available without permanently taking transcript space. Replay is manual: Veyra fills the composer with a fresh visible request, notes the original workflow and agents observed last time, and waits for you to edit or send it.
 
 Replay uses the current workspace and Git state. Prior agent replies remain transcript context; they are not treated as proof that files, tests, or risks are unchanged.
 
 ### Workflow Artifact History
 
-Workflow Artifact History v0.1 keeps a compact list of recent completed Veyra workflows in the docked view. Each entry summarizes the workflow command, original prompt, participating agents, final artifact headings, pending-change signals, checkpoint signals, approved verification result when present, and completion status.
+Workflow Artifact History v0.1 keeps a compact list of recent completed Veyra workflows in the collapsible Workflows panel. Each entry summarizes the workflow command, original prompt, participating agents, final artifact headings, pending-change signals, checkpoint signals, approved verification result when present, and completion status.
 
 History is local-only and derived from the persisted session messages Veyra already stores. It does not create a second source of truth, rerun old workflows, replay tool calls, execute commands, edit files, perform Git/GitHub actions, or make network calls. Use `Prepare replay` when you want a visible manual composer draft for a past workflow against the current workspace state.
 

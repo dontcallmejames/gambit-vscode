@@ -654,6 +654,23 @@ describe('extension manifest', () => {
     expect(readme).toContain('queued, active, complete, failed, cancelled, and waiting');
   });
 
+  it('documents the Presentation Density docked-view slice', () => {
+    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const changelog = readFileSync(join(process.cwd(), 'CHANGELOG.md'), 'utf8');
+    const roadmap = readFileSync(join(process.cwd(), 'docs', 'superpowers', 'specs', '2026-05-11-veyra-v1-roadmap-design.md'), 'utf8');
+
+    for (const document of [readme, changelog, roadmap]) {
+      expect(document).toContain('Presentation Density v0.1');
+      expect(document).toContain('Mission Control');
+      expect(document).toContain('Trust Center');
+      expect(document).toContain('Workflows');
+    }
+    expect(readme).toContain('collapsed by default');
+    expect(readme).toContain('opens automatically for urgent actionable signals');
+    expect(changelog).toContain('combining replay/history');
+    expect(roadmap).toContain('persists expanded/collapsed panel state');
+  });
+
   it('documents the structured workflow artifact cards presentation slice', () => {
     const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
     const changelog = readFileSync(join(process.cwd(), 'CHANGELOG.md'), 'utf8');

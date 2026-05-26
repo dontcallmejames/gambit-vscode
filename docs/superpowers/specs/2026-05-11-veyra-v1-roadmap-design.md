@@ -396,6 +396,8 @@ The order should be: Mission Control timeline first, structured artifact cards s
 
 Implementation note: the first Presentation Layer slice adds the compact Mission Control timeline, derived from existing webview/session events. The second slice adds Structured Workflow Artifact Cards v0.1 for known Veyra output sections while preserving safe Markdown fallback for malformed or unknown prose. The third slice adds Trust Center v0.1 as a persistent docked-view surface derived from existing session messages, change-set summaries, checkpoint summaries, approved verification context, and explicit Git/CI context, while reusing the same command paths as inline notices.
 
+Implementation note: Presentation Density v0.1 keeps Mission Control as the always-visible control strip, moves Trust Center and Workflows behind compact Mission Control chips, combines Workflow Replay and Workflow Artifact History into one capped Workflows panel, persists expanded/collapsed panel state in VS Code webview state, and auto-opens Trust Center for urgent actionable signals such as pending changes, edit conflicts, or failed approved verification. It preserves manual replay semantics and avoids hidden terminal execution, network calls, file edits, Git/GitHub actions, workflow reruns, and automatic replay.
+
 ## 13. Milestone 9: Later Parity Candidates
 
 These features are valuable but should be deferred until after the v1.0 spine and presentation layer are useful.

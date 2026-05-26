@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.18 - 2026-05-26
+
 - Adds Presentation Density v0.1 for the docked Veyra view, keeping Mission Control always visible while Trust Center and Workflows open from compact chips, combining replay/history into one capped Workflows panel, and auto-opening Trust Center for urgent pending-change, conflict, or failed-verification signals.
 
 ## 1.0.17 - 2026-05-26

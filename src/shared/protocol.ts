@@ -52,6 +52,7 @@ export type RetrievalFeedbackSummary = {
   sourceMessageId: string;
   timestamp: number;
   query: string;
+  workflowCommand?: 'review' | 'debate' | 'consensus' | 'implement';
   methodLabel: string;
   selectedFileCount: number;
   matchedFileCount: number;

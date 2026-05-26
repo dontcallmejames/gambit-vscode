@@ -37,6 +37,7 @@ import type {
   FileChangeKind,
   RollbackCheckpointPreview,
   RollbackCheckpointResult,
+  RetrievalFeedbackSummary,
   Session,
   SystemMessage,
   ToolEvent,
@@ -406,6 +407,7 @@ export class VeyraSessionService {
         workspaceContextResult,
         userMsg.id,
         Date.now(),
+        workflowCommandForRequest(request),
       );
       const sys: SystemMessage = {
         id: ulid(),
@@ -1097,6 +1099,19 @@ function workspaceContextFallbackText(request: VeyraDispatchRequest): string {
 
 function isImplementationWorkflowPrompt(text: string): boolean {
   return /(^|\n)Workflow:\s*implement(\n|$)/i.test(text);
+}
+
+function workflowCommandForRequest(request: VeyraDispatchRequest): RetrievalFeedbackSummary['workflowCommand'] {
+  return workflowCommandFromText(request.text) ?? workflowCommandFromText(request.workspaceContextQuery ?? '');
+}
+
+function workflowCommandFromText(text: string): RetrievalFeedbackSummary['workflowCommand'] {
+  const routed = text.match(/(?:^|\n)Workflow:\s*(review|debate|consensus|implement)\b/iu)?.[1];
+  const raw = text.match(/(?:^|\s)\/(review|debate|consensus|implement)\b/iu)?.[1];
+  const command = (routed ?? raw)?.toLowerCase();
+  return command === 'review' || command === 'debate' || command === 'consensus' || command === 'implement'
+    ? command
+    : undefined;
 }
 
 function formatWorkspaceContextDiagnosticsBlock(result: WorkspaceContextResult): string {

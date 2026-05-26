@@ -434,7 +434,7 @@ Useful if lexical retrieval cannot find the right context often enough. It shoul
 
 Implementation note: Retrieval Quality and Embedding Readiness v0.1 improves measurement before adding vectors. `@codebase` remains local lexical retrieval, but context blocks now explain why files were selected, where lexical retrieval may have missed context, and which prompt-budget limits omitted matching files. Diagnostic reports expose retrieval settings and inactive embedding readiness. Guardrails stay explicit: no cloud indexing, no paid embedding calls, and no background repository scans.
 
-Implementation note: Retrieval Feedback v0.2 closes the local feedback loop without adding a ranking store. After an `@codebase` turn, Veyra derives a compact docked-view summary from the session's local retrieval evidence. The summary shows selected files, omitted match counts or budget limits when available, and the local lexical rationale. User actions only prepare visible composer drafts or copy a retrieval report; they do not silently dispatch prompts, run commands, call embeddings, upload code, or persist hidden memory.
+Implementation note: Retrieval Feedback v0.3 closes the local feedback loop without adding a ranking store. After an `@codebase` turn, Veyra derives a compact docked-view summary from the session's local retrieval evidence. The summary shows selected files, omitted match counts or budget limits when available, and the local lexical rationale. User actions only open selected workspace files through the existing safe file-open path, prepare visible composer drafts that preserve the originating workflow command, or copy a retrieval report; they do not silently dispatch prompts, run commands, call embeddings, upload code, or persist hidden memory.
 
 ### Workflow replay
 
@@ -442,7 +442,7 @@ Useful for rerunning `/review`, `/consensus`, or `/implement` against a later co
 
 Implementation note: Workflow Replay v0.1 is the first manual version. It derives the latest workflow from existing session messages, summarizes the original workflow command, prompt, and agents that participated, then prepares a fresh docked composer draft. It does not silently dispatch agents, execute terminal work, replay old tool calls, or mutate the original transcript.
 
-Implementation note: Workflow Artifact History v0.1 extends the replay surface with a compact local-only history of recent completed `/review`, `/debate`, `/consensus`, and `/implement` turns. It derives command, original prompt, participating agents, final artifact headings, pending-change signals, checkpoint signals, approved verification state, and completion status from existing persisted session messages. It creates no separate source of truth and does not perform hidden terminal execution, file edits, Git/GitHub actions, network calls, automatic workflow reruns, or automatic replay.
+Implementation note: Workflow Artifact History v0.2 extends the replay surface with a compact local-only history of recent completed `/review`, `/debate`, `/consensus`, and `/implement` turns. It derives command, original prompt, participating agents, final artifact headings, pending-change signals, checkpoint signals, approved verification state, and completion status from existing persisted session messages, and each entry can copy a local summary with manual replay guardrails. It creates no separate source of truth and does not perform hidden terminal execution, file edits, Git/GitHub actions, network calls, automatic workflow reruns, or automatic replay.
 
 ### Cost and token meters
 

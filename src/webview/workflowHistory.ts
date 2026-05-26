@@ -86,6 +86,29 @@ export function workflowHistoryAgentLabel(entry: WorkflowHistoryEntry): string {
   return entry.participatingAgents.map(agentLabel).join(', ');
 }
 
+export function buildWorkflowHistorySummary(entry: WorkflowHistoryEntry): string {
+  return [
+    '# Veyra Workflow Summary',
+    '',
+    `Command: /${entry.command}`,
+    `Prompt: ${workflowHistoryPromptPreview(entry, 160)}`,
+    `Agents: ${workflowHistoryAgentLabel(entry)}`,
+    `Artifact headings: ${entry.artifactHeadings.length > 0 ? entry.artifactHeadings.join(', ') : 'None recorded'}`,
+    `Pending changes: ${plural(entry.pendingChangeCount, 'file')}`,
+    `Checkpoints: ${entry.checkpointCount} available`,
+    `Verification: ${entry.verificationState ?? 'not recorded'}`,
+    `Completion: ${entry.completionStatus}`,
+    '',
+    'Replay guardrails:',
+    '- Replay is manual and only prepares a visible composer draft.',
+    '- no hidden dispatches',
+    '- no terminal execution',
+    '- no Git or GitHub actions',
+    '- no network calls',
+    '- no old tool-call replay',
+  ].join('\n');
+}
+
 function workflowMessageIndexes(messages: SessionMessage[]): number[] {
   const indexes: number[] = [];
   messages.forEach((message, index) => {
@@ -191,4 +214,8 @@ function agentLabel(agentId: AgentId): string {
   if (agentId === 'claude') return 'Claude';
   if (agentId === 'codex') return 'Codex';
   return 'Gemini';
+}
+
+function plural(count: number, singular: string): string {
+  return `${count} ${singular}${count === 1 ? '' : 's'}`;
 }

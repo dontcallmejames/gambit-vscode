@@ -3,6 +3,7 @@ import { h, type VNode } from 'preact';
 import { initialState, reduce } from '../src/webview/state.js';
 import {
   buildWorkflowHistorySnapshot,
+  buildWorkflowHistorySummary,
 } from '../src/webview/workflowHistory.js';
 import { WorkflowHistoryPanel } from '../src/webview/components/WorkflowHistoryPanel.js';
 import { veyraWorkflowPrompt } from '../src/workflowPrompts.js';
@@ -84,6 +85,38 @@ describe('buildWorkflowHistorySnapshot', () => {
 
     expect(snapshot.entries[0].pendingChangeCount).toBe(0);
   });
+
+  it('builds a copyable local workflow summary with replay guardrails', () => {
+    let state = initialState();
+    for (const message of [
+      user('u1', '@veyra /review inspect parser risk', 1),
+      agent('a1', 'claude', 2, '## Summary\nLooks okay.'),
+      checkpoint('cp1', 3, 'automatic'),
+      agent('a2', 'codex', 4, '## Missing tests\nAdd parser coverage.'),
+      changeSet('cs1', 5, 'codex', 2),
+      agent('a3', 'gemini', 6, '## Veyra Synthesis\nShip it.\n\n## Next action\nRun verify.'),
+      user('verify1', 'Source: Approved Veyra verification command\nCommand: npm run verify\nExit status: 0', 7),
+    ]) {
+      state = reduce(state, eventForMessage(message));
+    }
+
+    const summary = buildWorkflowHistorySummary(buildWorkflowHistorySnapshot(state).entries[0]);
+
+    expect(summary).toContain('# Veyra Workflow Summary');
+    expect(summary).toContain('Command: /review');
+    expect(summary).toContain('Prompt: inspect parser risk');
+    expect(summary).toContain('Agents: Claude, Codex, Gemini');
+    expect(summary).toContain('Artifact headings: Veyra Synthesis, Next action');
+    expect(summary).toContain('Pending changes: 2 files');
+    expect(summary).toContain('Checkpoints: 1 available');
+    expect(summary).toContain('Verification: passed');
+    expect(summary).toContain('Completion: complete');
+    expect(summary).toContain('Replay is manual');
+    expect(summary).toContain('no hidden dispatches');
+    expect(summary).toContain('no terminal execution');
+    expect(summary).toContain('no Git or GitHub actions');
+    expect(summary).toContain('no network calls');
+  });
 });
 
 describe('WorkflowHistoryPanel', () => {
@@ -100,10 +133,12 @@ describe('WorkflowHistoryPanel', () => {
       },
     };
     const onPrepareReplay = vi.fn();
+    const onCopySummary = vi.fn();
 
     const vnode = WorkflowHistoryPanel({
       snapshot: buildWorkflowHistorySnapshot(state),
       onPrepareReplay,
+      onCopySummary,
     });
     const text = flattenText(vnode);
 
@@ -115,9 +150,12 @@ describe('WorkflowHistoryPanel', () => {
     expect(text).toContain('complete');
 
     clickButton(vnode, 'Prepare replay');
+    clickButton(vnode, 'Copy summary');
 
     expect(onPrepareReplay).toHaveBeenCalledWith(expect.stringContaining('@veyra /debate choose a parser approach'));
     expect(onPrepareReplay).toHaveBeenCalledWith(expect.stringContaining('Source: Manual Veyra workflow replay'));
+    expect(onCopySummary).toHaveBeenCalledWith(expect.stringContaining('Command: /debate'));
+    expect(onCopySummary).toHaveBeenCalledWith(expect.stringContaining('Agents: Claude, Codex'));
   });
 });
 

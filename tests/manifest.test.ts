@@ -402,12 +402,14 @@ describe('extension manifest', () => {
     const roadmap = readFileSync(join(process.cwd(), 'docs', 'superpowers', 'specs', '2026-05-11-veyra-v1-roadmap-design.md'), 'utf8');
 
     for (const document of [userGuide, changelog, roadmap]) {
-      expect(document).toContain('Retrieval Feedback v0.2');
+      expect(document).toContain('Retrieval Feedback v0.3');
     }
+    expect(userGuide).toContain('open selected files');
+    expect(userGuide).toContain('preserves the original');
     expect(userGuide).toContain('does not silently send prompts');
     expect(userGuide).toContain('create hidden memory');
     expect(roadmap).toContain('do not silently dispatch prompts');
-    expect(changelog).toContain('future batched release notes');
+    expect(changelog).toContain('originating Veyra workflow command');
   });
 
   it('keeps the README new-user overview compact while preserving detailed setup guidance', () => {
@@ -820,15 +822,16 @@ describe('extension manifest', () => {
     const roadmap = readFileSync(join(process.cwd(), 'docs', 'superpowers', 'specs', '2026-05-11-veyra-v1-roadmap-design.md'), 'utf8');
 
     for (const document of [userGuide, changelog, roadmap]) {
-      expect(document).toContain('Workflow Artifact History v0.1');
+      expect(document).toContain('Workflow Artifact History v0.2');
       expect(document).toContain('existing session messages');
       expect(document).toContain('no separate source of truth');
     }
     expect(userGuide).toContain('local-only');
     expect(userGuide).toContain('Prepare replay');
+    expect(userGuide).toContain('Copy summary');
     expect(userGuide).toContain('does not create a second source of truth');
     expect(roadmap).toContain('does not perform hidden terminal execution');
-    expect(changelog).toContain('manual replay preparation');
+    expect(changelog).toContain('manual replay guardrails');
   });
 
   it('contributes checkpoint commands and settings', () => {

@@ -12,6 +12,7 @@ type RetrievalFeedbackPanelProps = {
   onToggle: (expanded: boolean) => void;
   onPrepareDraft: (text: string) => void;
   onCopyReport: (text: string) => void;
+  onOpenFile: (path: string) => void;
 };
 
 export function RetrievalFeedbackPanel({
@@ -20,6 +21,7 @@ export function RetrievalFeedbackPanel({
   onToggle,
   onPrepareDraft,
   onCopyReport,
+  onOpenFile,
 }: RetrievalFeedbackPanelProps) {
   const summary = snapshot.latest;
   if (!summary) return null;
@@ -62,6 +64,9 @@ export function RetrievalFeedbackPanel({
                     <div class="retrieval-feedback-file" key={file.path}>
                       <span class="retrieval-feedback-file-path">{file.path}</span>
                       <span>{file.reason}</span>
+                      <button type="button" onClick={() => onOpenFile(file.path)}>
+                        Open file
+                      </button>
                       <button
                         type="button"
                         onClick={() => onPrepareDraft(buildFileMentionDraft(summary, file.path))}

@@ -11,12 +11,14 @@ export function retrievalFeedbackSummaryFromWorkspaceContextResult(
   result: WorkspaceContextResult,
   sourceMessageId: string,
   timestamp: number,
+  workflowCommand?: RetrievalFeedbackSummary['workflowCommand'],
 ): RetrievalFeedbackSummary {
   const quality = result.quality;
   return {
     sourceMessageId,
     timestamp,
     query: result.query,
+    ...(workflowCommand ? { workflowCommand } : {}),
     methodLabel: 'local lexical search over workspace file names and file text',
     selectedFileCount: quality.selectedFileCount,
     matchedFileCount: quality.matchedFileCount,

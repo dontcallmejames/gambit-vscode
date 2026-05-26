@@ -6,6 +6,7 @@ import {
   type WorkflowReplaySnapshot,
 } from '../workflowReplay.js';
 import {
+  buildWorkflowHistorySummary,
   workflowHistoryAgentLabel,
   workflowHistoryEntryToReplaySummary,
   workflowHistoryPromptPreview,
@@ -18,6 +19,7 @@ type WorkflowPanelProps = {
   expanded: boolean;
   onToggle: (expanded: boolean) => void;
   onPrepareReplay: (text: string) => void;
+  onCopySummary: (text: string) => void;
 };
 
 export function WorkflowPanel({
@@ -26,6 +28,7 @@ export function WorkflowPanel({
   expanded,
   onToggle,
   onPrepareReplay,
+  onCopySummary,
 }: WorkflowPanelProps) {
   const workflow = replay.latestWorkflow;
   return (
@@ -90,12 +93,17 @@ export function WorkflowPanel({
                       {entry.checkpointCount > 0 && <span>{plural(entry.checkpointCount, 'checkpoint')}</span>}
                       {entry.verificationState && <span>{`verification ${entry.verificationState}`}</span>}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => onPrepareReplay(buildWorkflowReplayDraft(workflowHistoryEntryToReplaySummary(entry)))}
-                    >
-                      Prepare replay
-                    </button>
+                    <div class="workflow-panel-actions">
+                      <button
+                        type="button"
+                        onClick={() => onPrepareReplay(buildWorkflowReplayDraft(workflowHistoryEntryToReplaySummary(entry)))}
+                      >
+                        Prepare replay
+                      </button>
+                      <button type="button" onClick={() => onCopySummary(buildWorkflowHistorySummary(entry))}>
+                        Copy summary
+                      </button>
+                    </div>
                   </article>
                 ))}
               </div>

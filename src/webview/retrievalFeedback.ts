@@ -20,11 +20,13 @@ export function buildRetrievalFeedbackSnapshot(state: WebviewState): RetrievalFe
 }
 
 export function buildRefineCodebaseDraft(summary: RetrievalFeedbackSummary): string {
+  const workflowCommand = summary.workflowCommand ?? 'review';
   return [
-    `@veyra /review @codebase ${summary.query}`,
+    `@veyra /${workflowCommand} @codebase ${summary.query}`,
     '',
     '[Retrieval feedback]',
     'Source: Manual retrieval refinement from visible Veyra retrieval feedback.',
+    `Original workflow: /${workflowCommand}.`,
     `Previous method: ${summary.methodLabel}.`,
     `Previous query terms: ${summary.queryTerms.join(', ') || 'none'}.`,
     `Previous budget: ${summary.budgetSummary}.`,
@@ -41,11 +43,13 @@ export function buildRefineCodebaseDraft(summary: RetrievalFeedbackSummary): str
 }
 
 export function buildFileMentionDraft(summary: RetrievalFeedbackSummary, filePath: string): string {
+  const workflowCommand = summary.workflowCommand ?? 'review';
   return [
-    `@veyra /review @${filePath}`,
+    `@veyra /${workflowCommand} @${filePath}`,
     '',
     '[Retrieval feedback]',
     'Source: Manual file mention from visible Veyra retrieval feedback.',
+    `Original workflow: /${workflowCommand}.`,
     `Original @codebase query: ${summary.query}`,
     'Use this explicitly mentioned file as context. Add more @file mentions before sending if retrieval missed important files.',
     '[/Retrieval feedback]',
@@ -57,6 +61,7 @@ export function buildRetrievalFeedbackReport(summary: RetrievalFeedbackSummary):
     '# Veyra Retrieval Report',
     '',
     `Query: ${summary.query}`,
+    `Workflow: /${summary.workflowCommand ?? 'review'}`,
     `Method: ${summary.methodLabel}`,
     `Query terms: ${summary.queryTerms.join(', ') || 'none'}`,
     `Prompt budget: ${summary.budgetSummary}`,

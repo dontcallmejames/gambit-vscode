@@ -99,6 +99,7 @@ export function App() {
         expanded={expandedPanels.workflows}
         onToggle={(expanded) => setPanelExpanded('workflows', expanded)}
         onPrepareReplay={prepareComposerDraft}
+        onCopySummary={(text) => send({ kind: 'copy-text', text })}
       />
       <RetrievalFeedbackPanel
         snapshot={retrievalFeedback}
@@ -106,6 +107,7 @@ export function App() {
         onToggle={(expanded) => setPanelExpanded('retrieval', expanded)}
         onPrepareDraft={prepareComposerDraft}
         onCopyReport={(text) => send({ kind: 'copy-text', text })}
+        onOpenFile={(relativePath) => send({ kind: 'open-workspace-file', relativePath })}
       />
       <MessageList session={state.session} inProgress={state.inProgress} settings={state.settings} send={send} />
       <Composer

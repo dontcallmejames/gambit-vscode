@@ -151,12 +151,14 @@ describe('collapsible density panels', () => {
   it('combines latest replay and recent history in one capped Workflows panel', () => {
     const state = workflowState();
     const onPrepareReplay = vi.fn();
+    const onCopySummary = vi.fn();
     const collapsed = WorkflowPanel({
       replay: buildWorkflowReplaySnapshot(state),
       history: buildWorkflowHistorySnapshot(state),
       expanded: false,
       onToggle: vi.fn(),
       onPrepareReplay,
+      onCopySummary,
     });
 
     expect(flattenText(collapsed)).toContain('Workflows');
@@ -170,6 +172,7 @@ describe('collapsible density panels', () => {
       expanded: true,
       onToggle: vi.fn(),
       onPrepareReplay,
+      onCopySummary,
     });
     const text = flattenText(expanded);
 
@@ -180,9 +183,12 @@ describe('collapsible density panels', () => {
     expect(findByClass(expanded, 'workflow-panel-body')).toHaveLength(1);
 
     clickButtonContaining(expanded, 'Prepare replay');
+    clickButtonContaining(expanded, 'Copy summary');
 
     expect(onPrepareReplay).toHaveBeenCalledWith(expect.stringContaining('@veyra /review inspect density controls'));
     expect(onPrepareReplay).toHaveBeenCalledWith(expect.stringContaining('Source: Manual Veyra workflow replay'));
+    expect(onCopySummary).toHaveBeenCalledWith(expect.stringContaining('Command: /review'));
+    expect(onCopySummary).toHaveBeenCalledWith(expect.stringContaining('Agents: Claude, Codex, Gemini'));
   });
 });
 

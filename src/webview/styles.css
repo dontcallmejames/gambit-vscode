@@ -469,9 +469,13 @@ body {
 .workflow-history-meta span {
   max-width: 180px;
 }
-.workflow-history button {
+.workflow-history-actions {
   grid-row: 1;
   grid-column: 2;
+  display: flex;
+  gap: 5px;
+}
+.workflow-history button {
   border: 1px solid var(--vscode-button-border, var(--border));
   border-radius: 4px;
   background: var(--vscode-button-secondaryBackground, rgba(255,255,255,0.07));
@@ -493,10 +497,11 @@ body {
   .workflow-history-item {
     grid-template-columns: minmax(0, 1fr);
   }
-  .workflow-history button {
+  .workflow-history-actions {
     grid-row: auto;
     grid-column: 1;
     justify-self: flex-start;
+    flex-wrap: wrap;
   }
   .workflow-history-main {
     align-items: flex-start;
@@ -611,9 +616,11 @@ body {
 .workflow-panel-meta span {
   max-width: 180px;
 }
-.workflow-panel-item > button {
+.workflow-panel-actions {
   grid-row: 1;
   grid-column: 2;
+  display: flex;
+  gap: 5px;
 }
 
 .retrieval-feedback-panel {
@@ -694,7 +701,7 @@ body {
 .retrieval-feedback-file {
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto;
   gap: 5px 8px;
   align-items: center;
   padding-top: 5px;
@@ -733,10 +740,11 @@ body {
   .retrieval-feedback-file {
     grid-template-columns: minmax(0, 1fr);
   }
-  .workflow-panel-item > button {
+  .workflow-panel-actions {
     grid-row: auto;
     grid-column: 1;
     justify-self: flex-start;
+    flex-wrap: wrap;
   }
 }
 

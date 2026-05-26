@@ -391,6 +391,7 @@ describe('VeyraSessionService', () => {
       { hangSeconds: 0, workspaceContextProvider: workspaceContextProvider as WorkspaceContextProvider },
     );
 
+    const events: any[] = [];
     await service.dispatch(
       {
         text: [
@@ -410,11 +411,18 @@ describe('VeyraSessionService', () => {
         forcedTarget: 'veyra',
         readOnly: true,
       },
-      () => {},
+      (event) => {
+        events.push(event);
+      },
     );
 
     expect(workspaceContextProvider.retrieve).toHaveBeenCalledWith('inspect the auth flow for correctness risks');
     expect(codexPrompt).toContain('[Workspace context from @codebase]');
+    const retrievalFeedback = events.find((event) =>
+      event.kind === 'system-message' &&
+      event.message.kind === 'retrieval-feedback'
+    )?.message;
+    expect(retrievalFeedback?.retrievalFeedback?.workflowCommand).toBe('review');
   });
 
   it.each(['native-chat', 'language-model'] as const)(

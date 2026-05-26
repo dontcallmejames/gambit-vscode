@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Adds Retrieval Feedback v0.3, preserving the originating Veyra workflow command in visible retrieval follow-up drafts and adding explicit open-file actions for selected `@codebase` files.
+- Adds Workflow Artifact History v0.2, letting users copy a local summary for each recent workflow with command, prompt, agents, artifact headings, trust signals, completion status, and manual replay guardrails.
+
 ## 1.0.19 - 2026-05-26
 
 - Adds Retrieval Feedback v0.2 as a compact local-only docked panel for the latest `@codebase` run, with visible refined-query drafts, explicit file-mention drafts, and copyable retrieval reports for future batched release notes.

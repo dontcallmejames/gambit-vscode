@@ -1,6 +1,7 @@
 import { h } from 'preact';
 import { buildWorkflowReplayDraft } from '../workflowReplay.js';
 import {
+  buildWorkflowHistorySummary,
   workflowHistoryAgentLabel,
   workflowHistoryEntryToReplaySummary,
   workflowHistoryPromptPreview,
@@ -11,9 +12,10 @@ import {
 type WorkflowHistoryPanelProps = {
   snapshot: WorkflowHistorySnapshot;
   onPrepareReplay: (text: string) => void;
+  onCopySummary: (text: string) => void;
 };
 
-export function WorkflowHistoryPanel({ snapshot, onPrepareReplay }: WorkflowHistoryPanelProps) {
+export function WorkflowHistoryPanel({ snapshot, onPrepareReplay, onCopySummary }: WorkflowHistoryPanelProps) {
   return (
     <section class={`workflow-history ${snapshot.entries.length > 0 ? 'workflow-history-active' : 'workflow-history-empty'}`} aria-label="Workflow History">
       <div class="workflow-history-head">
@@ -40,12 +42,17 @@ export function WorkflowHistoryPanel({ snapshot, onPrepareReplay }: WorkflowHist
                 {entry.checkpointCount > 0 && <span>{plural(entry.checkpointCount, 'checkpoint')}</span>}
                 {entry.verificationState && <span>{`verification ${entry.verificationState}`}</span>}
               </div>
-              <button
-                type="button"
-                onClick={() => onPrepareReplay(buildWorkflowReplayDraft(workflowHistoryEntryToReplaySummary(entry)))}
-              >
-                Prepare replay
-              </button>
+              <div class="workflow-history-actions">
+                <button
+                  type="button"
+                  onClick={() => onPrepareReplay(buildWorkflowReplayDraft(workflowHistoryEntryToReplaySummary(entry)))}
+                >
+                  Prepare replay
+                </button>
+                <button type="button" onClick={() => onCopySummary(buildWorkflowHistorySummary(entry))}>
+                  Copy summary
+                </button>
+              </div>
             </article>
           ))}
         </div>

@@ -71,7 +71,7 @@ Structured Workflow Artifact Cards render sections such as blocking issues, advi
 
 - Use `@codebase` when you want Veyra to retrieve relevant workspace files without naming them explicitly. The first version uses local lexical search over workspace files and project metadata; it does not upload or build a cloud index.
 - Retrieval Quality and Embedding Readiness v0.1 adds a retrieval-quality block to `@codebase` prompts. It names the local lexical method, query terms, selected-file evidence, prompt budget, omitted matching files, why files were selected, and where lexical retrieval may have missed context.
-- Retrieval Feedback v0.2 surfaces the latest `@codebase` result as a compact docked-view panel. It can prepare a visible refined `@codebase` draft, prepare an explicit `@file` mention draft, or copy a local retrieval report; it does not silently send prompts, run commands, upload code, or create hidden memory.
+- Retrieval Feedback v0.3 surfaces the latest `@codebase` result as a compact docked-view panel. It can open selected files through VS Code's workspace-file handler, prepare a visible refined `@codebase` draft that preserves the original `/review`, `/debate`, `/consensus`, or `/implement` workflow, prepare an explicit `@file` mention draft, or copy a local retrieval report; it does not silently send prompts, run commands, upload code, or create hidden memory.
 - The `@codebase` embedding readiness is inactive. Veyra performs no cloud indexing, no paid embedding calls, and no background repository scans. Refine `@codebase` query terms or attach known files with `@file` when lexical search misses something obvious.
 - Set `veyra.workflow.template` when a workspace wants an extra reusable lens such as `architecture-review`, `security-review`, `test-improvement`, `refactor-plan`, or `implementation-with-review`.
 - Use `veyra.agentRoles.claude`, `veyra.agentRoles.codex`, and `veyra.agentRoles.gemini` for workspace role customization. Non-empty values are appended to that agent's Veyra role preamble only.
@@ -187,7 +187,7 @@ Replay uses the current workspace and Git state. Prior agent replies remain tran
 
 ### Workflow Artifact History
 
-Workflow Artifact History v0.1 keeps a compact list of recent completed Veyra workflows in the collapsible Workflows panel. Each entry summarizes the workflow command, original prompt, participating agents, final artifact headings, pending-change signals, checkpoint signals, approved verification result when present, and completion status.
+Workflow Artifact History v0.2 keeps a compact list of recent completed Veyra workflows in the collapsible Workflows panel. Each entry summarizes the workflow command, original prompt, participating agents, final artifact headings, pending-change signals, checkpoint signals, approved verification result when present, and completion status. `Copy summary` copies the same local-only evidence plus manual replay guardrails for issue notes, PR prep, or follow-up planning.
 
 History is local-only and derived from the existing session messages Veyra already stores, with no separate source of truth. It does not rerun old workflows, replay tool calls, execute commands, edit files, perform Git/GitHub actions, or make network calls. Use `Prepare replay` when you want a visible manual composer draft for a past workflow against the current workspace state.
 

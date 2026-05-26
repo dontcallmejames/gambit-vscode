@@ -53,6 +53,17 @@ describe('retrieval feedback summary', () => {
     expect(report).toContain('no paid embedding calls');
     expect(report).toContain('no hidden background scans');
   });
+
+  it('preserves the originating workflow command in retrieval follow-up drafts', () => {
+    const summary = {
+      ...sampleSummary(),
+      workflowCommand: 'consensus',
+    } as RetrievalFeedbackSummary;
+
+    expect(buildRefineCodebaseDraft(summary)).toContain('@veyra /consensus @codebase auth flow');
+    expect(buildFileMentionDraft(summary, 'src/auth/session.ts')).toContain('@veyra /consensus @src/auth/session.ts');
+    expect(buildRetrievalFeedbackReport(summary)).toContain('Workflow: /consensus');
+  });
 });
 
 describe('RetrievalFeedbackPanel', () => {
@@ -60,6 +71,7 @@ describe('RetrievalFeedbackPanel', () => {
     const onToggle = vi.fn();
     const onPrepareDraft = vi.fn();
     const onCopyReport = vi.fn();
+    const onOpenFile = vi.fn();
     const snapshot = { latest: sampleSummary() };
 
     const collapsed = RetrievalFeedbackPanel({
@@ -68,6 +80,7 @@ describe('RetrievalFeedbackPanel', () => {
       onToggle,
       onPrepareDraft,
       onCopyReport,
+      onOpenFile,
     });
     const collapsedText = flattenText(collapsed);
 
@@ -89,6 +102,7 @@ describe('RetrievalFeedbackPanel', () => {
       onToggle,
       onPrepareDraft,
       onCopyReport,
+      onOpenFile,
     });
     const expandedText = flattenText(expanded);
 
@@ -99,11 +113,13 @@ describe('RetrievalFeedbackPanel', () => {
     expect(expandedText).toContain('no cloud indexing');
 
     clickButtonContaining(expanded, 'Refine @codebase query');
+    clickButtonContaining(expanded, 'Open file');
     clickButtonContaining(expanded, 'Mention');
     clickButtonContaining(expanded, 'Copy retrieval report');
 
     expect(onPrepareDraft).toHaveBeenCalledWith(expect.stringContaining('@veyra /review @codebase auth flow'));
     expect(onPrepareDraft).toHaveBeenCalledWith(expect.stringContaining('@src/auth/session.ts'));
+    expect(onOpenFile).toHaveBeenCalledWith('src/auth/session.ts');
     expect(onCopyReport).toHaveBeenCalledWith(expect.stringContaining('# Veyra Retrieval Report'));
   });
 
@@ -114,6 +130,7 @@ describe('RetrievalFeedbackPanel', () => {
       onToggle: vi.fn(),
       onPrepareDraft: vi.fn(),
       onCopyReport: vi.fn(),
+      onOpenFile: vi.fn(),
     })).toBeNull();
   });
 });

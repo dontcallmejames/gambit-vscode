@@ -15,6 +15,8 @@ export const allowedPackageFiles = [
   'dist/webview.js',
   'dist/webview.js.map',
   'dist/index.html',
+  'docs/user-guide.md',
+  'docs/developer-verification.md',
   'docs/preview-demo-script.md',
   'docs/vscode-smoke-test.md',
   'docs/goal-completion-audit.md',

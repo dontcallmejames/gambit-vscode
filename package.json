@@ -45,6 +45,8 @@
     "dist/index.html",
     "dist/webview.js",
     "dist/webview.js.map",
+    "docs/user-guide.md",
+    "docs/developer-verification.md",
     "docs/goal-completion-audit.md",
     "docs/preview-demo-script.md",
     "docs/vscode-smoke-test.md"

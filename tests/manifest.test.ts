@@ -29,6 +29,26 @@ vi.mock('vscode', () => ({
 import { NATIVE_CHAT_PARTICIPANTS } from '../src/nativeChat.js';
 import { VEYRA_LANGUAGE_MODELS } from '../src/languageModelProvider.js';
 
+function repoText(...segments: string[]): string {
+  return readFileSync(join(process.cwd(), ...segments), 'utf8');
+}
+
+function userGuideText(): string {
+  return repoText('docs', 'user-guide.md');
+}
+
+function developerVerificationText(): string {
+  return repoText('docs', 'developer-verification.md');
+}
+
+function packagedDocsText(): string {
+  return [
+    repoText('README.md'),
+    userGuideText(),
+    developerVerificationText(),
+  ].join('\n');
+}
+
 describe('extension manifest', () => {
   it('declares the VS Code API floor used by native chat and language model providers', () => {
     expect(manifest.engines.vscode).toBe('^1.118.0');
@@ -196,29 +216,31 @@ describe('extension manifest', () => {
     expect(vitestConfig).toContain("'**/.vscode/veyra/**'");
 
     const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const developerVerification = developerVerificationText();
     const audit = readFileSync(join(process.cwd(), 'docs', 'goal-completion-audit.md'), 'utf8');
     const smokeChecklist = readFileSync(join(process.cwd(), 'docs', 'vscode-smoke-test.md'), 'utf8');
     const liveReadme = readFileSync(join(process.cwd(), 'tests', 'integration', 'README.md'), 'utf8');
-    expect(readme).toContain('npm run verify:completion');
-    expect(readme).toContain('npm run verify:goal');
+    expect(readme).toContain('docs/developer-verification.md');
     expect(readme).toContain('Run Extension');
     expect(readme).toContain('F5');
     expect(readme).toContain('.vscode/launch.json');
-    expect(readme).toContain('Veyra: Show live validation guide');
+    expect(developerVerification).toContain('npm run verify:completion');
+    expect(developerVerification).toContain('npm run verify:goal');
     expect(readme).toContain('Veyra: Configure Codex/Gemini CLI paths');
     expect(readme).toContain('Veyra view');
     expect(readme).toContain('Veyra: Open View');
     expect(readme).toContain('command id `veyra.openPanel` remains available');
+    expect(developerVerification).toContain('Veyra: Show live validation guide');
     expect(readme).not.toContain('legacy Veyra panel');
     expect(readme).not.toContain('Use version `0.0.8` or newer');
     expect(readme).not.toContain('updated to `0.0.8` or newer');
-    expect(readme).toContain('explicit JS bundle, native executable, or npm shim paths');
-    expect(readme).toContain('stale PATH shims');
-    expect(readme).toContain('falls back to `npm root -g`');
-    expect(readme).toContain('shared-context relay');
-    expect(readme).toContain('write-capable implementation');
-    expect(readme).toContain("Remove-Item Env:\\VEYRA_RUN_LIVE -ErrorAction SilentlyContinue");
-    expect(readme).toContain("stays set for the current terminal session");
+    expect(developerVerification).toContain('explicit JS bundle, native executable, or npm shim paths');
+    expect(developerVerification).toContain('stale PATH shims');
+    expect(developerVerification).toContain('falls back to `npm root -g`');
+    expect(developerVerification).toContain('shared-context relay');
+    expect(developerVerification).toContain('write-capable implementation');
+    expect(developerVerification).toContain("Remove-Item Env:\\VEYRA_RUN_LIVE -ErrorAction SilentlyContinue");
+    expect(developerVerification).toContain("stays set for the current terminal session");
     expect(audit).toContain('npm run verify:completion');
     expect(audit).toContain('npm run verify:goal');
     expect(audit).toContain('Veyra: Show live validation guide');
@@ -343,46 +365,47 @@ describe('extension manifest', () => {
     });
 
     const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const userGuide = userGuideText();
     expect(readme).toContain('@codebase');
-    expect(readme).toContain('Retrieval Quality and Embedding Readiness v0.1');
-    expect(readme).toContain('why files were selected');
-    expect(readme).toContain('where lexical retrieval may have missed context');
-    expect(readme).toContain('no cloud indexing');
-    expect(readme).toContain('no paid embedding calls');
-    expect(readme).toContain('no background repository scans');
-    expect(readme).toContain('veyra.workspaceContext.maxFiles');
-    expect(readme).toContain('veyra.workspaceContext.maxSnippetLines');
-    expect(readme).toContain('veyra.workspaceContext.maxFileBytes');
+    expect(userGuide).toContain('Retrieval Quality and Embedding Readiness v0.1');
+    expect(userGuide).toContain('why files were selected');
+    expect(userGuide).toContain('where lexical retrieval may have missed context');
+    expect(userGuide).toContain('no cloud indexing');
+    expect(userGuide).toContain('no paid embedding calls');
+    expect(userGuide).toContain('no background repository scans');
+    expect(userGuide).toContain('veyra.workspaceContext.maxFiles');
+    expect(userGuide).toContain('veyra.workspaceContext.maxSnippetLines');
+    expect(userGuide).toContain('veyra.workspaceContext.maxFileBytes');
   });
 
   it('documents retrieval quality and embedding readiness guardrails', () => {
-    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const userGuide = userGuideText();
     const changelog = readFileSync(join(process.cwd(), 'CHANGELOG.md'), 'utf8');
     const audit = readFileSync(join(process.cwd(), 'docs', 'goal-completion-audit.md'), 'utf8');
     const smokeChecklist = readFileSync(join(process.cwd(), 'docs', 'vscode-smoke-test.md'), 'utf8');
     const roadmap = readFileSync(join(process.cwd(), 'docs', 'superpowers', 'specs', '2026-05-11-veyra-v1-roadmap-design.md'), 'utf8');
 
-    for (const document of [readme, changelog, audit, smokeChecklist, roadmap]) {
+    for (const document of [userGuide, changelog, audit, smokeChecklist, roadmap]) {
       expect(document).toContain('Retrieval Quality and Embedding Readiness v0.1');
       expect(document).toContain('local lexical');
       expect(document).toContain('no cloud indexing');
       expect(document).toContain('no background repository scans');
     }
-    expect(readme).toContain('embedding readiness is inactive');
-    expect(readme).toContain('attach known files with `@file`');
+    expect(userGuide).toContain('embedding readiness is inactive');
+    expect(userGuide).toContain('attach known files with `@file`');
     expect(changelog).toContain('@codebase retrieval');
   });
 
   it('documents retrieval feedback as a local-only unreleased slice', () => {
-    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const userGuide = userGuideText();
     const changelog = readFileSync(join(process.cwd(), 'CHANGELOG.md'), 'utf8');
     const roadmap = readFileSync(join(process.cwd(), 'docs', 'superpowers', 'specs', '2026-05-11-veyra-v1-roadmap-design.md'), 'utf8');
 
-    for (const document of [readme, changelog, roadmap]) {
+    for (const document of [userGuide, changelog, roadmap]) {
       expect(document).toContain('Retrieval Feedback v0.2');
     }
-    expect(readme).toContain('does not silently send prompts');
-    expect(readme).toContain('create hidden memory');
+    expect(userGuide).toContain('does not silently send prompts');
+    expect(userGuide).toContain('create hidden memory');
     expect(roadmap).toContain('do not silently dispatch prompts');
     expect(changelog).toContain('future batched release notes');
   });
@@ -398,6 +421,7 @@ describe('extension manifest', () => {
     );
     const opening = readme.slice(0, quickstartIndex);
     const quickstart = readme.slice(quickstartIndex, overviewIndex);
+    const readmeLines = readme.trimEnd().split(/\r?\n/u);
     const topLevelBullets = overview.split(/\r?\n/u).filter((line) => line.startsWith('- '));
     const quickstartSteps = quickstart.split(/\r?\n/u).filter((line) => /^\d+\./u.test(line));
 
@@ -410,13 +434,19 @@ describe('extension manifest', () => {
     expect(opening).toContain('does not upload your repository');
     expect(quickstartSteps.length).toBeLessThanOrEqual(8);
     expect(topLevelBullets.length).toBeLessThanOrEqual(6);
+    expect(readmeLines.length).toBeLessThanOrEqual(95);
     expect(overview).not.toMatch(/\bv\d+\.\d+\b/u);
     expect(overview).not.toMatch(/Retrieval Feedback|Presentation Density|Workflow Artifact History|Inline Autocomplete|Local Model Support/u);
     expect(readme).toContain('## Requirements');
     expect(readme).toContain('## Quickstart');
-    expect(readme).toContain('## Using Native Chat');
-    expect(readme).toContain('### Context And Tuning');
+    expect(readme).toContain('## Detailed Guides');
+    expect(readme).toContain('docs/user-guide.md');
+    expect(readme).toContain('docs/developer-verification.md');
     expect(readme).toContain('Veyra: Configure Codex/Gemini CLI paths');
+    expect(readme).not.toContain('## Using Native Chat');
+    expect(readme).not.toContain('### Context And Tuning');
+    expect(readme).not.toContain('## Settings');
+    expect(readme).not.toContain('## Verification');
   });
 
   it('keeps the Marketplace-facing README summary skimmable and trust-focused', () => {
@@ -445,9 +475,32 @@ describe('extension manifest', () => {
     expect(summary).not.toMatch(/\bv0\.[12]\b/u);
   });
 
+  it('keeps the packaged user guide navigable after moving detailed README content', () => {
+    const userGuide = userGuideText();
+
+    expect(userGuide).toContain('## Contents');
+    for (const link of [
+      '[Using Native Chat](#using-native-chat)',
+      '[Composer Discovery](#composer-discovery)',
+      '[Workflow Modes](#workflow-modes)',
+      '[Context And Tuning](#context-and-tuning)',
+      '[Terminal And Verification Context](#terminal-and-verification-context)',
+      '[GitHub And CI Workflow Context](#github-and-ci-workflow-context)',
+      '[Using Veyra As A Language Model](#using-veyra-as-a-language-model)',
+      '[Edit Coordination](#edit-coordination)',
+      '[Trust Center](#trust-center)',
+      '[Workflow Replay](#workflow-replay)',
+      '[Checkpoints And Rollback](#checkpoints-and-rollback)',
+      '[Settings](#settings)',
+    ]) {
+      expect(userGuide).toContain(link);
+    }
+    expect(userGuide.match(/\[Back to top\]\(#veyra-user-guide\)/g)?.length).toBeGreaterThanOrEqual(4);
+  });
+
   it('contributes opt-in inline autocomplete settings and docs', () => {
     const properties = manifest.contributes.configuration.properties;
-    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const userGuide = userGuideText();
     const changelog = readFileSync(join(process.cwd(), 'CHANGELOG.md'), 'utf8');
     const roadmap = readFileSync(join(process.cwd(), 'docs', 'superpowers', 'specs', '2026-05-11-veyra-v1-roadmap-design.md'), 'utf8');
 
@@ -479,10 +532,10 @@ describe('extension manifest', () => {
       minimum: 0,
       maximum: 200,
     });
-    expect(readme).toContain('Inline Autocomplete v0.1');
-    expect(readme).toContain('veyra.inlineAutocomplete.enabled');
-    expect(readme).toContain('manual inline suggestion');
-    expect(readme).toContain('read-only direct-agent request');
+    expect(userGuide).toContain('Inline Autocomplete v0.1');
+    expect(userGuide).toContain('veyra.inlineAutocomplete.enabled');
+    expect(userGuide).toContain('manual inline suggestion');
+    expect(userGuide).toContain('read-only direct-agent request');
     expect(changelog).toContain('Inline Autocomplete v0.1');
     expect(roadmap).toContain('Implementation note: Inline Autocomplete v0.1');
   });
@@ -490,7 +543,7 @@ describe('extension manifest', () => {
   it('contributes diff preview commands and settings', () => {
     const properties = manifest.contributes.configuration.properties;
     const commands = new Map(manifest.contributes.commands.map((command) => [command.command, command.title]));
-    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const userGuide = userGuideText();
 
     expect(manifest.contributes.commands.map((command) => command.command)).toContain('veyra.openPendingChanges');
     expect(manifest.contributes.commands.map((command) => command.command)).toContain('veyra.acceptPendingChanges');
@@ -516,28 +569,28 @@ describe('extension manifest', () => {
       default: 1000000,
       minimum: 1024,
     });
-    expect(readme).toContain('Veyra: Open Pending Changes');
-    expect(readme).toContain('Veyra: Accept Pending Changes');
-    expect(readme).toContain('Veyra: Reject Pending Changes');
-    expect(readme).toContain('Veyra: Accept Pending Change File');
-    expect(readme).toContain('Veyra: Reject Pending Change File');
-    expect(readme).toContain('individual files');
-    expect(readme).toContain('veyra.diffPreview.enabled');
-    expect(readme).toContain('veyra.diffPreview.maxFileBytes');
+    expect(userGuide).toContain('Veyra: Open Pending Changes');
+    expect(userGuide).toContain('Veyra: Accept Pending Changes');
+    expect(userGuide).toContain('Veyra: Reject Pending Changes');
+    expect(userGuide).toContain('Veyra: Accept Pending Change File');
+    expect(userGuide).toContain('Veyra: Reject Pending Change File');
+    expect(userGuide).toContain('individual files');
+    expect(userGuide).toContain('veyra.diffPreview.enabled');
+    expect(userGuide).toContain('veyra.diffPreview.maxFileBytes');
   });
 
   it('documents workflow synthesis output shapes', () => {
-    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const userGuide = userGuideText();
 
-    expect(readme).toContain('Veyra Synthesis');
-    expect(readme).toContain('Blocking issues');
-    expect(readme).toContain('Advisory risks');
-    expect(readme).toContain('Missing tests');
-    expect(readme).toContain('Follow-up suggestions');
-    expect(readme).toContain('None found');
-    expect(readme).toContain('Recommended approach');
-    expect(readme).toContain('Handoff Summary');
-    expect(readme).toContain('Not run');
+    expect(userGuide).toContain('Veyra Synthesis');
+    expect(userGuide).toContain('Blocking issues');
+    expect(userGuide).toContain('Advisory risks');
+    expect(userGuide).toContain('Missing tests');
+    expect(userGuide).toContain('Follow-up suggestions');
+    expect(userGuide).toContain('None found');
+    expect(userGuide).toContain('Recommended approach');
+    expect(userGuide).toContain('Handoff Summary');
+    expect(userGuide).toContain('Not run');
   });
 
   it('contributes conservative local-model support settings', () => {
@@ -571,7 +624,7 @@ describe('extension manifest', () => {
 
   it('contributes workflow template and workspace role customization settings', () => {
     const properties = manifest.contributes.configuration.properties;
-    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const userGuide = userGuideText();
 
     expect(properties['veyra.workflow.template']).toMatchObject({
       type: 'string',
@@ -588,18 +641,18 @@ describe('extension manifest', () => {
     expect(properties['veyra.agentRoles.claude']).toMatchObject({ type: 'string', default: '' });
     expect(properties['veyra.agentRoles.codex']).toMatchObject({ type: 'string', default: '' });
     expect(properties['veyra.agentRoles.gemini']).toMatchObject({ type: 'string', default: '' });
-    expect(readme).toContain('veyra.workflow.template');
-    expect(readme).toContain('security-review');
-    expect(readme).toContain('veyra.agentRoles.claude');
-    expect(readme).toContain('workspace role customization');
+    expect(userGuide).toContain('veyra.workflow.template');
+    expect(userGuide).toContain('security-review');
+    expect(userGuide).toContain('veyra.agentRoles.claude');
+    expect(userGuide).toContain('workspace role customization');
   });
 
   it('documents terminal awareness guardrails', () => {
-    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const userGuide = userGuideText();
     const smokeChecklist = readFileSync(join(process.cwd(), 'docs', 'vscode-smoke-test.md'), 'utf8');
     const commands = new Map(manifest.contributes.commands.map((command) => [command.command, command.title]));
 
-    for (const document of [readme, smokeChecklist]) {
+    for (const document of [userGuide, smokeChecklist]) {
       const normalized = document.toLowerCase();
 
       expect(normalized).toContain('terminal selections');
@@ -620,19 +673,19 @@ describe('extension manifest', () => {
     expect(manifest.activationEvents).toContain('onCommand:veyra.reviewBrowserTestOutput');
     expect(manifest.activationEvents).toContain('onCommand:veyra.summarizeGitStatus');
     expect(manifest.activationEvents).toContain('onCommand:veyra.reviewCiWorkflowOutput');
-    expect(readme).toContain('Veyra: Diagnose Terminal Output');
-    expect(readme).toContain('Veyra: Run Verification Command');
-    expect(readme).toContain('Veyra: Review Browser/Test Output');
-    expect(readme).toContain('copied or pasted terminal output');
-    expect(readme).toContain('does not read terminal scrollback directly');
+    expect(userGuide).toContain('Veyra: Diagnose Terminal Output');
+    expect(userGuide).toContain('Veyra: Run Verification Command');
+    expect(userGuide).toContain('Veyra: Review Browser/Test Output');
+    expect(userGuide).toContain('copied or pasted terminal output');
+    expect(userGuide).toContain('does not read terminal scrollback directly');
   });
 
   it('documents GitHub and CI workflow awareness guardrails', () => {
-    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const userGuide = userGuideText();
     const smokeChecklist = readFileSync(join(process.cwd(), 'docs', 'vscode-smoke-test.md'), 'utf8');
     const commands = new Map(manifest.contributes.commands.map((command) => [command.command, command.title]));
 
-    for (const document of [readme, smokeChecklist]) {
+    for (const document of [userGuide, smokeChecklist]) {
       const normalized = document.toLowerCase();
 
       expect(normalized).toContain('github and ci workflow context');
@@ -656,124 +709,124 @@ describe('extension manifest', () => {
     expect(manifest.activationEvents).toContain('onCommand:veyra.reviewCiWorkflowOutput');
     expect(manifest.activationEvents).toContain('onCommand:veyra.preparePrPackageDraft');
     expect(manifest.activationEvents).toContain('onCommand:veyra.reviewBrowserTestOutput');
-    expect(readme).toContain('Veyra: Summarize Git Status');
-    expect(readme).toContain('Veyra: Review CI/PR Output');
-    expect(readme).toContain('Veyra: Prepare PR Package Draft');
-    expect(readme).toContain('Veyra: Review Browser/Test Output');
+    expect(userGuide).toContain('Veyra: Summarize Git Status');
+    expect(userGuide).toContain('Veyra: Review CI/PR Output');
+    expect(userGuide).toContain('Veyra: Prepare PR Package Draft');
+    expect(userGuide).toContain('Veyra: Review Browser/Test Output');
   });
 
   it('documents docked composer command discovery', () => {
-    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const userGuide = userGuideText();
 
-    expect(readme).toContain('Type `/` in the docked Veyra composer');
-    expect(readme).toContain('/review');
-    expect(readme).toContain('Veyra: Open Pending Changes');
-    expect(readme).toContain('Veyra: Run Verification Command');
-    expect(readme).toContain('Veyra: Review Browser/Test Output');
-    expect(readme).toContain('Veyra: Summarize Git Status');
-    expect(readme).toContain('Veyra: Review CI/PR Output');
-    expect(readme).toContain('Veyra: Prepare PR Package Draft');
-    expect(readme).toContain('Veyra: Roll Back Latest Checkpoint');
-    expect(readme).toContain('Veyra: Copy Diagnostic Report');
+    expect(userGuide).toContain('Type `/` in the docked Veyra composer');
+    expect(userGuide).toContain('/review');
+    expect(userGuide).toContain('Veyra: Open Pending Changes');
+    expect(userGuide).toContain('Veyra: Run Verification Command');
+    expect(userGuide).toContain('Veyra: Review Browser/Test Output');
+    expect(userGuide).toContain('Veyra: Summarize Git Status');
+    expect(userGuide).toContain('Veyra: Review CI/PR Output');
+    expect(userGuide).toContain('Veyra: Prepare PR Package Draft');
+    expect(userGuide).toContain('Veyra: Roll Back Latest Checkpoint');
+    expect(userGuide).toContain('Veyra: Copy Diagnostic Report');
   });
 
   it('documents safe Markdown rendering and provider transparency', () => {
-    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const userGuide = userGuideText();
     const changelog = readFileSync(join(process.cwd(), 'CHANGELOG.md'), 'utf8');
     const audit = readFileSync(join(process.cwd(), 'docs', 'goal-completion-audit.md'), 'utf8');
     const roadmap = readFileSync(join(process.cwd(), 'docs', 'superpowers', 'specs', '2026-05-11-veyra-v1-roadmap-design.md'), 'utf8');
 
-    for (const document of [readme, changelog, audit, roadmap]) {
+    for (const document of [userGuide, changelog, audit, roadmap]) {
       expect(document).toContain('Markdown');
       expect(document).toContain('provider transparency');
       expect(document).toContain('Claude CLI');
       expect(document).toContain('Codex CLI');
       expect(document).toContain('Antigravity CLI');
     }
-    expect(readme).toContain('Veyra renders agent Markdown safely');
-    expect(readme).toContain('Veyra does not hardcode vendor model promises');
-    expect(readme).toContain('CLI/provider versions');
+    expect(userGuide).toContain('Veyra renders agent Markdown safely');
+    expect(userGuide).toContain('Veyra does not hardcode vendor model promises');
+    expect(userGuide).toContain('CLI/provider versions');
   });
 
   it('documents Local Model Support v0.1 guardrails', () => {
-    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const userGuide = userGuideText();
     const changelog = readFileSync(join(process.cwd(), 'CHANGELOG.md'), 'utf8');
     const audit = readFileSync(join(process.cwd(), 'docs', 'goal-completion-audit.md'), 'utf8');
     const smokeChecklist = readFileSync(join(process.cwd(), 'docs', 'vscode-smoke-test.md'), 'utf8');
     const roadmap = readFileSync(join(process.cwd(), 'docs', 'superpowers', 'specs', '2026-05-11-veyra-v1-roadmap-design.md'), 'utf8');
 
-    for (const document of [readme, changelog, audit, smokeChecklist, roadmap]) {
+    for (const document of [userGuide, changelog, audit, smokeChecklist, roadmap]) {
       expect(document).toContain('Local Model Support v0.1');
       expect(document).toContain('local/self-hosted');
       expect(document).toContain('no automatic model downloads');
       expect(document).toContain('no hidden server launches');
       expect(document).toContain('no background network probing');
     }
-    expect(readme).toContain('veyra.localModels.mode');
-    expect(readme).toContain('veyra.localModels.endpoint');
-    expect(readme).toContain('veyra.localModels.model');
-    expect(readme).toContain('diagnostics only');
-    expect(readme).toContain('does not replace Claude, Codex, or Gemini routing');
+    expect(userGuide).toContain('veyra.localModels.mode');
+    expect(userGuide).toContain('veyra.localModels.endpoint');
+    expect(userGuide).toContain('veyra.localModels.model');
+    expect(userGuide).toContain('diagnostics only');
+    expect(userGuide).toContain('does not replace Claude, Codex, or Gemini routing');
   });
 
   it('documents the Mission Control timeline presentation slice', () => {
-    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const userGuide = userGuideText();
     const changelog = readFileSync(join(process.cwd(), 'CHANGELOG.md'), 'utf8');
     const audit = readFileSync(join(process.cwd(), 'docs', 'goal-completion-audit.md'), 'utf8');
     const roadmap = readFileSync(join(process.cwd(), 'docs', 'superpowers', 'specs', '2026-05-11-veyra-v1-roadmap-design.md'), 'utf8');
 
-    for (const document of [readme, changelog, audit, roadmap]) {
+    for (const document of [userGuide, changelog, audit, roadmap]) {
       expect(document).toContain('Mission Control timeline');
       expect(document).toContain('Presentation Layer');
     }
-    expect(readme).toContain('queued, active, complete, failed, cancelled, and waiting');
+    expect(userGuide).toContain('queued, active, complete, failed, cancelled, and waiting');
   });
 
   it('documents the Presentation Density docked-view slice', () => {
-    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const userGuide = userGuideText();
     const changelog = readFileSync(join(process.cwd(), 'CHANGELOG.md'), 'utf8');
     const roadmap = readFileSync(join(process.cwd(), 'docs', 'superpowers', 'specs', '2026-05-11-veyra-v1-roadmap-design.md'), 'utf8');
 
-    for (const document of [readme, changelog, roadmap]) {
+    for (const document of [userGuide, changelog, roadmap]) {
       expect(document).toContain('Presentation Density v0.1');
       expect(document).toContain('Mission Control');
       expect(document).toContain('Trust Center');
       expect(document).toContain('Workflows');
     }
-    expect(readme).toContain('collapsed by default');
-    expect(readme).toContain('opens automatically for urgent actionable signals');
+    expect(userGuide).toContain('collapsed by default');
+    expect(userGuide).toContain('opens automatically for urgent actionable signals');
     expect(changelog).toContain('combining replay/history');
     expect(roadmap).toContain('persists expanded/collapsed panel state');
   });
 
   it('documents the structured workflow artifact cards presentation slice', () => {
-    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const userGuide = userGuideText();
     const changelog = readFileSync(join(process.cwd(), 'CHANGELOG.md'), 'utf8');
     const audit = readFileSync(join(process.cwd(), 'docs', 'goal-completion-audit.md'), 'utf8');
     const roadmap = readFileSync(join(process.cwd(), 'docs', 'superpowers', 'specs', '2026-05-11-veyra-v1-roadmap-design.md'), 'utf8');
 
-    for (const document of [readme, changelog, audit, roadmap]) {
+    for (const document of [userGuide, changelog, audit, roadmap]) {
       expect(document).toContain('Structured Workflow Artifact Cards');
       expect(document).toContain('Veyra Synthesis');
       expect(document).toContain('Handoff Summary');
     }
-    expect(readme).toContain('blocking issues');
+    expect(userGuide).toContain('blocking issues');
     expect(changelog).toContain('safe Markdown fallback');
   });
 
   it('documents workflow artifact history guardrails', () => {
-    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const userGuide = userGuideText();
     const changelog = readFileSync(join(process.cwd(), 'CHANGELOG.md'), 'utf8');
     const roadmap = readFileSync(join(process.cwd(), 'docs', 'superpowers', 'specs', '2026-05-11-veyra-v1-roadmap-design.md'), 'utf8');
 
-    for (const document of [readme, changelog, roadmap]) {
+    for (const document of [userGuide, changelog, roadmap]) {
       expect(document).toContain('Workflow Artifact History v0.1');
       expect(document).toContain('existing session messages');
       expect(document).toContain('no separate source of truth');
     }
-    expect(readme).toContain('local-only');
-    expect(readme).toContain('Prepare replay');
-    expect(readme).toContain('does not create a second source of truth');
+    expect(userGuide).toContain('local-only');
+    expect(userGuide).toContain('Prepare replay');
+    expect(userGuide).toContain('does not create a second source of truth');
     expect(roadmap).toContain('does not perform hidden terminal execution');
     expect(changelog).toContain('manual replay preparation');
   });
@@ -781,7 +834,7 @@ describe('extension manifest', () => {
   it('contributes checkpoint commands and settings', () => {
     const properties = manifest.contributes.configuration.properties;
     const commands = new Map(manifest.contributes.commands.map((command) => [command.command, command.title]));
-    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const userGuide = userGuideText();
 
     expect(manifest.contributes.commands.map((command) => command.command)).toContain('veyra.createCheckpoint');
     expect(manifest.contributes.commands.map((command) => command.command)).toContain('veyra.listCheckpoints');
@@ -807,12 +860,12 @@ describe('extension manifest', () => {
       minimum: 1,
       maximum: 100,
     });
-    expect(readme).toContain('Veyra: Create Checkpoint');
-    expect(readme).toContain('Veyra: List Checkpoints');
-    expect(readme).toContain('Veyra: Roll Back Latest Checkpoint');
-    expect(readme).toContain('veyra.checkpoints.enabled');
-    expect(readme).toContain('veyra.checkpoints.maxFileBytes');
-    expect(readme).toContain('veyra.checkpoints.maxCount');
+    expect(userGuide).toContain('Veyra: Create Checkpoint');
+    expect(userGuide).toContain('Veyra: List Checkpoints');
+    expect(userGuide).toContain('Veyra: Roll Back Latest Checkpoint');
+    expect(userGuide).toContain('veyra.checkpoints.enabled');
+    expect(userGuide).toContain('veyra.checkpoints.maxFileBytes');
+    expect(userGuide).toContain('veyra.checkpoints.maxCount');
   });
 
   it('contributes the docked Veyra webview in the Secondary Side Bar', () => {
@@ -975,11 +1028,11 @@ describe('extension manifest', () => {
   });
 
   it('documents the autonomous workflow guardrails for broad implementation requests', () => {
-    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const userGuide = userGuideText();
     const smokeChecklist = readFileSync(join(process.cwd(), 'docs', 'vscode-smoke-test.md'), 'utf8');
     const audit = readFileSync(join(process.cwd(), 'docs', 'goal-completion-audit.md'), 'utf8');
 
-    for (const document of [readme, smokeChecklist, audit]) {
+    for (const document of [userGuide, smokeChecklist, audit]) {
       expect(document).toContain('brainstorming or approval checkpoints');
       expect(document).toContain('available model and CLI capabilities');
       expect(document).toContain('read-only or edit-permitted instructions');
@@ -1031,6 +1084,8 @@ describe('extension manifest', () => {
       'dist/index.html',
       'dist/webview.js',
       'dist/webview.js.map',
+      'docs/user-guide.md',
+      'docs/developer-verification.md',
       'docs/goal-completion-audit.md',
       'docs/preview-demo-script.md',
       'docs/vscode-smoke-test.md',
@@ -1038,6 +1093,8 @@ describe('extension manifest', () => {
     expect(packageVerifier).toContain("'LICENSE.txt'");
     expect(packageVerifier).toContain("'CHANGELOG.md'");
     expect(packageVerifier).toContain("'resources/icon.png'");
+    expect(packageVerifier).toContain("'docs/user-guide.md'");
+    expect(packageVerifier).toContain("'docs/developer-verification.md'");
     expect(packageVerifier).toContain("'docs/vscode-smoke-test.md'");
     expect(packageVerifier).toContain("'docs/goal-completion-audit.md'");
     expect(packageVerifier).toContain("'docs/preview-demo-script.md'");
@@ -1047,6 +1104,8 @@ describe('extension manifest', () => {
     const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
     expect(readme).toContain('## Quickstart');
     expect(readme).toContain('## Troubleshooting');
+    expect(readme).toContain('docs/user-guide.md');
+    expect(readme).toContain('docs/developer-verification.md');
     expect(readme).toContain('docs/preview-demo-script.md');
 
     const npmIgnore = readFileSync(join(process.cwd(), '.npmignore'), 'utf8');

@@ -1,8 +1,9 @@
 import type { TrustCenterSnapshot } from './trustCenter.js';
+import type { RetrievalFeedbackSnapshot } from './retrievalFeedback.js';
 import type { WorkflowHistorySnapshot } from './workflowHistory.js';
 import type { WorkflowReplaySnapshot } from './workflowReplay.js';
 
-export type PresentationPanelId = 'trust' | 'workflows';
+export type PresentationPanelId = 'trust' | 'workflows' | 'retrieval';
 
 export type PresentationDensityState = {
   expandedPanels: Record<PresentationPanelId, boolean>;
@@ -10,7 +11,7 @@ export type PresentationDensityState = {
 };
 
 export type MissionControlActionChip = {
-  id: 'trust' | 'checkpoints' | 'replay' | 'history';
+  id: 'trust' | 'checkpoints' | 'replay' | 'history' | 'retrieval';
   panelId: PresentationPanelId;
   label: string;
   detail: string;
@@ -22,6 +23,7 @@ export const DEFAULT_PRESENTATION_DENSITY_STATE: PresentationDensityState = {
   expandedPanels: {
     trust: false,
     workflows: false,
+    retrieval: false,
   },
   lastUrgentTrustKey: null,
 };
@@ -33,6 +35,7 @@ export function readPresentationDensityState(raw: unknown): PresentationDensityS
     expandedPanels: {
       trust: candidate.expandedPanels.trust === true,
       workflows: candidate.expandedPanels.workflows === true,
+      retrieval: candidate.expandedPanels.retrieval === true,
     },
     lastUrgentTrustKey: typeof candidate.lastUrgentTrustKey === 'string' ? candidate.lastUrgentTrustKey : null,
   };
@@ -103,14 +106,16 @@ export function buildPresentationDensityChips({
   trustCenter,
   workflowReplay,
   workflowHistory,
+  retrievalFeedback,
   expandedPanels,
 }: {
   trustCenter: TrustCenterSnapshot;
   workflowReplay: WorkflowReplaySnapshot;
   workflowHistory: WorkflowHistorySnapshot;
+  retrievalFeedback?: RetrievalFeedbackSnapshot;
   expandedPanels: Record<PresentationPanelId, boolean>;
 }): MissionControlActionChip[] {
-  return [
+  const chips: MissionControlActionChip[] = [
     {
       id: 'trust',
       panelId: 'trust',
@@ -141,6 +146,16 @@ export function buildPresentationDensityChips({
       expanded: expandedPanels.workflows,
     },
   ];
+  if (retrievalFeedback?.latest) {
+    chips.push({
+      id: 'retrieval',
+      panelId: 'retrieval',
+      label: 'Retrieval @codebase',
+      detail: retrievalDetail(retrievalFeedback.latest),
+      expanded: expandedPanels.retrieval,
+    });
+  }
+  return chips;
 }
 
 function trustDetail(snapshot: TrustCenterSnapshot): string {
@@ -155,6 +170,13 @@ function trustDetail(snapshot: TrustCenterSnapshot): string {
 function checkpointLabel(count: number): string {
   if (count === 0) return 'No checkpoints';
   return count === 1 ? 'checkpoint available' : `${count} checkpoints available`;
+}
+
+function retrievalDetail(summary: NonNullable<RetrievalFeedbackSnapshot['latest']>): string {
+  const selected = plural(summary.selectedFileCount, 'selected');
+  return summary.omittedMatchedFileCount > 0
+    ? `${selected}, ${plural(summary.omittedMatchedFileCount, 'omitted')}`
+    : selected;
 }
 
 function plural(count: number, singular: string): string {

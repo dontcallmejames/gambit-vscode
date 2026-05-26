@@ -3,6 +3,7 @@ import { useEffect, useReducer, useState } from 'preact/hooks';
 import { initialState, reduce } from './state.js';
 import { buildMissionControlSnapshot } from './missionControl.js';
 import { buildTrustCenterSnapshot } from './trustCenter.js';
+import { buildRetrievalFeedbackSnapshot } from './retrievalFeedback.js';
 import { buildWorkflowReplaySnapshot } from './workflowReplay.js';
 import { buildWorkflowHistorySnapshot } from './workflowHistory.js';
 import {
@@ -18,6 +19,7 @@ import {
 } from './presentationDensity.js';
 import { MissionControlTimeline } from './components/MissionControlTimeline.js';
 import { TrustCenter } from './components/TrustCenter.js';
+import { RetrievalFeedbackPanel } from './components/RetrievalFeedbackPanel.js';
 import { WorkflowPanel } from './components/WorkflowPanel.js';
 import { MessageList } from './components/MessageList.js';
 import { Composer } from './components/Composer.js';
@@ -39,6 +41,7 @@ export function App() {
   const [density, setDensity] = useState(() => readPresentationDensityState(vscode.getState?.()));
   const missionControl = buildMissionControlSnapshot(state);
   const trustCenter = buildTrustCenterSnapshot(state);
+  const retrievalFeedback = buildRetrievalFeedbackSnapshot(state);
   const workflowReplay = buildWorkflowReplaySnapshot(state);
   const workflowHistory = buildWorkflowHistorySnapshot(state);
   const trustUrgent = isTrustCenterUrgent(trustCenter);
@@ -46,11 +49,13 @@ export function App() {
   const expandedPanels = {
     trust: effectivePresentationPanelExpanded(density, 'trust', { trustUrgent }),
     workflows: effectivePresentationPanelExpanded(density, 'workflows', { trustUrgent }),
+    retrieval: effectivePresentationPanelExpanded(density, 'retrieval', { trustUrgent }),
   };
   const actionChips = buildPresentationDensityChips({
     trustCenter,
     workflowReplay,
     workflowHistory,
+    retrievalFeedback,
     expandedPanels,
   });
 
@@ -71,6 +76,9 @@ export function App() {
   const setPanelExpanded = (panelId: PresentationPanelId, expanded: boolean) => {
     setDensity((current) => setPresentationPanelExpanded(current, panelId, expanded));
   };
+  const prepareComposerDraft = (text: string) => {
+    setComposerDraft((draft) => ({ id: (draft?.id ?? 0) + 1, text }));
+  };
 
   return (
     <div class="app">
@@ -90,7 +98,14 @@ export function App() {
         history={workflowHistory}
         expanded={expandedPanels.workflows}
         onToggle={(expanded) => setPanelExpanded('workflows', expanded)}
-        onPrepareReplay={(text) => setComposerDraft((draft) => ({ id: (draft?.id ?? 0) + 1, text }))}
+        onPrepareReplay={prepareComposerDraft}
+      />
+      <RetrievalFeedbackPanel
+        snapshot={retrievalFeedback}
+        expanded={expandedPanels.retrieval}
+        onToggle={(expanded) => setPanelExpanded('retrieval', expanded)}
+        onPrepareDraft={prepareComposerDraft}
+        onCopyReport={(text) => send({ kind: 'copy-text', text })}
       />
       <MessageList session={state.session} inProgress={state.inProgress} settings={state.settings} send={send} />
       <Composer

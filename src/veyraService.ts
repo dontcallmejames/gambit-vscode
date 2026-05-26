@@ -13,6 +13,7 @@ import { parseFileMentions, embedFiles } from './fileMentions.js';
 import { DEFAULT_AUTONOMY_POLICY, composePrompt } from './composePrompt.js';
 import { parseWorkspaceContextMention, type WorkspaceContextProvider, type WorkspaceContextResult } from './workspaceContext.js';
 import { formatProjectCommandHintsBlock, type ProjectCommandProvider } from './projectCommands.js';
+import { retrievalFeedbackNoticeText, retrievalFeedbackSummaryFromWorkspaceContextResult } from './retrievalFeedback.js';
 import type { AgentRoleOverrides } from './workflowSettings.js';
 import {
   type ChangeLedger,
@@ -399,6 +400,24 @@ export class VeyraSessionService {
     };
     this.store.appendUser(userMsg);
     await emit({ kind: 'user-message', message: userMsg });
+
+    if (workspaceContextResult.enabled) {
+      const feedback = retrievalFeedbackSummaryFromWorkspaceContextResult(
+        workspaceContextResult,
+        userMsg.id,
+        Date.now(),
+      );
+      const sys: SystemMessage = {
+        id: ulid(),
+        role: 'system',
+        kind: 'retrieval-feedback',
+        text: retrievalFeedbackNoticeText(feedback),
+        timestamp: feedback.timestamp,
+        retrievalFeedback: feedback,
+      };
+      this.store.appendSystem(sys);
+      await emit({ kind: 'system-message', message: sys });
+    }
 
     for (const diagnostic of workspaceContextResult.diagnostics) {
       const sys: SystemMessage = {

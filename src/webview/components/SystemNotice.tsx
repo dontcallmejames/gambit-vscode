@@ -31,6 +31,10 @@ export function SystemNotice({
   if (message.kind === 'file-edited') classes.push('file-edited');
   if (message.kind === 'change-set') classes.push('change-set');
   if (message.kind === 'checkpoint') classes.push('checkpoint');
+  if (message.kind === 'retrieval-feedback') classes.push('retrieval-feedback');
+  if (message.kind === 'retrieval-feedback') {
+    return <div class={classes.join(' ')}>{message.text}</div>;
+  }
   if (message.kind === 'change-set' && message.changeSet) {
     const changeSet = message.changeSet;
     const changeSetOpen = changeSet.status === 'pending' || changeSet.status === 'stale';

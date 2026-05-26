@@ -245,7 +245,8 @@ body {
   gap: 5px;
 }
 .trust-center button,
-.workflow-panel button {
+.workflow-panel button,
+.retrieval-feedback-panel button {
   min-width: 0;
   border: 1px solid var(--vscode-button-border, var(--border));
   border-radius: 4px;
@@ -259,7 +260,8 @@ body {
   white-space: nowrap;
 }
 .trust-center button:hover,
-.workflow-panel button:hover {
+.workflow-panel button:hover,
+.retrieval-feedback-panel button:hover {
   background: var(--vscode-button-secondaryHoverBackground, rgba(255,255,255,0.12));
 }
 .trust-file-list,
@@ -613,14 +615,122 @@ body {
   grid-row: 1;
   grid-column: 2;
 }
+
+.retrieval-feedback-panel {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--vscode-sideBar-background, rgba(255,255,255,0.02));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  box-shadow: inset 2px 0 0 var(--vscode-focusBorder, #4daafc);
+}
+.retrieval-feedback-panel-expanded {
+  max-height: 24vh;
+}
+.retrieval-feedback-head,
+.retrieval-feedback-summary,
+.retrieval-feedback-card-head,
+.retrieval-feedback-actions {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.retrieval-feedback-head,
+.retrieval-feedback-card-head {
+  justify-content: space-between;
+}
+.retrieval-feedback-kicker {
+  opacity: 0.65;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  margin-right: 6px;
+}
+.retrieval-feedback-label,
+.retrieval-feedback-card-head span:first-child,
+.retrieval-feedback-file-path {
+  font-weight: 700;
+}
+.retrieval-feedback-summary span,
+.retrieval-feedback-card-head span:last-child,
+.retrieval-feedback-muted,
+.retrieval-feedback-card p,
+.retrieval-feedback-card li,
+.retrieval-feedback-actions span,
+.retrieval-feedback-file span {
+  min-width: 0;
+  margin: 0;
+  color: var(--vscode-descriptionForeground, inherit);
+}
+.retrieval-feedback-body {
+  max-height: 18vh;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.retrieval-feedback-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 7px;
+}
+.retrieval-feedback-card {
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--vscode-editorWidget-background, rgba(255,255,255,0.04));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.retrieval-feedback-files {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.retrieval-feedback-file {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 5px 8px;
+  align-items: center;
+  padding-top: 5px;
+  border-top: 1px solid var(--border);
+}
+.retrieval-feedback-file-path,
+.retrieval-feedback-card-head span:last-child,
+.retrieval-feedback-summary span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.retrieval-feedback-card ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.retrieval-feedback-actions {
+  flex-wrap: wrap;
+}
+.retrieval-feedback-actions span {
+  overflow-wrap: anywhere;
+}
 @media (max-width: 520px) {
   .workflow-panel-head,
   .workflow-panel-replay,
-  .workflow-panel-main {
+  .workflow-panel-main,
+  .retrieval-feedback-head,
+  .retrieval-feedback-card-head,
+  .retrieval-feedback-actions {
     align-items: flex-start;
     flex-direction: column;
   }
   .workflow-panel-item {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .retrieval-feedback-file {
     grid-template-columns: minmax(0, 1fr);
   }
   .workflow-panel-item > button {
@@ -872,6 +982,10 @@ body {
 }
 .system-notice.checkpoint {
   font-style: normal;
+}
+.system-notice.retrieval-feedback {
+  font-style: normal;
+  color: var(--vscode-descriptionForeground, inherit);
 }
 .change-set-files {
   margin-top: 6px;

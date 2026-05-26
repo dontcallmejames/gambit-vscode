@@ -42,6 +42,28 @@ export type CheckpointSummary = {
   workflow?: string;
 };
 
+export type RetrievalFeedbackFile = {
+  path: string;
+  score: number;
+  reason: string;
+};
+
+export type RetrievalFeedbackSummary = {
+  sourceMessageId: string;
+  timestamp: number;
+  query: string;
+  methodLabel: string;
+  selectedFileCount: number;
+  matchedFileCount: number;
+  omittedMatchedFileCount: number;
+  selectedFiles: RetrievalFeedbackFile[];
+  queryTerms: string[];
+  budgetSummary: string;
+  possibleMisses: string;
+  warnings: string[];
+  guardrails: string[];
+};
+
 export type RollbackCheckpointPreview = {
   checkpointId: string;
   status: 'ready' | 'stale';
@@ -105,7 +127,7 @@ export type AgentMessage = {
 export type SystemMessage = {
   id: string;
   role: 'system';
-  kind: 'routing-needed' | 'local-response' | 'warning' | 'error' | 'facilitator-decision' | 'edit-conflict' | 'file-edited' | 'change-set' | 'checkpoint';
+  kind: 'routing-needed' | 'local-response' | 'warning' | 'error' | 'facilitator-decision' | 'edit-conflict' | 'file-edited' | 'change-set' | 'checkpoint' | 'retrieval-feedback';
   text: string;
   timestamp: number;
   agentId?: AgentId;     // present when a system notice is associated with a specific agent
@@ -114,6 +136,7 @@ export type SystemMessage = {
   changeKind?: FileChangeKind;
   changeSet?: DispatchChangeSetSummary;
   checkpoint?: CheckpointSummary;
+  retrievalFeedback?: RetrievalFeedbackSummary;
 };
 
 export type SessionMessage = UserMessage | AgentMessage | SystemMessage;
@@ -165,6 +188,7 @@ export type FromWebview =
   | { kind: 'cancel' }
   | { kind: 'reload-status' }
   | { kind: 'run-command'; command: VeyraCommandActionId | string }
+  | { kind: 'copy-text'; text: string }
   | { kind: 'configure-cli-paths' }
   | { kind: 'show-setup-guide' }
   | { kind: 'show-live-validation-guide' }

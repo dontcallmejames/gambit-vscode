@@ -348,6 +348,20 @@ describe('VeyraSessionService', () => {
     expect(codexPrompt).not.toContain('review @codebase auth flow');
     const userMessage = events.find((event) => event.kind === 'user-message')?.message;
     expect(userMessage.attachedFiles).toEqual([{ path: 'src/auth/session.ts', lines: 4, truncated: true }]);
+    const retrievalFeedback = events.find((event) =>
+      event.kind === 'system-message' &&
+      event.message.kind === 'retrieval-feedback'
+    )?.message;
+    expect(retrievalFeedback?.retrievalFeedback).toMatchObject({
+      query: 'review auth flow',
+      selectedFileCount: 1,
+      matchedFileCount: 1,
+      omittedMatchedFileCount: 0,
+      guardrails: ['no cloud indexing', 'no paid embedding calls', 'no background repository scans'],
+      selectedFiles: [
+        { path: 'src/auth/session.ts', score: 10, reason: 'path:auth' },
+      ],
+    });
   });
 
   it('uses an explicit workspace-context query instead of workflow boilerplate', async () => {

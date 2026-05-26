@@ -38,7 +38,7 @@ vi.mock('vscode', () => {
       })),
       openTextDocument: vi.fn().mockResolvedValue({}),
     },
-    env: { openExternal: vi.fn() },
+    env: { openExternal: vi.fn(), clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } },
     commands: { executeCommand: vi.fn() },
     __test: { messages, onDidReceive, onDidChangeConfiguration, fakeWebview },
   };
@@ -127,7 +127,9 @@ describe('VeyraWebviewController', () => {
     vi.mocked((vscode as any).workspace.openTextDocument).mockClear();
     vi.mocked((vscode as any).window.showTextDocument).mockClear();
     vi.mocked((vscode as any).window.showWarningMessage).mockClear();
+    vi.mocked((vscode as any).window.showInformationMessage).mockClear();
     vi.mocked((vscode as any).env.openExternal).mockClear();
+    vi.mocked((vscode as any).env.clipboard.writeText).mockClear();
     vi.mocked((vscode as any).commands.executeCommand).mockClear();
     (vscode as any).workspace.getConfiguration = vi.fn(() => ({ get: (_k: string, dflt: any) => dflt }));
     (vscode as any).__test.onDidChangeConfiguration.handler = undefined;
@@ -381,6 +383,17 @@ describe('VeyraWebviewController', () => {
 
     expect((vscode as any).commands.executeCommand).not.toHaveBeenCalledWith('workbench.action.closeWindow');
     expect((vscode as any).window.showWarningMessage).toHaveBeenCalledWith('Unsupported Veyra command action.');
+  });
+
+  it('copies explicit webview text without running commands or dispatching prompts', async () => {
+    await attachController();
+    const onDidReceive = (vscode as any).__test.onDidReceive.handler;
+
+    await onDidReceive({ kind: 'copy-text', text: '# Veyra Retrieval Report\n\nQuery: auth flow' });
+
+    expect((vscode as any).env.clipboard.writeText).toHaveBeenCalledWith('# Veyra Retrieval Report\n\nQuery: auth flow');
+    expect((vscode as any).commands.executeCommand).not.toHaveBeenCalled();
+    expect((vscode as any).window.showInformationMessage).toHaveBeenCalledWith('Copied Veyra retrieval report to clipboard.');
   });
 
   it('open-external from webview opens https URLs', async () => {

@@ -8,38 +8,13 @@ The working rule is: agents can work together without losing context, stomping e
 
 ## What It Adds
 
-- Native VS Code Chat participants:
-  - `@veyra` routes work through Veyra's facilitator.
-  - `@claude`, `@codex`, and `@gemini` send directly to one agent.
-- `@veyra` slash workflows:
-  - `/review` asks all three agents to review the request in sequence with role-specific focus.
-  - `/debate` asks all three agents to compare approaches before implementation from different strengths.
-  - `/consensus` asks all three agents to resolve options into one read-only recommendation.
-  - `/implement` runs a serial all-agent implementation pass: Claude frames approach/risk, Codex changes code/tests, then Gemini reviews.
-- A VS Code Language Model provider named `Veyra`, with local models for the orchestrator and each direct agent.
-- A docked Veyra view for the full orchestration UI with statuses, checkpoints, and pending changes.
-- A compact Presentation Layer with a Mission Control timeline that shows Claude, Codex, and Gemini as queued, active, complete, failed, cancelled, and waiting stages.
-- Presentation Density v0.1 keeps Mission Control always visible while Trust Center and Workflows open from compact chips instead of permanently filling the transcript.
-- Structured Workflow Artifact Cards for known Veyra sections such as `Veyra Synthesis`, `Recommendation`, blocking issues, missing tests, follow-ups, next actions, and `Handoff Summary`.
-- A Trust Center in the docked view that keeps pending changes, checkpoints, edit conflicts, file edits, approved verification status, Git/CI context, and browser/test context visible without replacing the inline notices.
-- Workflow Replay in the docked view to prepare a fresh composer draft for the latest `/review`, `/debate`, `/consensus`, or `/implement` workflow against the current workspace state.
-- Workflow Artifact History v0.1 in the docked view, deriving recent completed workflow summaries from existing session messages with no separate source of truth.
-- Composer autocomplete in the docked Veyra view for agents, slash workflows, and common Veyra commands.
-- Inline Autocomplete v0.1 for opt-in, manual editor ghost-text suggestions through a short read-only direct-agent request.
-- Shared context and file mention support across the Veyra view, native chat, and language model requests.
-- File edit visibility through streamed edit events, file decoration badges, session summaries, and commit attribution.
-- Workspace change detection for files modified during an agent turn even when the underlying CLI does not report a write tool.
-- Cross-agent edit conflict notices when a later agent touches a file already edited by another agent in the session.
-- Veyra renders agent Markdown safely in the docked view while keeping tool calls, file-edit notices, checkpoints, and pending-change actions as structured controls.
-- Terminal selections and project command hints are included as prompt context for safer build, test, and debug follow-up.
-- `Veyra: Diagnose Terminal Output` routes copied or pasted terminal output into a read-only Veyra diagnosis prompt.
-- `Veyra: Review Browser/Test Output` routes copied browser test logs, console errors, network errors, screenshot notes, URL notes, or reproduction notes into a structured read-only review.
-- `Veyra: Summarize Git Status` routes local branch, remote, dirty-tree, and recent commit context into Veyra for GitHub and CI follow-up.
-- `Veyra: Review CI/PR Output` combines copied CI or PR output with local Git context for a draft PR summary and readiness checklist.
-- `Veyra: Prepare PR Package Draft` combines local Git context, pending-change and checkpoint signals, approved verification evidence when recorded, and optional CI/PR output into a structured PR package draft.
-- Provider transparency in diagnostics shows Claude CLI, Codex CLI, and the Google provider path through Antigravity CLI or legacy Gemini fallback, including CLI/provider versions where Veyra can read them safely.
-- Local Model Support v0.1 records local/self-hosted provider targets in settings and diagnostic reports while keeping default provider routing unchanged.
-- Retrieval Quality and Embedding Readiness v0.1 keeps `@codebase` local lexical by default while exposing why files were selected, where lexical retrieval may have missed context, and why embedding readiness is inactive.
+- Native Chat participants and slash workflows for `@veyra`, `@claude`, `@codex`, and `@gemini`, including `/review`, `/debate`, `/consensus`, and `/implement`.
+- A docked orchestration view with the Presentation Layer, Mission Control timeline, Presentation Density v0.1, Trust Center, Workflows, replay, and Workflow Artifact History v0.1.
+- Structured Workflow Artifact Cards and safe Markdown rendering for review findings, synthesis, recommendations, missing tests, follow-ups, next actions, and handoffs.
+- Workspace context through `@codebase`, `@file` mentions, terminal selections, project command hints, Git/CI context, browser/test notes, and Retrieval Quality and Embedding Readiness v0.1.
+- Edit trust controls for diff preview, pending changes, file badges, edit conflicts, checkpoints, rollback, verification evidence, and commit attribution.
+- Provider routing through local Claude CLI, Codex CLI, and Antigravity or legacy Gemini CLI, with provider transparency and Local Model Support v0.1 diagnostics.
+- Discovery and ergonomics through docked composer autocomplete, Inline Autocomplete v0.1, the `Veyra` Language Model provider, setup checks, and diagnostic reports.
 
 ## Requirements
 
@@ -136,8 +111,9 @@ Workflow prompts tell agents to use their available model and CLI capabilities w
 ### Context And Tuning
 
 - Use `@codebase` when you want Veyra to retrieve relevant workspace files without naming them explicitly. The first version uses local lexical search over workspace files and project metadata; it does not upload or build a cloud index.
-- Retrieval Quality and Embedding Readiness v0.1 adds a retrieval-quality block to `@codebase` prompts. It names the local lexical method, query terms, selected-file evidence, prompt budget, omitted matching files, and where lexical retrieval may have missed context.
-- Embedding readiness is inactive. Veyra performs no cloud indexing, no paid embedding calls, and no background repository scans. Refine `@codebase` query terms or attach known files with `@file` when lexical search misses something obvious.
+- Retrieval Quality and Embedding Readiness v0.1 adds a retrieval-quality block to `@codebase` prompts. It names the local lexical method, query terms, selected-file evidence, prompt budget, omitted matching files, why files were selected, and where lexical retrieval may have missed context.
+- Retrieval Feedback v0.2 surfaces the latest `@codebase` result as a compact docked-view panel. It can prepare a visible refined `@codebase` draft, prepare an explicit `@file` mention draft, or copy a local retrieval report; it does not silently send prompts, run commands, upload code, or create hidden memory.
+- The `@codebase` embedding readiness is inactive. Veyra performs no cloud indexing, no paid embedding calls, and no background repository scans. Refine `@codebase` query terms or attach known files with `@file` when lexical search misses something obvious.
 - Set `veyra.workflow.template` when a workspace wants an extra reusable lens such as `architecture-review`, `security-review`, `test-improvement`, `refactor-plan`, or `implementation-with-review`.
 - Use `veyra.agentRoles.claude`, `veyra.agentRoles.codex`, and `veyra.agentRoles.gemini` for workspace role customization. Non-empty values are appended to that agent's Veyra role preamble only.
 
@@ -231,6 +207,7 @@ Reject refuses to overwrite files that changed after the agent edit. In that cas
 
 The docked Veyra view includes a compact Trust Center above the transcript. It derives from the same session messages as the inline notices, so it does not create a second source of truth.
 
+- Mission Control timeline shows Claude, Codex, and Gemini as queued, active, complete, failed, cancelled, and waiting while keeping the top of the view compact.
 - Presentation Density v0.1 keeps Trust Center collapsed by default when there are no urgent actions, while Mission Control chips keep the trust summary and checkpoint count visible.
 - Trust Center opens automatically for urgent actionable signals such as pending changes, edit conflicts, or failed approved verification.
 - Pending changes show the same open diff, accept, reject, and per-file actions as the inline change-set notice.
@@ -249,7 +226,7 @@ Replay uses the current workspace and Git state. Prior agent replies remain tran
 
 Workflow Artifact History v0.1 keeps a compact list of recent completed Veyra workflows in the collapsible Workflows panel. Each entry summarizes the workflow command, original prompt, participating agents, final artifact headings, pending-change signals, checkpoint signals, approved verification result when present, and completion status.
 
-History is local-only and derived from the persisted session messages Veyra already stores. It does not create a second source of truth, rerun old workflows, replay tool calls, execute commands, edit files, perform Git/GitHub actions, or make network calls. Use `Prepare replay` when you want a visible manual composer draft for a past workflow against the current workspace state.
+History is local-only and derived from the existing session messages Veyra already stores, with no separate source of truth. It does not rerun old workflows, replay tool calls, execute commands, edit files, perform Git/GitHub actions, or make network calls. Use `Prepare replay` when you want a visible manual composer draft for a past workflow against the current workspace state.
 
 ### Checkpoints And Rollback
 

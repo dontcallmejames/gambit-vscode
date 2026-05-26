@@ -19,7 +19,7 @@ import {
   setPresentationPanelExpanded,
   trustCenterUrgencyKey,
 } from '../src/webview/presentationDensity.js';
-import type { AgentMessage, FromExtension, SystemMessage, UserMessage } from '../src/shared/protocol.js';
+import type { AgentMessage, FromExtension, RetrievalFeedbackSummary, SystemMessage, UserMessage } from '../src/shared/protocol.js';
 
 vi.stubGlobal('React', { createElement: h });
 
@@ -27,6 +27,7 @@ describe('presentation density state', () => {
   it('defaults dense panels collapsed and auto-expands Trust Center when new urgent signals appear', () => {
     expect(effectivePresentationPanelExpanded(DEFAULT_PRESENTATION_DENSITY_STATE, 'trust', { trustUrgent: false })).toBe(false);
     expect(effectivePresentationPanelExpanded(DEFAULT_PRESENTATION_DENSITY_STATE, 'workflows', { trustUrgent: false })).toBe(false);
+    expect(effectivePresentationPanelExpanded(DEFAULT_PRESENTATION_DENSITY_STATE, 'retrieval', { trustUrgent: false })).toBe(false);
 
     let state = initialState();
     state = reduce(state, eventForMessage(checkpoint('cp1', 2)));
@@ -50,13 +51,13 @@ describe('presentation density state', () => {
   it('persists expanded and collapsed choices inside VS Code webview state without dropping unrelated keys', () => {
     const restored = readPresentationDensityState({
       scrollTop: 240,
-      presentationDensity: { expandedPanels: { trust: true, workflows: false } },
+      presentationDensity: { expandedPanels: { trust: true, workflows: false, retrieval: true } },
     });
 
-    expect(restored.expandedPanels).toEqual({ trust: true, workflows: false });
+    expect(restored.expandedPanels).toEqual({ trust: true, workflows: false, retrieval: true });
 
     const next = setPresentationPanelExpanded(restored, 'workflows', true);
-    expect(next.expandedPanels).toEqual({ trust: true, workflows: true });
+    expect(next.expandedPanels).toEqual({ trust: true, workflows: true, retrieval: true });
     expect(mergePresentationDensityState({ scrollTop: 240 }, next)).toEqual({
       scrollTop: 240,
       presentationDensity: next,
@@ -71,7 +72,7 @@ describe('Mission Control density chips', () => {
       trustCenter: buildTrustCenterSnapshot(state),
       workflowReplay: buildWorkflowReplaySnapshot(state),
       workflowHistory: buildWorkflowHistorySnapshot(state),
-      expandedPanels: { trust: false, workflows: false },
+      expandedPanels: { trust: false, workflows: false, retrieval: false },
     });
     const opened: string[] = [];
 
@@ -94,6 +95,32 @@ describe('Mission Control density chips', () => {
     clickButtonContaining(vnode, 'History 1');
 
     expect(opened).toEqual(['trust', 'trust', 'workflows', 'workflows']);
+  });
+
+  it('opens Retrieval Feedback from Mission Control only when @codebase evidence exists', () => {
+    const state = workflowState();
+    const chips = buildPresentationDensityChips({
+      trustCenter: buildTrustCenterSnapshot(state),
+      workflowReplay: buildWorkflowReplaySnapshot(state),
+      workflowHistory: buildWorkflowHistorySnapshot(state),
+      retrievalFeedback: { latest: retrievalSummary() },
+      expandedPanels: { trust: false, workflows: false, retrieval: false },
+    });
+    const opened: string[] = [];
+
+    const vnode = MissionControlTimeline({
+      snapshot: buildMissionControlSnapshot(state),
+      actionChips: chips,
+      onOpenPanel: (panelId) => opened.push(panelId),
+    });
+    const text = flattenText(vnode);
+
+    expect(text).toContain('Retrieval @codebase');
+    expect(text).toContain('1 selected');
+
+    clickButtonContaining(vnode, 'Retrieval @codebase');
+
+    expect(opened).toEqual(['retrieval']);
   });
 });
 
@@ -235,6 +262,24 @@ function checkpoint(id: string, timestamp: number): SystemMessage {
       promptSummary: 'Before dispatch',
       fileCount: 2,
     },
+  };
+}
+
+function retrievalSummary(): RetrievalFeedbackSummary {
+  return {
+    sourceMessageId: 'retrieval-1',
+    timestamp: 7,
+    query: 'auth flow',
+    methodLabel: 'local lexical search',
+    selectedFileCount: 1,
+    matchedFileCount: 1,
+    omittedMatchedFileCount: 0,
+    selectedFiles: [{ path: 'src/auth/session.ts', score: 10, reason: 'path:auth' }],
+    queryTerms: ['auth'],
+    budgetSummary: 'max files 8, max snippet lines 80, max file bytes 1000000',
+    possibleMisses: 'Lexical retrieval can miss renamed concepts.',
+    warnings: [],
+    guardrails: ['no cloud indexing', 'no paid embedding calls', 'no background repository scans'],
   };
 }
 

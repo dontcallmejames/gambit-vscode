@@ -432,6 +432,8 @@ Useful if lexical retrieval cannot find the right context often enough. It shoul
 
 Implementation note: Retrieval Quality and Embedding Readiness v0.1 improves measurement before adding vectors. `@codebase` remains local lexical retrieval, but context blocks now explain why files were selected, where lexical retrieval may have missed context, and which prompt-budget limits omitted matching files. Diagnostic reports expose retrieval settings and inactive embedding readiness. Guardrails stay explicit: no cloud indexing, no paid embedding calls, and no background repository scans.
 
+Implementation note: Retrieval Feedback v0.2 closes the local feedback loop without adding a ranking store. After an `@codebase` turn, Veyra derives a compact docked-view summary from the session's local retrieval evidence. The summary shows selected files, omitted match counts or budget limits when available, and the local lexical rationale. User actions only prepare visible composer drafts or copy a retrieval report; they do not silently dispatch prompts, run commands, call embeddings, upload code, or persist hidden memory.
+
 ### Workflow replay
 
 Useful for rerunning `/review`, `/consensus`, or `/implement` against a later commit to compare how the agents' opinion changed. It should wait until structured artifacts and session summaries have a stable persisted shape.

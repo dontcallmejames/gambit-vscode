@@ -209,6 +209,10 @@ export class VeyraWebviewController {
         }
         await vscode.commands.executeCommand(msg.command);
         break;
+      case 'copy-text':
+        await vscode.env.clipboard.writeText(msg.text);
+        vscode.window.showInformationMessage('Copied Veyra retrieval report to clipboard.');
+        break;
       case 'show-live-validation-guide':
         await vscode.commands.executeCommand('veyra.showLiveValidationGuide');
         break;

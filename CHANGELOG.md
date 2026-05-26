@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Adds Retrieval Feedback v0.2 as a compact local-only docked panel for the latest `@codebase` run, with visible refined-query drafts, explicit file-mention drafts, and copyable retrieval reports for future batched release notes.
+- Shortens the README's first-pass feature overview so new users see the product shape before the detailed command ledger.
+
 ## 1.0.18 - 2026-05-26
 
 - Adds Presentation Density v0.1 for the docked Veyra view, keeping Mission Control always visible while Trust Center and Workflows open from compact chips, combining replay/history into one capped Workflows panel, and auto-opening Trust Center for urgent pending-change, conflict, or failed-verification signals.

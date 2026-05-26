@@ -370,6 +370,36 @@ describe('extension manifest', () => {
     expect(changelog).toContain('@codebase retrieval');
   });
 
+  it('documents retrieval feedback as a local-only unreleased slice', () => {
+    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const changelog = readFileSync(join(process.cwd(), 'CHANGELOG.md'), 'utf8');
+    const roadmap = readFileSync(join(process.cwd(), 'docs', 'superpowers', 'specs', '2026-05-11-veyra-v1-roadmap-design.md'), 'utf8');
+
+    for (const document of [readme, changelog, roadmap]) {
+      expect(document).toContain('Retrieval Feedback v0.2');
+    }
+    expect(readme).toContain('does not silently send prompts');
+    expect(readme).toContain('create hidden memory');
+    expect(roadmap).toContain('do not silently dispatch prompts');
+    expect(changelog).toContain('future batched release notes');
+  });
+
+  it('keeps the README new-user overview compact while preserving detailed setup guidance', () => {
+    const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
+    const overview = readme.slice(
+      readme.indexOf('## What It Adds'),
+      readme.indexOf('## Requirements'),
+    );
+    const topLevelBullets = overview.split(/\r?\n/u).filter((line) => line.startsWith('- '));
+
+    expect(topLevelBullets.length).toBeLessThanOrEqual(8);
+    expect(readme).toContain('## Requirements');
+    expect(readme).toContain('## Tester Quickstart');
+    expect(readme).toContain('## Using Native Chat');
+    expect(readme).toContain('### Context And Tuning');
+    expect(readme).toContain('Veyra: Configure Codex/Gemini CLI paths');
+  });
+
   it('contributes opt-in inline autocomplete settings and docs', () => {
     const properties = manifest.contributes.configuration.properties;
     const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');

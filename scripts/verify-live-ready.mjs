@@ -709,6 +709,7 @@ function formatDiagnosticSection(result) {
 
 function readinessDiagnostics(input) {
   const lines = [
+    selectedGoogleProviderDiagnostic(input),
     `VEYRA_CODEX_CLI_PATH / veyra.codexCliPath: ${formatCliOverride(input.cliOverrides?.codex)}`,
     `VEYRA_ANTIGRAVITY_CLI_PATH / veyra.antigravityCliPath: ${formatCliOverride(input.cliOverrides?.antigravity)}`,
     `VEYRA_GEMINI_CLI_PATH / veyra.geminiCliPath: ${formatCliOverride(input.cliOverrides?.gemini)}`,
@@ -727,6 +728,16 @@ function readinessDiagnostics(input) {
 
   lines.push(`npm root -g: ${input.npmRoot || 'unavailable'}`);
   return lines;
+}
+
+function selectedGoogleProviderDiagnostic(input) {
+  const antigravity = antigravityCliStatus(input);
+  if (antigravity) {
+    return input.cliOverrides?.gemini
+      ? 'Selected Google provider path: Antigravity CLI; legacy Gemini fallback configured but not used for readiness.'
+      : 'Selected Google provider path: Antigravity CLI; legacy Gemini fallback not configured.';
+  }
+  return 'Selected Google provider path: legacy Gemini CLI fallback.';
 }
 
 function formatCliOverride(value) {

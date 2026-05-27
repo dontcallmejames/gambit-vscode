@@ -630,6 +630,97 @@ describe('agent CLI resolution failures', () => {
     expect(spawnCalls.at(-1)?.[1] ?? []).not.toContain(prompt);
   });
 
+  it('GeminiAgent falls back to legacy Gemini when Antigravity hits an argv launch limit anyway', async () => {
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+    process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\agy\\agy.exe';
+    process.env.VEYRA_GEMINI_CLI_PATH = 'D:\\tools\\gemini\\gemini.js';
+    const spawn = vi.fn((command: string) => {
+      if (command === 'D:\\tools\\agy\\agy.exe') {
+        const error = new Error('spawn ENAMETOOLONG') as NodeJS.ErrnoException;
+        error.code = 'ENAMETOOLONG';
+        throw error;
+      }
+      return fakeProcess();
+    });
+    const execSync = vi.fn((command: string) => {
+      if (command.startsWith('where node')) return 'D:\\node\\node.exe\n';
+      throw new Error(`unexpected command: ${command}`);
+    });
+    vi.doMock('vscode', () => ({
+      workspace: {
+        getConfiguration: vi.fn(() => ({ get: (_k: string, dflt: unknown) => dflt })),
+      },
+    }));
+    vi.doMock('node:fs', () => ({
+      accessSync: vi.fn(),
+      existsSync: vi.fn(() => true),
+    }));
+    vi.doMock('node:child_process', () => ({ spawn, execSync }));
+
+    const { GeminiAgent } = await import('../../src/agents/gemini.js');
+    const prompt = `medium review\n${'x'.repeat(10_000)}`;
+
+    for await (const _chunk of new GeminiAgent().send(prompt, { readOnly: true } as any)) {
+      // drain
+    }
+
+    expect(spawn).toHaveBeenCalledTimes(2);
+    expect(spawn).toHaveBeenLastCalledWith(
+      'D:\\node\\node.exe',
+      expect.arrayContaining(['D:\\tools\\gemini\\gemini.js', '-o', 'stream-json']),
+      expect.anything(),
+    );
+    const spawnCalls = spawn.mock.calls as unknown as Array<[string, string[], unknown]>;
+    expect(spawnCalls.at(-1)?.[1] ?? []).not.toContain(prompt);
+  });
+
+  it('GeminiAgent reports Antigravity argv guidance when spawn hits ENAMETOOLONG and no fallback exists', async () => {
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+    process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\agy\\agy.exe';
+    const spawn = vi.fn(() => {
+      const error = new Error('spawn ENAMETOOLONG') as NodeJS.ErrnoException;
+      error.code = 'ENAMETOOLONG';
+      throw error;
+    });
+    const accessSync = vi.fn((path: string) => {
+      if (/agy\.exe$/i.test(path)) return;
+      const error = new Error('missing') as NodeJS.ErrnoException;
+      error.code = 'ENOENT';
+      throw error;
+    });
+    const execSync = vi.fn((command: string) => {
+      if (command === 'where.exe gemini.exe') throw new Error('native gemini missing');
+      if (command.startsWith('where.exe gemini.')) throw new Error('gemini shim missing');
+      if (command === 'npm root -g') return 'D:\\npm\\node_modules\n';
+      throw new Error(`unexpected command: ${command}`);
+    });
+    vi.doMock('vscode', () => ({
+      workspace: {
+        getConfiguration: vi.fn(() => ({ get: (_k: string, dflt: unknown) => dflt })),
+      },
+    }));
+    vi.doMock('node:fs', () => ({
+      accessSync,
+      existsSync: vi.fn(() => true),
+    }));
+    vi.doMock('node:child_process', () => ({ spawn, execSync }));
+
+    const { GeminiAgent } = await import('../../src/agents/gemini.js');
+    const chunks = [];
+    for await (const chunk of new GeminiAgent().send(`medium review\n${'x'.repeat(10_000)}`, { readOnly: true } as any)) {
+      chunks.push(chunk);
+    }
+
+    expect(chunks).toEqual([
+      {
+        type: 'error',
+        message: expect.stringContaining('could not accept this prompt as a command-line argument'),
+      },
+      { type: 'done' },
+    ]);
+    expect(String((chunks[0] as any).message)).toContain('Configure legacy Gemini CLI fallback');
+  });
+
   it('GeminiAgent reports a helpful error when a large Antigravity prompt has no legacy fallback', async () => {
     Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
     process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\agy\\agy.exe';

@@ -56,6 +56,8 @@ In PowerShell, `$env:VEYRA_RUN_LIVE = '1'` stays set for the current terminal se
 
 If Windows npm global package paths are inaccessible from the VS Code extension host, Veyra first uses direct native `codex.exe`, `agy.exe`, or `gemini.exe` executables found on PATH, then the standard Antigravity install, then recognized PATH npm shims such as `codex.cmd` and `gemini.ps1`. Veyra skips stale PATH shims whose derived JS bundle targets are missing and falls back to `npm root -g`. If those are not available, point Veyra at explicit JS bundle, native executable, or npm shim paths in settings:
 
+`npm run verify:live-ready` prints the selected Google provider path in its readiness context. When Antigravity is selected, any configured legacy Gemini path remains a large-prompt runtime fallback but is not used to decide Antigravity readiness.
+
 ```text
 Veyra: Configure Codex/Gemini CLI paths
 ```

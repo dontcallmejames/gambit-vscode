@@ -23,9 +23,7 @@ function resolveGoogleCommand(prompt: string): GoogleCliCommand {
   try {
     return { runtime: 'gemini', ...resolveGeminiCommand() };
   } catch (err) {
-    throw new Error(
-      `Antigravity CLI --print requires the prompt as a command-line argument, and this ${prompt.length}-character prompt is too large for a safe launch. Configure legacy Gemini CLI fallback with VEYRA_GEMINI_CLI_PATH or veyra.geminiCliPath, or shorten the request. Legacy Gemini fallback was unavailable: ${errorMessage(err)}`,
-    );
+    throw new Error(antigravityArgvFailureMessage(prompt, err));
   }
 }
 
@@ -246,7 +244,11 @@ export class GeminiAgent implements Agent {
     try {
       googleCommand = resolveGoogleCommand(prompt);
     } catch (err) {
-      yield { type: 'error', message: `Unable to start Gemini CLI: ${errorMessage(err)}` };
+      const message = errorMessage(err);
+      yield {
+        type: 'error',
+        message: isAntigravityArgvFailureMessage(message) ? message : `Unable to start Gemini CLI: ${message}`,
+      };
       yield { type: 'done' };
       return;
     }
@@ -263,10 +265,32 @@ export class GeminiAgent implements Agent {
       );
       if (googleCommand.runtime === 'gemini') child.stdin?.end(prompt);
     } catch (err) {
-      const label = googleCommand.runtime === 'antigravity' ? 'Antigravity CLI' : 'Gemini CLI';
-      yield { type: 'error', message: `Unable to start ${label}: ${errorMessage(err)}` };
-      yield { type: 'done' };
-      return;
+      if (googleCommand.runtime === 'antigravity' && isArgvLaunchError(err)) {
+        try {
+          googleCommand = { runtime: 'gemini', ...resolveGeminiCommand() };
+        } catch (fallbackErr) {
+          yield { type: 'error', message: antigravityArgvFailureMessage(prompt, fallbackErr) };
+          yield { type: 'done' };
+          return;
+        }
+        try {
+          child = spawn(
+            googleCommand.command,
+            [...googleCommand.args, ...geminiArgs(opts.readOnly)],
+            { cwd: opts.cwd, stdio: ['pipe', 'pipe', 'pipe'] }
+          );
+          child.stdin?.end(prompt);
+        } catch (fallbackStartErr) {
+          yield { type: 'error', message: `Unable to start Gemini CLI: ${errorMessage(fallbackStartErr)}` };
+          yield { type: 'done' };
+          return;
+        }
+      } else {
+        const label = googleCommand.runtime === 'antigravity' ? 'Antigravity CLI' : 'Gemini CLI';
+        yield { type: 'error', message: `Unable to start ${label}: ${errorMessage(err)}` };
+        yield { type: 'done' };
+        return;
+      }
     }
     this.active = child;
 
@@ -434,6 +458,29 @@ function* parseGeminiEvent(
 function errorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
   return String(err);
+}
+
+function isArgvLaunchError(err: unknown): boolean {
+  const code = typeof err === 'object' && err !== null && 'code' in err
+    ? String((err as { code?: unknown }).code)
+    : '';
+  const message = errorMessage(err);
+  return code === 'ENAMETOOLONG'
+    || /\bENAMETOOLONG\b/iu.test(message)
+    || /argument list too long/iu.test(message)
+    || /command[- ]line.*too long/iu.test(message);
+}
+
+function antigravityArgvFailureMessage(prompt: string, fallbackError: unknown): string {
+  return [
+    `Antigravity CLI --print requires the prompt as a command-line argument and could not accept this prompt as a command-line argument (${prompt.length} characters).`,
+    'Configure legacy Gemini CLI fallback with VEYRA_GEMINI_CLI_PATH or veyra.geminiCliPath, or shorten the request.',
+    `Legacy Gemini fallback was unavailable: ${errorMessage(fallbackError)}`,
+  ].join(' ');
+}
+
+function isAntigravityArgvFailureMessage(message: string): boolean {
+  return message.startsWith('Antigravity CLI --print requires the prompt as a command-line argument');
 }
 
 function commandExists(command: string): boolean {

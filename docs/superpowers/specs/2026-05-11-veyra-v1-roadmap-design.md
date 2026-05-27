@@ -303,6 +303,8 @@ Keep Veyra aligned with the agent CLIs the user actually wants to trust: Claude 
 
 This is now a near-term maintenance and trust milestone, not a later parity feature. The current Claude code already contains a CLI fallback, so the Claude change is mostly deleting the SDK-first branch, removing dependency surface, and strengthening CLI tests. The Google change is riskier: Antigravity CLI needs a verified non-interactive mode and event stream before it can replace Gemini CLI safely.
 
+Implementation note: Antigravity provider hardening v0.2 preserves the visible Gemini identity while tightening the Antigravity-first runtime path. If Antigravity `--print` hits a command-line prompt limit, Veyra falls back to the configured legacy Gemini CLI stdin path when available, otherwise it reports prompt-length guidance with the exact fallback settings. Readiness diagnostics now name the selected Google provider path, and provider transparency can surface backend-reported model metadata without hardcoded model promises.
+
 ## 11. Milestone 7: Output Polish And Provider Transparency
 
 ### Goal

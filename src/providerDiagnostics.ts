@@ -34,43 +34,75 @@ export function collectProviderDiagnostics(options: {
   const googleRuntime = options.googleRuntime ?? detectGoogleRuntime();
   const runVersion = options.runVersion ?? defaultRunVersion;
   const googleCommand = googleRuntime === 'antigravity' ? 'agy' : 'gemini';
+  const claudeMetadata = safeProviderMetadata(runVersion, 'claude');
+  const codexMetadata = safeProviderMetadata(runVersion, 'codex');
+  const googleMetadata = safeProviderMetadata(runVersion, googleCommand);
 
   return {
     claude: {
       provider: 'Claude',
       runtime: 'Claude CLI',
       command: 'claude',
-      version: safeVersion(runVersion, 'claude'),
-      model: 'local CLI/provider default; not selected by Veyra',
+      version: claudeMetadata.version,
+      model: claudeMetadata.model,
     },
     codex: {
       provider: 'Codex',
       runtime: 'Codex CLI',
       command: 'codex',
-      version: safeVersion(runVersion, 'codex'),
-      model: 'local CLI/provider default; not selected by Veyra',
+      version: codexMetadata.version,
+      model: codexMetadata.model,
     },
     gemini: {
       provider: 'Gemini',
       runtime: googleRuntime === 'antigravity' ? 'Antigravity CLI' : 'legacy Gemini CLI fallback',
       command: googleCommand,
-      version: safeVersion(runVersion, googleCommand),
-      model: 'local CLI/provider default; not selected by Veyra',
+      version: googleMetadata.version,
+      model: googleMetadata.model,
     },
     localModel: collectLocalModelDiagnostics(options.localModel),
   };
 }
 
-function safeVersion(runVersion: VersionRunner, command: string): string {
+function safeProviderMetadata(runVersion: VersionRunner, command: string): { version: string; model: string } {
   try {
-    return normalizeVersion(runVersion(command, ['--version']));
+    const output = runVersion(command, ['--version']);
+    return {
+      version: normalizeVersion(output),
+      model: backendReportedModel(output) ?? 'local CLI/provider default; not selected by Veyra',
+    };
   } catch {
-    return 'unavailable';
+    return {
+      version: 'unavailable',
+      model: 'local CLI/provider default; not selected by Veyra',
+    };
   }
 }
 
 function normalizeVersion(output: string): string {
   return output.split(/\r?\n/u).map((line) => line.trim()).find(Boolean) ?? 'unavailable';
+}
+
+function backendReportedModel(output: string): string | null {
+  try {
+    const parsed = JSON.parse(output) as { model?: unknown; defaultModel?: unknown };
+    const model = typeof parsed.model === 'string'
+      ? parsed.model
+      : typeof parsed.defaultModel === 'string'
+        ? parsed.defaultModel
+        : '';
+    if (model.trim()) return `backend-reported model: ${model.trim()}`;
+  } catch {
+    // Most CLI --version output is plain text; fall through to line parsing.
+  }
+
+  const modelLine = output
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .find((line) => /^(?:model|default model|active model)\s*[:=]/iu.test(line));
+  if (!modelLine) return null;
+  const model = modelLine.replace(/^(?:model|default model|active model)\s*[:=]\s*/iu, '').trim();
+  return model ? `backend-reported model: ${model}` : null;
 }
 
 function defaultRunVersion(command: string, args: string[]): string {

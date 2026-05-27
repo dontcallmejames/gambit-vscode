@@ -56,6 +56,19 @@ describe('provider diagnostics', () => {
     expect(diagnostics.gemini.model).toContain('not selected by Veyra');
   });
 
+  it('surfaces backend-reported Google model metadata without hardcoded promises', () => {
+    const diagnostics = collectProviderDiagnostics({
+      googleRuntime: 'antigravity',
+      runVersion: (command: string) => {
+        if (command === 'agy') return 'Antigravity CLI 1.0.2\nModel: gemini-3.5-flash-medium\n';
+        return 'ok\n';
+      },
+    });
+
+    expect(diagnostics.gemini.version).toBe('Antigravity CLI 1.0.2');
+    expect(diagnostics.gemini.model).toBe('backend-reported model: gemini-3.5-flash-medium');
+  });
+
   it('adds local-model transparency when a self-hosted target is configured', () => {
     const diagnostics = collectProviderDiagnostics({
       googleRuntime: 'antigravity',

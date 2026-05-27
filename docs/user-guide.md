@@ -120,11 +120,13 @@ Run `Veyra: Check agent status` before starting an autonomous workflow. If Codex
 
 On Windows, `Veyra: Configure Codex/Gemini CLI paths` can detect native CLI executables, PATH npm shims, npm global CLI bundles, and the standard Antigravity install. It saves `veyra.codexCliPath`, `veyra.antigravityCliPath`, and the legacy `veyra.geminiCliPath` workspace settings when available. If a backend reports `Node.js missing`, install Node.js so the `node` command is on PATH, or point Codex/Gemini at native executable paths instead of JS bundle paths.
 
+Antigravity is preferred for the visible Gemini agent when available. If an Antigravity `--print` launch cannot safely carry a large prompt through command-line arguments, Veyra falls back to the configured legacy Gemini CLI path and sends the prompt over stdin. If no fallback is configured, the error explains the prompt-length issue and names the legacy fallback settings to use.
+
 ### Output And Provider Transparency
 
 - Veyra renders agent Markdown safely in the docked view, so headings, lists, code blocks, blockquotes, links, and tables become readable prose while arbitrary HTML remains escaped as text.
 - Veyra does not hardcode vendor model promises. Claude, Codex, and Gemini use local CLI/provider defaults unless a provider exposes reliable backend model metadata or a stable local override setting.
-- `Veyra: Copy Diagnostic Report` includes provider transparency for Claude CLI, Codex CLI, Antigravity CLI or legacy Gemini fallback, and CLI/provider versions where available.
+- `Veyra: Copy Diagnostic Report` includes provider transparency for Claude CLI, Codex CLI, Antigravity CLI or legacy Gemini fallback, CLI/provider versions where available, and backend-reported model metadata when a CLI exposes it.
 - Local Model Support v0.1 is diagnostics only for local/self-hosted targets. Set `veyra.localModels.mode` to `informational`, then fill `veyra.localModels.provider`, `veyra.localModels.endpoint`, and `veyra.localModels.model` to include the target in diagnostic reports.
 - Local Model Support v0.1 does not replace Claude, Codex, or Gemini routing. Veyra performs no automatic model downloads, no hidden server launches, and no background network probing.
 

@@ -263,6 +263,32 @@ describe('live readiness verifier', () => {
     ]);
   });
 
+  it('names the selected Google provider path in readiness diagnostics', async () => {
+    const { evaluateLiveReadiness } = await readinessModule();
+    const result = evaluateLiveReadiness({
+      platform: 'win32',
+      homeDir: 'C:/Users/tester',
+      npmRoot: null,
+      cliOverrides: {
+        codex: 'D:/tools/codex/codex.exe',
+        antigravity: 'D:/tools/agy/agy.exe',
+        gemini: 'D:/legacy/gemini/gemini.js',
+      },
+      commandAvailable: (command) => command === 'code' || command === 'claude',
+      fileExists: () => false,
+      fileStatus: (filePath) => {
+        const normalized = filePath.replace(/\\/g, '/');
+        if (normalized === 'D:/tools/codex/codex.exe') return 'exists';
+        if (normalized === 'D:/tools/agy/agy.exe') return 'exists';
+        if (normalized === 'C:/Users/tester/.claude/.credentials.json') return 'exists';
+        if (normalized === 'C:/Users/tester/.codex/auth.json') return 'exists';
+        return 'missing';
+      },
+    });
+
+    expect(result.diagnostics).toContain('Selected Google provider path: Antigravity CLI; legacy Gemini fallback configured but not used for readiness.');
+  });
+
   it('accepts explicit native executable overrides before probing global npm bundles', async () => {
     const { evaluateLiveReadiness } = await readinessModule();
     const result = evaluateLiveReadiness({

@@ -65,5 +65,5 @@ Open the folder in VS Code, then press `F5` or run the `Run Extension` launch co
 
 ## Detailed Guides
 
-- [User Guide](docs/user-guide.md): native chat commands, composer discovery, workflow modes, context and retrieval tuning, trust controls, Language Model provider usage, checkpoints, and settings.
-- [Developer And Verification Guide](docs/developer-verification.md): local development, package verification, smoke tests, live readiness, live validation, and CLI path troubleshooting.
+- [User Guide](https://github.com/dontcallmejames/veyra-vscode/blob/main/docs/user-guide.md): native chat commands, composer discovery, workflow modes, context and retrieval tuning, trust controls, Language Model provider usage, checkpoints, and settings.
+- [Developer And Verification Guide](https://github.com/dontcallmejames/veyra-vscode/blob/main/docs/developer-verification.md): local development, package verification, smoke tests, live readiness, live validation, and CLI path troubleshooting.

@@ -423,6 +423,31 @@ describe('extension manifest', () => {
     expect(changelog).toContain('originating Veyra workflow command');
   });
 
+  it('documents retrieval quality v0.4 missed-context feedback and ranking signals', () => {
+    const userGuide = userGuideText();
+    const changelog = readFileSync(join(process.cwd(), 'CHANGELOG.md'), 'utf8');
+    const audit = readFileSync(join(process.cwd(), 'docs', 'goal-completion-audit.md'), 'utf8');
+    const smokeChecklist = readFileSync(join(process.cwd(), 'docs', 'vscode-smoke-test.md'), 'utf8');
+    const roadmap = readFileSync(join(process.cwd(), 'docs', 'superpowers', 'specs', '2026-05-11-veyra-v1-roadmap-design.md'), 'utf8');
+
+    for (const document of [userGuide, changelog, audit, smokeChecklist, roadmap]) {
+      expect(document).toContain('Retrieval Quality v0.4');
+      expect(document).toContain('Known missing files');
+      expect(document).toContain('file-name');
+      expect(document).toContain('symbol');
+      expect(document).toContain('test');
+      expect(document).toContain('import');
+      expect(document).toContain('no embeddings');
+      expect(document).toContain('no background indexing');
+      expect(document).toContain('no hidden memory');
+    }
+    expect(userGuide).toContain('visible/manual missed-context feedback');
+    expect(userGuide).toContain('does not persist marked missing files');
+    expect(changelog).toContain('copyable retrieval reports');
+    expect(audit).toContain('npx vitest run --environment node --exclude ".vscode-test/**" tests/retrievalFeedback.test.tsx');
+    expect(roadmap).toContain('does not add embeddings, uploads, background indexing, hidden memory, or automatic dispatch');
+  });
+
   it('keeps the README new-user overview compact while preserving detailed setup guidance', () => {
     const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
     const quickstartIndex = readme.indexOf('## Quickstart');

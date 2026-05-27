@@ -209,6 +209,90 @@ describe('WorkspaceContextProvider', () => {
     expect(result.block).toContain('PaymentProcessor');
   });
 
+  it('boosts exact file-name stems for explainable lexical ranking', async () => {
+    const root = tempWorkspace();
+    writeFile(root, 'src/domain/PaymentProcessor.ts', 'export const handler = true;\n');
+    writeFile(root, 'src/notes.ts', [
+      'paymentprocessor paymentprocessor paymentprocessor',
+      'paymentprocessor paymentprocessor',
+    ].join('\n'));
+
+    const provider = new WorkspaceContextProvider(root, {
+      maxFiles: 2,
+      maxSnippetLines: 5,
+      maxFileBytes: 100_000,
+    });
+    const result = await provider.retrieve('paymentprocessor');
+
+    expect(result.selected[0]?.path).toBe('src/domain/PaymentProcessor.ts');
+    expect(result.selected[0]?.reasons).toContain('name-stem:paymentprocessor');
+  });
+
+  it('boosts symbol declarations above generic repeated content matches', async () => {
+    const root = tempWorkspace();
+    writeFile(root, 'src/domain.ts', 'export class PaymentProcessor {}\n');
+    writeFile(root, 'src/notes.ts', [
+      'paymentprocessor paymentprocessor paymentprocessor',
+      'paymentprocessor paymentprocessor',
+    ].join('\n'));
+
+    const provider = new WorkspaceContextProvider(root, {
+      maxFiles: 2,
+      maxSnippetLines: 5,
+      maxFileBytes: 100_000,
+    });
+    const result = await provider.retrieve('paymentprocessor');
+
+    expect(result.selected[0]?.path).toBe('src/domain.ts');
+    expect(result.selected[0]?.reasons).toContain('symbol:paymentprocessor');
+  });
+
+  it('boosts test files for testing-oriented queries', async () => {
+    const root = tempWorkspace();
+    writeFile(root, 'tests/payment/processor.test.ts', 'it("covers payment regression", () => undefined);\n');
+    writeFile(root, 'src/payment/coverage.ts', [
+      'payment regression tests',
+      'payment regression tests',
+      'payment regression tests',
+      'payment regression tests',
+      'payment regression tests',
+    ].join('\n'));
+
+    const provider = new WorkspaceContextProvider(root, {
+      maxFiles: 2,
+      maxSnippetLines: 5,
+      maxFileBytes: 100_000,
+    });
+    const result = await provider.retrieve('payment regression tests');
+
+    expect(result.selected[0]?.path).toBe('tests/payment/processor.test.ts');
+    expect(result.selected[0]?.reasons).toContain('test-path');
+  });
+
+  it('boosts import path matches above unrelated content-only matches', async () => {
+    const root = tempWorkspace();
+    writeFile(root, 'src/auth/consumer.ts', [
+      "import { refreshSession } from './sessionStore';",
+      'export const consumer = refreshSession;',
+    ].join('\n'));
+    writeFile(root, 'src/notes.ts', [
+      'session refresh session refresh',
+      'session refresh session refresh',
+      'session refresh',
+    ].join('\n'));
+
+    const provider = new WorkspaceContextProvider(root, {
+      maxFiles: 2,
+      maxSnippetLines: 5,
+      maxFileBytes: 100_000,
+    });
+    const result = await provider.retrieve('session refresh');
+
+    expect(result.selected[0]?.path).toBe('src/auth/consumer.ts');
+    expect(result.selected[0]?.reasons).toContain('import:session');
+    expect(result.selected[0]?.reasons).toContain('import:refresh');
+  });
+
   it('excludes secret-prone files from git workspace context', async () => {
     const root = tempWorkspace();
     runGit(root, ['init']);

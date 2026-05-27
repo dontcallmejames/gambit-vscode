@@ -718,6 +718,24 @@ body {
   margin: 0;
   padding-left: 18px;
 }
+.retrieval-feedback-missing-list {
+  overflow-wrap: anywhere;
+}
+.retrieval-feedback-missing-input {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+}
+.retrieval-feedback-missing-input input {
+  min-width: 0;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, var(--border));
+  border-radius: 4px;
+  padding: 4px 6px;
+  font: inherit;
+}
 .retrieval-feedback-actions {
   flex-wrap: wrap;
 }
@@ -738,6 +756,9 @@ body {
     grid-template-columns: minmax(0, 1fr);
   }
   .retrieval-feedback-file {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .retrieval-feedback-missing-input {
     grid-template-columns: minmax(0, 1fr);
   }
   .workflow-panel-actions {

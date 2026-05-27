@@ -3,10 +3,13 @@ import { h, type VNode } from 'preact';
 import { initialState, reduce } from '../src/webview/state.js';
 import type { FromExtension, RetrievalFeedbackSummary, SystemMessage } from '../src/shared/protocol.js';
 import {
+  addMarkedMissingFile,
   buildFileMentionDraft,
+  buildMissingFileDraft,
   buildRefineCodebaseDraft,
   buildRetrievalFeedbackReport,
   buildRetrievalFeedbackSnapshot,
+  normalizeMarkedMissingFilePath,
 } from '../src/webview/retrievalFeedback.js';
 import { RetrievalFeedbackPanel } from '../src/webview/components/RetrievalFeedbackPanel.js';
 import { retrievalFeedbackSummaryFromWorkspaceContextResult } from '../src/retrievalFeedback.js';
@@ -101,6 +104,30 @@ describe('retrieval feedback summary', () => {
     expect(report).toContain('no hidden memory');
   });
 
+  it('normalizes marked missing paths and includes them in manual drafts and reports', () => {
+    const summary = sampleSummary();
+
+    expect(normalizeMarkedMissingFilePath(' @src/auth/session.ts ')).toBe('src/auth/session.ts');
+    expect(normalizeMarkedMissingFilePath('`docs/user-guide.md`')).toBe('docs/user-guide.md');
+    expect(normalizeMarkedMissingFilePath('   ')).toBeNull();
+    expect(addMarkedMissingFile(['src/auth/session.ts'], '@src/auth/session.ts')).toEqual(['src/auth/session.ts']);
+    expect(addMarkedMissingFile(['src/auth/session.ts'], 'src/auth/middleware.ts')).toEqual([
+      'src/auth/session.ts',
+      'src/auth/middleware.ts',
+    ]);
+
+    const markedFiles = ['src/auth/session.ts', 'src/auth/middleware.ts'];
+    expect(buildRefineCodebaseDraft(summary, markedFiles)).toContain('Known missing files marked in panel: src/auth/session.ts, src/auth/middleware.ts');
+    expect(buildMissingFileDraft(summary, markedFiles)).toContain('@veyra /review @src/auth/session.ts @src/auth/middleware.ts');
+    expect(buildMissingFileDraft(summary, markedFiles)).toContain('Source: Manual known-missing file draft from visible Veyra retrieval feedback.');
+
+    const report = buildRetrievalFeedbackReport(summary, markedFiles);
+    expect(report).toContain('Known missing files marked in panel:');
+    expect(report).toContain('- src/auth/session.ts');
+    expect(report).toContain('- src/auth/middleware.ts');
+    expect(report).toContain('Marked missing files are visible manual evidence only; Veyra does not persist them as hidden memory.');
+  });
+
   it.each(['review', 'debate', 'consensus', 'implement'] as const)(
     'preserves the originating /%s workflow command in retrieval follow-up drafts',
     (workflowCommand) => {
@@ -123,15 +150,21 @@ describe('RetrievalFeedbackPanel', () => {
     const onPrepareDraft = vi.fn();
     const onCopyReport = vi.fn();
     const onOpenFile = vi.fn();
+    const onMissingFileInput = vi.fn();
+    const onMarkMissingFile = vi.fn();
     const snapshot = { latest: sampleSummary() };
 
     const collapsed = RetrievalFeedbackPanel({
       snapshot,
       expanded: false,
+      markedMissingFiles: [],
+      missingFileInput: '',
       onToggle,
       onPrepareDraft,
       onCopyReport,
       onOpenFile,
+      onMissingFileInput: vi.fn(),
+      onMarkMissingFile: vi.fn(),
     });
     const collapsedText = flattenText(collapsed);
 
@@ -150,10 +183,14 @@ describe('RetrievalFeedbackPanel', () => {
     const expanded = RetrievalFeedbackPanel({
       snapshot,
       expanded: true,
+      markedMissingFiles: ['src/auth/middleware.ts'],
+      missingFileInput: 'src/auth/policy.ts',
       onToggle,
       onPrepareDraft,
       onCopyReport,
       onOpenFile,
+      onMissingFileInput,
+      onMarkMissingFile,
     });
     const expandedText = flattenText(expanded);
 
@@ -164,26 +201,41 @@ describe('RetrievalFeedbackPanel', () => {
     expect(expandedText).toContain('no hidden dispatches');
     expect(expandedText).toContain('no cloud indexing');
     expect(expandedText).toContain('no hidden memory');
+    expect(expandedText).toContain('Known missing files');
+    expect(expandedText).toContain('src/auth/middleware.ts');
 
     clickButtonContaining(expanded, 'Refine @codebase query');
     clickButtonContaining(expanded, 'Open file');
     clickButtonContaining(expanded, 'Mention');
+    inputWithPlaceholder(expanded, 'src/path/to/missing.ts')?.props.onInput?.({
+      currentTarget: { value: 'src/auth/policy.ts' },
+    });
+    clickButtonContaining(expanded, 'Mark missing file');
+    clickButtonContaining(expanded, 'Draft missing files');
     clickButtonContaining(expanded, 'Copy retrieval report');
 
     expect(onPrepareDraft).toHaveBeenCalledWith(expect.stringContaining('@veyra /review @codebase auth flow'));
     expect(onPrepareDraft).toHaveBeenCalledWith(expect.stringContaining('@src/auth/session.ts'));
+    expect(onPrepareDraft).toHaveBeenCalledWith(expect.stringContaining('@src/auth/middleware.ts'));
+    expect(onMissingFileInput).toHaveBeenCalledWith('src/auth/policy.ts');
+    expect(onMarkMissingFile).toHaveBeenCalledWith('src/auth/policy.ts');
     expect(onOpenFile).toHaveBeenCalledWith('src/auth/session.ts');
     expect(onCopyReport).toHaveBeenCalledWith(expect.stringContaining('# Veyra Retrieval Report'));
+    expect(onCopyReport).toHaveBeenCalledWith(expect.stringContaining('src/auth/middleware.ts'));
   });
 
   it('renders no panel when no @codebase retrieval feedback exists', () => {
     expect(RetrievalFeedbackPanel({
       snapshot: { latest: null },
       expanded: false,
+      markedMissingFiles: [],
+      missingFileInput: '',
       onToggle: vi.fn(),
       onPrepareDraft: vi.fn(),
       onCopyReport: vi.fn(),
       onOpenFile: vi.fn(),
+      onMissingFileInput: vi.fn(),
+      onMarkMissingFile: vi.fn(),
     })).toBeNull();
   });
 });
@@ -278,6 +330,24 @@ function findButtons(node: unknown): Array<VNode & { props: { onClick?: () => vo
   if (typeof vnode.type === 'function') return findButtons((vnode.type as any)(vnode.props));
   const self = vnode.type === 'button' ? [vnode as VNode & { props: { onClick?: () => void; children?: unknown } }] : [];
   return [...self, ...findButtons(vnode.props?.children)];
+}
+
+function findInputs(node: unknown): Array<VNode & { props: { placeholder?: string; onInput?: (event: { currentTarget: { value: string } }) => void } }> {
+  if (node === null || node === undefined || typeof node === 'boolean') return [];
+  if (typeof node === 'string' || typeof node === 'number') return [];
+  if (Array.isArray(node)) return node.flatMap(findInputs);
+  const vnode = node as VNode;
+  if (typeof vnode.type === 'function') return findInputs((vnode.type as any)(vnode.props));
+  const self = vnode.type === 'input'
+    ? [vnode as VNode & { props: { placeholder?: string; onInput?: (event: { currentTarget: { value: string } }) => void } }]
+    : [];
+  return [...self, ...findInputs(vnode.props?.children)];
+}
+
+function inputWithPlaceholder(node: unknown, placeholder: string): (VNode & { props: { placeholder?: string; onInput?: (event: { currentTarget: { value: string } }) => void } }) | undefined {
+  const input = findInputs(node).find((candidate) => candidate.props.placeholder === placeholder);
+  expect(input, `input with placeholder ${placeholder}`).toBeTruthy();
+  return input;
 }
 
 function clickButtonContaining(node: unknown, label: string): void {

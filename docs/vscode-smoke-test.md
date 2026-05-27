@@ -34,6 +34,8 @@ Retrieval Quality and Embedding Readiness v0.1 is also local-first in the no-pai
 
 Retrieval Feedback v0.3 is covered as a local-only docked-view surface. Unit tests cover the latest `@codebase` result summary, compact collapsed panel, explicit open-file action for selected files, visible refined `@codebase` and explicit `@file` drafts that preserve `/review`, `/debate`, `/consensus`, and `/implement`, and copyable reports with local lexical evidence, selected files, omitted/budget notes, and guardrails. It does not silently dispatch prompts, execute commands, upload code, call embeddings, create a background index, or create hidden memory.
 
+Retrieval Quality v0.4 extends that no-paid smoke coverage with visible/manual missed-context feedback. Unit tests cover Known missing files marks, explicit missing-file drafts, copyable reports that include marked evidence, and local lexical file-name, symbol, test, and import ranking signals. It keeps the same local-only guardrails: no embeddings, no uploads, no background indexing, no hidden memory, and no automatic dispatch.
+
 For the interactive end-to-end checklist:
 
 1. Open this repository in VS Code.

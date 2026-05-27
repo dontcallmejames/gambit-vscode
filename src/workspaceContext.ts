@@ -130,6 +130,16 @@ const STOP_WORDS = new Set([
   'with',
 ]);
 
+const TEST_QUERY_TERMS = new Set([
+  'coverage',
+  'regression',
+  'spec',
+  'specs',
+  'test',
+  'tests',
+  'testing',
+]);
+
 const CONTENT_READ_CONCURRENCY = 16;
 const GIT_COMMAND_MAX_BUFFER_BYTES = 50 * 1024 * 1024;
 const WORKSPACE_CONTEXT_MENTION_PATTERN = /(^|[\s([{<`])@codebase(?=$|[^\w./-])([,:;]?)/gi;
@@ -388,6 +398,22 @@ function scoreFile(
       reasonSet.add(`content:${term}`);
     }
   }
+  for (const term of symbolTerms(content)) {
+    if (terms.includes(term)) {
+      score += 10;
+      reasonSet.add(`symbol:${term}`);
+    }
+  }
+  for (const term of importTerms(content)) {
+    if (terms.includes(term)) {
+      score += 8;
+      reasonSet.add(`import:${term}`);
+    }
+  }
+  if (terms.some((term) => TEST_QUERY_TERMS.has(term)) && isTestPath(file.path)) {
+    score += 12;
+    reasonSet.add('test-path');
+  }
   if (file.metadata && score > 0) {
     score += 1;
     reasonSet.add('metadata');
@@ -406,6 +432,10 @@ function scoreFilePathWithReasons(
 ): { score: number; reasons: string[] } {
   const pathLower = file.path.toLowerCase();
   const baseLower = path.basename(file.path).toLowerCase();
+  const stemLower = path.basename(file.path, path.extname(file.path)).toLowerCase();
+  const stemNormalized = normalizeIdentifier(stemLower);
+  const pathSegmentTerms = new Set(pathLower.split('/').flatMap((segment) => identifierTerms(segment)));
+  const basenameTerms = new Set(identifierTerms(stemLower));
   let score = 0;
   const reasons = new Set<string>();
 
@@ -418,9 +448,75 @@ function scoreFilePathWithReasons(
       score += 4;
       reasons.add(`name:${term}`);
     }
+    if (stemNormalized === term) {
+      score += 14;
+      reasons.add(`name-stem:${term}`);
+    }
+    if (pathSegmentTerms.has(term)) {
+      score += 6;
+      reasons.add(`path-segment:${term}`);
+    }
+    if (basenameTerms.has(term)) {
+      score += 7;
+      reasons.add(`name-token:${term}`);
+    }
   }
 
   return { score, reasons: [...reasons] };
+}
+
+function symbolTerms(content: string): Set<string> {
+  const terms = new Set<string>();
+  const declarationPattern = /\b(?:export\s+)?(?:default\s+)?(?:async\s+)?(?:class|function|interface|type|enum|const|let|var)\s+([A-Za-z_$][\w$]*)/g;
+  for (const match of content.matchAll(declarationPattern)) {
+    for (const term of identifierTerms(match[1] ?? '')) terms.add(term);
+  }
+  return terms;
+}
+
+function importTerms(content: string): Set<string> {
+  const terms = new Set<string>();
+  for (const line of content.split(/\r?\n/)) {
+    if (!/^\s*import\b/.test(line)) continue;
+    for (const term of identifierTerms(line)) terms.add(term);
+  }
+  return terms;
+}
+
+function identifierTerms(value: string): string[] {
+  const normalizedFull = normalizeIdentifier(value);
+  const parts = value
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .toLowerCase()
+    .split(/[^a-z0-9_]+/g)
+    .map((part) => part.trim())
+    .filter((part) => part.length >= 2 && !STOP_WORDS.has(part));
+  return [...new Set([
+    ...(normalizedFull.length >= 2 && !STOP_WORDS.has(normalizedFull) ? [normalizedFull] : []),
+    ...parts,
+  ])];
+}
+
+function normalizeIdentifier(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9_]+/g, '');
+}
+
+function isTestPath(filePath: string): boolean {
+  const normalized = normalizePath(filePath).toLowerCase();
+  const base = path.basename(normalized);
+  return (
+    normalized.split('/').some((part) => part === 'tests' || part === '__tests__') ||
+    base.includes('.test.') ||
+    base.includes('.spec.') ||
+    base.endsWith('.test.ts') ||
+    base.endsWith('.test.tsx') ||
+    base.endsWith('.test.js') ||
+    base.endsWith('.test.jsx') ||
+    base.endsWith('.spec.ts') ||
+    base.endsWith('.spec.tsx') ||
+    base.endsWith('.spec.js') ||
+    base.endsWith('.spec.jsx')
+  );
 }
 
 function extractSnippet(

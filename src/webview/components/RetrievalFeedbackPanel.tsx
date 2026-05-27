@@ -1,6 +1,7 @@
 import { h } from 'preact';
 import {
   buildFileMentionDraft,
+  buildMissingFileDraft,
   buildRefineCodebaseDraft,
   buildRetrievalFeedbackReport,
   type RetrievalFeedbackSnapshot,
@@ -9,19 +10,27 @@ import {
 type RetrievalFeedbackPanelProps = {
   snapshot: RetrievalFeedbackSnapshot;
   expanded: boolean;
+  markedMissingFiles: string[];
+  missingFileInput: string;
   onToggle: (expanded: boolean) => void;
   onPrepareDraft: (text: string) => void;
   onCopyReport: (text: string) => void;
   onOpenFile: (path: string) => void;
+  onMissingFileInput: (value: string) => void;
+  onMarkMissingFile: (value: string) => void;
 };
 
 export function RetrievalFeedbackPanel({
   snapshot,
   expanded,
+  markedMissingFiles,
+  missingFileInput,
   onToggle,
   onPrepareDraft,
   onCopyReport,
   onOpenFile,
+  onMissingFileInput,
+  onMarkMissingFile,
 }: RetrievalFeedbackPanelProps) {
   const summary = snapshot.latest;
   if (!summary) return null;
@@ -94,13 +103,45 @@ export function RetrievalFeedbackPanel({
               )}
               <p>{summary.possibleMisses}</p>
             </section>
+
+            <section class="retrieval-feedback-card">
+              <div class="retrieval-feedback-card-head">
+                <span>Known missing files</span>
+                <span>{markedMissingFiles.length > 0 ? `${markedMissingFiles.length} marked` : 'none marked'}</span>
+              </div>
+              {markedMissingFiles.length > 0 ? (
+                <ul class="retrieval-feedback-missing-list">
+                  {markedMissingFiles.map((filePath) => <li key={filePath}>{filePath}</li>)}
+                </ul>
+              ) : (
+                <p class="retrieval-feedback-muted">Mark files you know retrieval missed before drafting a manual follow-up.</p>
+              )}
+              <div class="retrieval-feedback-missing-input">
+                <input
+                  type="text"
+                  value={missingFileInput}
+                  placeholder="src/path/to/missing.ts"
+                  onInput={(event) => onMissingFileInput(event.currentTarget.value)}
+                />
+                <button type="button" onClick={() => onMarkMissingFile(missingFileInput)}>
+                  Mark missing file
+                </button>
+              </div>
+              <button
+                type="button"
+                disabled={markedMissingFiles.length === 0}
+                onClick={() => onPrepareDraft(buildMissingFileDraft(summary, markedMissingFiles))}
+              >
+                Draft missing files
+              </button>
+            </section>
           </div>
 
           <div class="retrieval-feedback-actions">
-            <button type="button" onClick={() => onPrepareDraft(buildRefineCodebaseDraft(summary))}>
+            <button type="button" onClick={() => onPrepareDraft(buildRefineCodebaseDraft(summary, markedMissingFiles))}>
               Refine @codebase query
             </button>
-            <button type="button" onClick={() => onCopyReport(buildRetrievalFeedbackReport(summary))}>
+            <button type="button" onClick={() => onCopyReport(buildRetrievalFeedbackReport(summary, markedMissingFiles))}>
               Copy retrieval report
             </button>
             <span>{summary.guardrails.join(', ')}</span>

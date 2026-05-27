@@ -3,7 +3,7 @@ import { useEffect, useReducer, useState } from 'preact/hooks';
 import { initialState, reduce } from './state.js';
 import { buildMissionControlSnapshot } from './missionControl.js';
 import { buildTrustCenterSnapshot } from './trustCenter.js';
-import { buildRetrievalFeedbackSnapshot } from './retrievalFeedback.js';
+import { addMarkedMissingFile, buildRetrievalFeedbackSnapshot } from './retrievalFeedback.js';
 import { buildWorkflowReplaySnapshot } from './workflowReplay.js';
 import { buildWorkflowHistorySnapshot } from './workflowHistory.js';
 import {
@@ -38,6 +38,11 @@ const send = (msg: FromWebview) => vscode.postMessage(msg);
 export function App() {
   const [state, dispatch] = useReducer(reduce, initialState());
   const [composerDraft, setComposerDraft] = useState<{ id: number; text: string } | null>(null);
+  const [retrievalMissingFiles, setRetrievalMissingFiles] = useState<{
+    sourceMessageId: string | null;
+    input: string;
+    files: string[];
+  }>({ sourceMessageId: null, input: '', files: [] });
   const [density, setDensity] = useState(() => readPresentationDensityState(vscode.getState?.()));
   const missionControl = buildMissionControlSnapshot(state);
   const trustCenter = buildTrustCenterSnapshot(state);
@@ -73,11 +78,30 @@ export function App() {
     setDensity((current) => nextPresentationDensityStateForSignals(current, { trustUrgencyKey: trustUrgentKey }));
   }, [trustUrgentKey]);
 
+  useEffect(() => {
+    const sourceMessageId = retrievalFeedback.latest?.sourceMessageId ?? null;
+    setRetrievalMissingFiles((current) => (
+      current.sourceMessageId === sourceMessageId
+        ? current
+        : { sourceMessageId, input: '', files: [] }
+    ));
+  }, [retrievalFeedback.latest?.sourceMessageId]);
+
   const setPanelExpanded = (panelId: PresentationPanelId, expanded: boolean) => {
     setDensity((current) => setPresentationPanelExpanded(current, panelId, expanded));
   };
   const prepareComposerDraft = (text: string) => {
     setComposerDraft((draft) => ({ id: (draft?.id ?? 0) + 1, text }));
+  };
+  const markMissingFile = (value: string) => {
+    setRetrievalMissingFiles((current) => {
+      const files = addMarkedMissingFile(current.files, value);
+      return {
+        ...current,
+        input: files === current.files ? current.input : '',
+        files,
+      };
+    });
   };
 
   return (
@@ -104,10 +128,14 @@ export function App() {
       <RetrievalFeedbackPanel
         snapshot={retrievalFeedback}
         expanded={expandedPanels.retrieval}
+        markedMissingFiles={retrievalMissingFiles.files}
+        missingFileInput={retrievalMissingFiles.input}
         onToggle={(expanded) => setPanelExpanded('retrieval', expanded)}
         onPrepareDraft={prepareComposerDraft}
         onCopyReport={(text) => send({ kind: 'copy-text', text })}
         onOpenFile={(relativePath) => send({ kind: 'open-workspace-file', relativePath })}
+        onMissingFileInput={(input) => setRetrievalMissingFiles((current) => ({ ...current, input }))}
+        onMarkMissingFile={markMissingFile}
       />
       <MessageList session={state.session} inProgress={state.inProgress} settings={state.settings} send={send} />
       <Composer

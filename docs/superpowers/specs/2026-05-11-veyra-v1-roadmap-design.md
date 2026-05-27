@@ -438,6 +438,8 @@ Implementation note: Retrieval Quality and Embedding Readiness v0.1 improves mea
 
 Implementation note: Retrieval Feedback v0.3 closes the local feedback loop without adding a ranking store. After an `@codebase` turn, Veyra derives a compact docked-view summary from the session's local retrieval evidence. The summary shows selected files, omitted match counts or budget limits when available, and the local lexical rationale. User actions only open selected workspace files through the existing safe file-open path, prepare visible composer drafts that preserve the originating workflow command, or copy a retrieval report; they do not silently dispatch prompts, run commands, call embeddings, upload code, create background indexes, or persist hidden memory.
 
+Implementation note: Retrieval Quality v0.4 adds visible/manual missed-context feedback to that panel. Users can mark Known missing files, draft explicit file mentions, and copy reports that include the marked evidence while Veyra keeps the marks as current webview state rather than hidden memory. Local lexical ranking gains file-name, symbol, test, and import signals. It does not add embeddings, uploads, background indexing, hidden memory, or automatic dispatch, and the guardrails remain explicit as no embeddings, no uploads, no background indexing, and no hidden memory.
+
 ### Workflow replay
 
 Useful for rerunning `/review`, `/consensus`, or `/implement` against a later commit to compare how the agents' opinion changed. It should wait until structured artifacts and session summaries have a stable persisted shape.

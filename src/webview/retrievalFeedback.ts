@@ -19,7 +19,27 @@ export function buildRetrievalFeedbackSnapshot(state: WebviewState): RetrievalFe
   return { latest: null };
 }
 
-export function buildRefineCodebaseDraft(summary: RetrievalFeedbackSummary): string {
+export function normalizeMarkedMissingFilePath(value: string): string | null {
+  const normalized = value
+    .trim()
+    .replace(/^@+/, '')
+    .replace(/^["'`]+|["'`]+$/g, '')
+    .replace(/\\/g, '/')
+    .replace(/^\/+/, '')
+    .trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+export function addMarkedMissingFile(current: string[], nextValue: string): string[] {
+  const normalized = normalizeMarkedMissingFilePath(nextValue);
+  if (!normalized || current.includes(normalized)) return current;
+  return [...current, normalized];
+}
+
+export function buildRefineCodebaseDraft(
+  summary: RetrievalFeedbackSummary,
+  markedMissingFiles: string[] = [],
+): string {
   const workflowCommand = summary.workflowCommand ?? 'review';
   return [
     `@veyra /${workflowCommand} @codebase ${summary.query}`,
@@ -35,9 +55,29 @@ export function buildRefineCodebaseDraft(summary: RetrievalFeedbackSummary): str
     summary.omittedMatchedFileCount > 0
       ? `Omitted matching files: ${summary.omittedMatchedFileCount}.`
       : 'Omitted matching files: none recorded.',
+    ...formatMarkedMissingFilesForDraft(markedMissingFiles),
     ...summary.warnings.map((warning) => `Warning: ${warning}`),
     `Possible misses: ${summary.possibleMisses}`,
     'Please refine the @codebase query or add @file mentions for known missing context before sending this manual follow-up.',
+    '[/Retrieval feedback]',
+  ].join('\n');
+}
+
+export function buildMissingFileDraft(summary: RetrievalFeedbackSummary, markedMissingFiles: string[]): string {
+  const workflowCommand = summary.workflowCommand ?? 'review';
+  const mentions = markedMissingFiles
+    .map((filePath) => normalizeMarkedMissingFilePath(filePath))
+    .filter((filePath): filePath is string => Boolean(filePath))
+    .map((filePath) => `@${filePath}`);
+  return [
+    `@veyra /${workflowCommand} ${mentions.join(' ')}`.trim(),
+    '',
+    '[Retrieval feedback]',
+    'Source: Manual known-missing file draft from visible Veyra retrieval feedback.',
+    `Original workflow: /${workflowCommand}.`,
+    `Original @codebase query: ${summary.query}`,
+    ...formatMarkedMissingFilesForDraft(markedMissingFiles),
+    'Use these explicitly mentioned files as context. Edit this visible draft before sending if any path is wrong or incomplete.',
     '[/Retrieval feedback]',
   ].join('\n');
 }
@@ -56,7 +96,10 @@ export function buildFileMentionDraft(summary: RetrievalFeedbackSummary, filePat
   ].join('\n');
 }
 
-export function buildRetrievalFeedbackReport(summary: RetrievalFeedbackSummary): string {
+export function buildRetrievalFeedbackReport(
+  summary: RetrievalFeedbackSummary,
+  markedMissingFiles: string[] = [],
+): string {
   return [
     '# Veyra Retrieval Report',
     '',
@@ -71,6 +114,10 @@ export function buildRetrievalFeedbackReport(summary: RetrievalFeedbackSummary):
     ...summary.warnings.map((warning) => `Warning: ${warning}`),
     `Possible misses: ${summary.possibleMisses}`,
     '',
+    'Known missing files marked in panel:',
+    ...formatMarkedMissingFilesForReport(markedMissingFiles),
+    'Marked missing files are visible manual evidence only; Veyra does not persist them as hidden memory.',
+    '',
     'Guardrails:',
     ...summary.guardrails.map((guardrail) => `- ${guardrail}`),
     '',
@@ -83,4 +130,22 @@ export function buildRetrievalFeedbackReport(summary: RetrievalFeedbackSummary):
 function formatSelectedFiles(summary: RetrievalFeedbackSummary): string[] {
   if (summary.selectedFiles.length === 0) return ['- None selected.'];
   return summary.selectedFiles.map((file) => `- ${file.path} - ${file.reason} (score ${file.score})`);
+}
+
+function formatMarkedMissingFilesForDraft(markedMissingFiles: string[]): string[] {
+  const normalized = normalizedMarkedMissingFiles(markedMissingFiles);
+  return normalized.length > 0
+    ? [`Known missing files marked in panel: ${normalized.join(', ')}`]
+    : ['Known missing files marked in panel: none.'];
+}
+
+function formatMarkedMissingFilesForReport(markedMissingFiles: string[]): string[] {
+  const normalized = normalizedMarkedMissingFiles(markedMissingFiles);
+  return normalized.length > 0
+    ? normalized.map((filePath) => `- ${filePath}`)
+    : ['- None marked in this visible panel.'];
+}
+
+function normalizedMarkedMissingFiles(markedMissingFiles: string[]): string[] {
+  return markedMissingFiles.reduce<string[]>((current, filePath) => addMarkedMissingFile(current, filePath), []);
 }

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.21 - 2026-05-27
+
 - Adds Retrieval Quality v0.4 with visible/manual missed-context feedback in Retrieval Feedback. Users can mark Known missing files, draft explicit file mentions, and include that evidence in copyable retrieval reports while lexical ranking gains file-name, symbol, test, and import signals; the loop remains local-only with no embeddings, no uploads, no background indexing, no hidden memory, and no automatic dispatch.
 
 ## 1.0.20 - 2026-05-27

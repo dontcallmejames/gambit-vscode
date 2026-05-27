@@ -2,7 +2,9 @@
 
 ## Unreleased
 
-- Adds Retrieval Feedback v0.3, preserving the originating Veyra workflow command in visible retrieval follow-up drafts and adding explicit open-file actions for selected `@codebase` files.
+## 1.0.20 - 2026-05-27
+
+- Adds Retrieval Feedback v0.3, preserving the originating Veyra workflow command in visible retrieval follow-up drafts, adding explicit open-file actions for selected `@codebase` files, and keeping reports local-only with no hidden dispatches, command execution, uploads, embeddings, background indexing, or hidden memory.
 - Adds Workflow Artifact History v0.2, letting users copy a local summary for each recent workflow with command, prompt, agents, artifact headings, trust signals, completion status, and manual replay guardrails.
 - Adds Antigravity provider hardening v0.2, falling back to legacy Gemini when Antigravity hits command-line prompt limits, improving readiness diagnostics for the selected Google provider path, and surfacing backend-reported model metadata without hardcoded model promises.
 

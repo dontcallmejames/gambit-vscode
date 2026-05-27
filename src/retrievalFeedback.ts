@@ -2,9 +2,15 @@ import type { RetrievalFeedbackSummary } from './shared/protocol.js';
 import type { WorkspaceContextResult } from './workspaceContext.js';
 
 const RETRIEVAL_GUARDRAILS = [
+  'no hidden dispatches',
+  'no command execution',
+  'no uploads',
   'no cloud indexing',
+  'no embedding calls',
   'no paid embedding calls',
+  'no background indexing',
   'no background repository scans',
+  'no hidden memory',
 ];
 
 export function retrievalFeedbackSummaryFromWorkspaceContextResult(

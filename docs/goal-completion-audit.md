@@ -1,6 +1,6 @@
 # Veyra Goal Completion Audit
 
-Last updated: 2026-05-25
+Last updated: 2026-05-27
 
 This audit tracks the active goal: make Veyra a VS Code extension where Claude, Codex, and Gemini can collaborate without losing context, stomping each other's edits, or making invisible changes.
 
@@ -33,6 +33,8 @@ The 2026-05-25 Browser Testing Awareness v0.1 pass adds `Veyra: Review Browser/T
 The 2026-05-25 Local Model Support v0.1 pass adds a conservative diagnostics-only surface for local/self-hosted provider targets. Users can record mode, provider label, endpoint, and model settings for diagnostic reports, but the feature remains inactive for runtime dispatch: no automatic model downloads, no hidden server launches, no background network probing, and no replacement of Claude, Codex, or Gemini routing.
 
 The Retrieval Quality and Embedding Readiness v0.1 pass keeps `@codebase` on local lexical retrieval while making the evidence easier to audit. Workspace context blocks now name the local lexical method, query terms, selected-file counts, prompt budget, omitted matches, and possible misses; diagnostic reports record retrieval settings and inactive embedding readiness. The guardrails remain explicit: no cloud indexing, no paid embedding calls, and no background repository scans.
+
+The Retrieval Feedback v0.3 pass keeps the latest `@codebase` result visible as a compact docked-view panel derived from existing retrieval-feedback system messages. The panel exposes explicit open-file actions for selected files, prepares visible manual refined `@codebase` drafts that preserve `/review`, `/debate`, `/consensus`, or `/implement`, prepares explicit `@file` mention drafts, and copies local retrieval reports with lexical method, query terms, selected-file reasons, omitted/budget notes, possible misses, and guardrails. It does not silently dispatch prompts, execute commands, upload code, call embeddings, create a background index, or create hidden memory.
 
 ## Prompt-to-Artifact Checklist
 

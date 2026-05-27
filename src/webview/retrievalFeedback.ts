@@ -37,7 +37,7 @@ export function buildRefineCodebaseDraft(summary: RetrievalFeedbackSummary): str
       : 'Omitted matching files: none recorded.',
     ...summary.warnings.map((warning) => `Warning: ${warning}`),
     `Possible misses: ${summary.possibleMisses}`,
-    'Please refine the @codebase query or add @file mentions for known missing context before reviewing.',
+    'Please refine the @codebase query or add @file mentions for known missing context before sending this manual follow-up.',
     '[/Retrieval feedback]',
   ].join('\n');
 }
@@ -73,7 +73,6 @@ export function buildRetrievalFeedbackReport(summary: RetrievalFeedbackSummary):
     '',
     'Guardrails:',
     ...summary.guardrails.map((guardrail) => `- ${guardrail}`),
-    '- no hidden background scans',
     '',
     'Next steps:',
     '- Refine @codebase query terms when lexical retrieval missed a concept.',

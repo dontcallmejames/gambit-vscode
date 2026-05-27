@@ -80,7 +80,7 @@ describe('extension manifest', () => {
     expect(manifest.name).toBe('veyra-vscode');
     expect(manifest.displayName).toBe('Veyra');
     expect(manifestRecord.private).toBeUndefined();
-    expect(manifest.version).toBe('1.0.19');
+    expect(manifest.version).toBe('1.0.20');
     expect(manifest.preview).toBe(false);
     expect(manifest.license).toBe('SEE LICENSE IN LICENSE.txt');
     expect(manifest.repository).toEqual({
@@ -396,19 +396,30 @@ describe('extension manifest', () => {
     expect(changelog).toContain('@codebase retrieval');
   });
 
-  it('documents retrieval feedback as a local-only unreleased slice', () => {
+  it('documents retrieval feedback as a local-only slice', () => {
     const userGuide = userGuideText();
     const changelog = readFileSync(join(process.cwd(), 'CHANGELOG.md'), 'utf8');
+    const audit = readFileSync(join(process.cwd(), 'docs', 'goal-completion-audit.md'), 'utf8');
+    const smokeChecklist = readFileSync(join(process.cwd(), 'docs', 'vscode-smoke-test.md'), 'utf8');
     const roadmap = readFileSync(join(process.cwd(), 'docs', 'superpowers', 'specs', '2026-05-11-veyra-v1-roadmap-design.md'), 'utf8');
 
-    for (const document of [userGuide, changelog, roadmap]) {
+    for (const document of [userGuide, changelog, audit, smokeChecklist, roadmap]) {
       expect(document).toContain('Retrieval Feedback v0.3');
     }
     expect(userGuide).toContain('open selected files');
     expect(userGuide).toContain('preserves the original');
     expect(userGuide).toContain('does not silently send prompts');
+    expect(userGuide).toContain('execute commands');
+    expect(userGuide).toContain('upload code');
+    expect(userGuide).toContain('call embeddings');
+    expect(userGuide).toContain('create a background index');
     expect(userGuide).toContain('create hidden memory');
+    expect(smokeChecklist).toContain('explicit open-file action');
+    expect(smokeChecklist).toContain('visible refined `@codebase` and explicit `@file` drafts');
+    expect(audit).toContain('selected-file reasons');
     expect(roadmap).toContain('do not silently dispatch prompts');
+    expect(roadmap).toContain('create background indexes');
+    expect(changelog).toContain('no hidden dispatches');
     expect(changelog).toContain('originating Veyra workflow command');
   });
 

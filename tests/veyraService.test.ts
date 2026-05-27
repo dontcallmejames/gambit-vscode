@@ -357,7 +357,17 @@ describe('VeyraSessionService', () => {
       selectedFileCount: 1,
       matchedFileCount: 1,
       omittedMatchedFileCount: 0,
-      guardrails: ['no cloud indexing', 'no paid embedding calls', 'no background repository scans'],
+      guardrails: [
+        'no hidden dispatches',
+        'no command execution',
+        'no uploads',
+        'no cloud indexing',
+        'no embedding calls',
+        'no paid embedding calls',
+        'no background indexing',
+        'no background repository scans',
+        'no hidden memory',
+      ],
       selectedFiles: [
         { path: 'src/auth/session.ts', score: 10, reason: 'path:auth' },
       ],
@@ -424,6 +434,56 @@ describe('VeyraSessionService', () => {
     )?.message;
     expect(retrievalFeedback?.retrievalFeedback?.workflowCommand).toBe('review');
   });
+
+  it.each(['review', 'debate', 'consensus', 'implement'] as VeyraWorkflowCommand[])(
+    'records /%s as the originating @codebase retrieval workflow',
+    async (workflowCommand) => {
+      const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-service-'));
+      const workspaceContextProvider = fakeWorkspaceContextProvider([
+        '[Workspace context from @codebase]',
+        'Selected files:',
+        '- src/auth/session.ts',
+        '[/Workspace context]',
+      ].join('\n'));
+      const service = new VeyraSessionService(
+        workspacePath,
+        {
+          claude: agentNoop('claude'),
+          codex: agentNoop('codex'),
+          gemini: agentNoop('gemini'),
+        },
+        { hangSeconds: 0, workspaceContextProvider: workspaceContextProvider as WorkspaceContextProvider },
+      );
+
+      const events: any[] = [];
+      await service.dispatch(
+        {
+          text: [
+            '@all',
+            '',
+            `Workflow: ${workflowCommand}`,
+            '',
+            `@codebase inspect ${workflowCommand} retrieval context`,
+          ].join('\n'),
+          workspaceContextQuery: `@codebase inspect ${workflowCommand} retrieval context`,
+          source: 'native-chat',
+          cwd: workspacePath,
+          forcedTarget: 'veyra',
+          readOnly: workflowCommand !== 'implement',
+        },
+        (event) => {
+          events.push(event);
+        },
+      );
+
+      const retrievalFeedback = events.find((event) =>
+        event.kind === 'system-message' &&
+        event.message.kind === 'retrieval-feedback'
+      )?.message;
+      expect(workspaceContextProvider.retrieve).toHaveBeenCalledWith(`inspect ${workflowCommand} retrieval context`);
+      expect(retrievalFeedback?.retrievalFeedback?.workflowCommand).toBe(workflowCommand);
+    },
+  );
 
   it.each(['native-chat', 'language-model'] as const)(
     'does not infer @codebase from transcript text for %s dispatches',

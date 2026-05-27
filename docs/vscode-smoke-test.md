@@ -32,6 +32,8 @@ Local Model Support v0.1 is diagnostics-only in the no-paid smoke path. `Veyra: 
 
 Retrieval Quality and Embedding Readiness v0.1 is also local-first in the no-paid smoke path. Unit tests cover local lexical `@codebase` evidence, omitted-match budget warnings, and diagnostic report wording. Veyra performs no cloud indexing, no paid embedding calls, and no background repository scans; embedding readiness is documented as inactive until lexical retrieval misses are measured.
 
+Retrieval Feedback v0.3 is covered as a local-only docked-view surface. Unit tests cover the latest `@codebase` result summary, compact collapsed panel, explicit open-file action for selected files, visible refined `@codebase` and explicit `@file` drafts that preserve `/review`, `/debate`, `/consensus`, and `/implement`, and copyable reports with local lexical evidence, selected files, omitted/budget notes, and guardrails. It does not silently dispatch prompts, execute commands, upload code, call embeddings, create a background index, or create hidden memory.
+
 For the interactive end-to-end checklist:
 
 1. Open this repository in VS Code.

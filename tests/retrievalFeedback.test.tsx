@@ -9,10 +9,52 @@ import {
   buildRetrievalFeedbackSnapshot,
 } from '../src/webview/retrievalFeedback.js';
 import { RetrievalFeedbackPanel } from '../src/webview/components/RetrievalFeedbackPanel.js';
+import { retrievalFeedbackSummaryFromWorkspaceContextResult } from '../src/retrievalFeedback.js';
+import type { WorkspaceContextResult } from '../src/workspaceContext.js';
 
 vi.stubGlobal('React', { createElement: h });
 
+const COMPLETE_RETRIEVAL_GUARDRAILS = [
+  'no hidden dispatches',
+  'no command execution',
+  'no uploads',
+  'no cloud indexing',
+  'no embedding calls',
+  'no paid embedding calls',
+  'no background indexing',
+  'no background repository scans',
+  'no hidden memory',
+];
+
 describe('retrieval feedback summary', () => {
+  it('derives a source summary with complete local-first guardrails from @codebase evidence', () => {
+    const summary = retrievalFeedbackSummaryFromWorkspaceContextResult(
+      sampleWorkspaceContextResult(),
+      'user-1',
+      123,
+      'implement',
+    );
+
+    expect(summary).toMatchObject({
+      sourceMessageId: 'user-1',
+      timestamp: 123,
+      query: 'auth flow',
+      workflowCommand: 'implement',
+      methodLabel: 'local lexical search over workspace file names and file text',
+      selectedFileCount: 1,
+      matchedFileCount: 3,
+      omittedMatchedFileCount: 2,
+      queryTerms: ['auth', 'flow'],
+      budgetSummary: 'max files 1, max snippet lines 80, max file bytes 1000000',
+      selectedFiles: [
+        { path: 'src/auth/session.ts', score: 42, reason: 'path:auth, text:flow' },
+      ],
+    });
+    for (const guardrail of COMPLETE_RETRIEVAL_GUARDRAILS) {
+      expect(summary.guardrails).toContain(guardrail);
+    }
+  });
+
   it('derives the latest @codebase retrieval feedback from existing session messages', () => {
     let state = initialState();
     state = reduce(state, eventForMessage(retrievalMessage('older', 1, {
@@ -50,20 +92,29 @@ describe('retrieval feedback summary', () => {
     expect(report).toContain('Selected files');
     expect(report).toContain('Omitted matching files: 2');
     expect(report).toContain('no cloud indexing');
+    expect(report).toContain('no hidden dispatches');
+    expect(report).toContain('no command execution');
+    expect(report).toContain('no uploads');
+    expect(report).toContain('no embedding calls');
     expect(report).toContain('no paid embedding calls');
-    expect(report).toContain('no hidden background scans');
+    expect(report).toContain('no background indexing');
+    expect(report).toContain('no hidden memory');
   });
 
-  it('preserves the originating workflow command in retrieval follow-up drafts', () => {
-    const summary = {
-      ...sampleSummary(),
-      workflowCommand: 'consensus',
-    } as RetrievalFeedbackSummary;
+  it.each(['review', 'debate', 'consensus', 'implement'] as const)(
+    'preserves the originating /%s workflow command in retrieval follow-up drafts',
+    (workflowCommand) => {
+      const summary = {
+        ...sampleSummary(),
+        workflowCommand,
+      } as RetrievalFeedbackSummary;
 
-    expect(buildRefineCodebaseDraft(summary)).toContain('@veyra /consensus @codebase auth flow');
-    expect(buildFileMentionDraft(summary, 'src/auth/session.ts')).toContain('@veyra /consensus @src/auth/session.ts');
-    expect(buildRetrievalFeedbackReport(summary)).toContain('Workflow: /consensus');
-  });
+      expect(buildRefineCodebaseDraft(summary)).toContain(`@veyra /${workflowCommand} @codebase auth flow`);
+      expect(buildRefineCodebaseDraft(summary)).toContain('before sending this manual follow-up');
+      expect(buildFileMentionDraft(summary, 'src/auth/session.ts')).toContain(`@veyra /${workflowCommand} @src/auth/session.ts`);
+      expect(buildRetrievalFeedbackReport(summary)).toContain(`Workflow: /${workflowCommand}`);
+    },
+  );
 });
 
 describe('RetrievalFeedbackPanel', () => {
@@ -110,7 +161,9 @@ describe('RetrievalFeedbackPanel', () => {
     expect(expandedText).toContain('src/auth/session.ts');
     expect(expandedText).toContain('path:auth, text:flow');
     expect(expandedText).toContain('Prompt budget');
+    expect(expandedText).toContain('no hidden dispatches');
     expect(expandedText).toContain('no cloud indexing');
+    expect(expandedText).toContain('no hidden memory');
 
     clickButtonContaining(expanded, 'Refine @codebase query');
     clickButtonContaining(expanded, 'Open file');
@@ -153,11 +206,43 @@ function sampleSummary(): RetrievalFeedbackSummary {
     warnings: [
       '2 matching files were omitted by veyra.workspaceContext.maxFiles (1). Refine @codebase query or attach known files with @file.',
     ],
-    guardrails: [
-      'no cloud indexing',
-      'no paid embedding calls',
-      'no background repository scans',
+    guardrails: COMPLETE_RETRIEVAL_GUARDRAILS,
+  };
+}
+
+function sampleWorkspaceContextResult(): WorkspaceContextResult {
+  return {
+    enabled: true,
+    query: 'auth flow',
+    block: '[Workspace context from @codebase]\n[/Workspace context]',
+    attached: [{ path: 'src/auth/session.ts', lines: 80, truncated: false }],
+    selected: [
+      {
+        path: 'src/auth/session.ts',
+        score: 42,
+        reasons: ['path:auth', 'text:flow'],
+        language: 'ts',
+        startLine: 1,
+        endLine: 80,
+      },
     ],
+    diagnostics: [],
+    quality: {
+      method: 'local-lexical',
+      inventoryFileCount: 10,
+      candidateFileCount: 4,
+      matchedFileCount: 3,
+      selectedFileCount: 1,
+      omittedMatchedFileCount: 2,
+      queryTerms: ['auth', 'flow'],
+      maxFiles: 1,
+      maxSnippetLines: 80,
+      maxFileBytes: 1_000_000,
+      embeddingReadiness: 'inactive',
+      warnings: [
+        '2 matching files were omitted by veyra.workspaceContext.maxFiles (1). Refine @codebase query or attach known files with @file.',
+      ],
+    },
   };
 }
 

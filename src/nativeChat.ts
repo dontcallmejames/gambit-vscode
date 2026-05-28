@@ -509,7 +509,7 @@ function renderNativeChatEvent(
     if (event.message.kind === 'error' && event.message.filePath) {
       response.reference(editedFileUri(workspacePath, event.message.filePath));
       response.markdown(`\n\n> ${event.message.text.replace(/\r?\n/g, '\n> ')}`);
-      return { sawText: false, sawError: Boolean(event.message.agentId) };
+      return { sawText: true, sawError: Boolean(event.message.agentId) && !event.message.workflowState };
     }
     if (event.message.kind === 'warning') {
       response.markdown(`\n\n> ${event.message.text.replace(/\r?\n/g, '\n> ')}`);

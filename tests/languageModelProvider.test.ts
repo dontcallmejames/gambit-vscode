@@ -1389,6 +1389,85 @@ describe('Veyra language model provider helpers', () => {
     }));
   });
 
+  it('streams structured workflow-state notices as visible nonfatal language model output', async () => {
+    const context = { subscriptions: [] as Array<{ dispose(): void }> };
+    const service = {
+      dispatch: vi.fn(async (_request, emit) => {
+        await emit({
+          kind: 'system-message',
+          message: {
+            id: 'sys1',
+            role: 'system',
+            kind: 'warning',
+            text: 'No observed inspection evidence from Gemini.',
+            timestamp: 1,
+            agentId: 'gemini',
+            workflowState: {
+              kind: 'low-evidence-output',
+              severity: 'warning',
+              agentId: 'gemini',
+              text: 'No observed inspection evidence from Gemini.',
+            },
+          },
+        });
+        await emit({
+          kind: 'system-message',
+          message: {
+            id: 'sys2',
+            role: 'system',
+            kind: 'error',
+            text: 'Read-only workflow violation: Claude edited src/review.ts during a read-only dispatch.',
+            timestamp: 2,
+            agentId: 'claude',
+            filePath: 'src/review.ts',
+            workflowState: {
+              kind: 'read-only-violation',
+              severity: 'error',
+              agentId: 'claude',
+              filePath: 'src/review.ts',
+              text: 'Read-only workflow violation: Claude edited src/review.ts during a read-only dispatch.',
+            },
+          },
+        });
+      }),
+      cancelAll: vi.fn(),
+    };
+
+    registerVeyraLanguageModelProvider(
+      context as any,
+      () => ({ service, workspacePath: '/workspace' } as any),
+    );
+
+    const provider = vscodeMocks.registerLanguageModelChatProvider.mock.calls[0]?.[1] as {
+      provideLanguageModelChatResponse(
+        model: unknown,
+        messages: unknown[],
+        options: unknown,
+        progress: { report(value: unknown): void },
+        token: unknown,
+      ): Promise<void>;
+    };
+    const progress = { report: vi.fn() };
+
+    await provider.provideLanguageModelChatResponse(
+      VEYRA_LANGUAGE_MODELS[0],
+      [{ role: 1, name: undefined, content: [{ value: 'Review this.' }] }],
+      {},
+      progress,
+      cancellationToken(),
+    );
+
+    expect(progress.report).toHaveBeenCalledWith(expect.objectContaining({
+      value: expect.stringContaining('No observed inspection evidence'),
+    }));
+    expect(progress.report).toHaveBeenCalledWith(expect.objectContaining({
+      value: expect.stringContaining('[src/review.ts](file:///workspace/src/review.ts)'),
+    }));
+    expect(progress.report).not.toHaveBeenCalledWith(expect.objectContaining({
+      value: '_No text response._',
+    }));
+  });
+
   it('does not dispatch when the language model request is already cancelled', async () => {
     const context = { subscriptions: [] as Array<{ dispose(): void }> };
     const service = {

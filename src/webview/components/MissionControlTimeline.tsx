@@ -24,6 +24,19 @@ export function MissionControlTimeline({ snapshot, actionChips, onOpenPanel }: M
       <div class="mission-control-stages">
         {snapshot.stages.map((stage) => <Stage key={stage.agentId} stage={stage} />)}
       </div>
+      {snapshot.workflowWarnings.length > 0 && (
+        <div class="mission-control-workflow-warnings" aria-label="Workflow state warnings">
+          {snapshot.workflowWarnings.map((warning) => (
+            <span
+              class={`mission-control-workflow-chip mission-control-workflow-chip-${warning.severity}`}
+              key={`${warning.kind}-${warning.agentId ?? 'workflow'}-${warning.filePath ?? warning.text}`}
+              title={warning.text}
+            >
+              {warning.label}
+            </span>
+          ))}
+        </div>
+      )}
       {actionChips && actionChips.length > 0 ? (
         <div class="mission-control-actions" aria-label="Mission Control sections">
           {actionChips.map((chip) => (

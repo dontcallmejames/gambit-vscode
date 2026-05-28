@@ -1,5 +1,5 @@
 import type { AgentId } from '../types.js';
-import type { AgentMessage, SessionMessage, SystemMessage, ToolEvent } from '../shared/protocol.js';
+import type { AgentMessage, SessionMessage, SystemMessage, ToolEvent, WorkflowStateKind } from '../shared/protocol.js';
 import type { WebviewState } from './state.js';
 
 export type MissionControlStageState = 'waiting' | 'queued' | 'active' | 'complete' | 'failed' | 'cancelled';
@@ -11,6 +11,15 @@ export type MissionControlStage = {
   state: MissionControlStageState;
 };
 
+export type MissionControlWorkflowWarning = {
+  kind: WorkflowStateKind;
+  label: string;
+  text: string;
+  severity: 'info' | 'warning' | 'error';
+  agentId?: AgentId;
+  filePath?: string;
+};
+
 export type MissionControlSnapshot = {
   mode: MissionControlMode;
   label: string;
@@ -20,6 +29,7 @@ export type MissionControlSnapshot = {
   pendingChangeCount: number;
   availableCheckpointCount: number;
   verificationState: 'passed' | 'failed' | 'unknown' | null;
+  workflowWarnings: MissionControlWorkflowWarning[];
 };
 
 const AGENTS: AgentId[] = ['claude', 'codex', 'gemini'];
@@ -57,6 +67,7 @@ export function buildMissionControlSnapshot(state: WebviewState): MissionControl
     pendingChangeCount: pendingChangeCount(state.session.messages),
     availableCheckpointCount: availableCheckpointCount(state.session.messages),
     verificationState: verificationState(state.session.messages),
+    workflowWarnings: workflowWarnings(state.session.messages),
   };
 }
 
@@ -152,6 +163,29 @@ function verificationState(messages: SessionMessage[]): MissionControlSnapshot['
   const status = match?.[1]?.trim().toLowerCase();
   if (!status || status === 'unknown') return 'unknown';
   return status === '0' ? 'passed' : 'failed';
+}
+
+function workflowWarnings(messages: SessionMessage[]): MissionControlWorkflowWarning[] {
+  return messages
+    .filter((message): message is SystemMessage => message.role === 'system' && Boolean(message.workflowState))
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .slice(0, 4)
+    .map((message) => ({
+      kind: message.workflowState!.kind,
+      label: workflowStateLabel(message.workflowState!.kind),
+      text: message.workflowState!.text,
+      severity: message.workflowState!.severity,
+      agentId: message.workflowState!.agentId,
+      filePath: message.workflowState!.filePath,
+    }));
+}
+
+function workflowStateLabel(kind: WorkflowStateKind): string {
+  if (kind === 'stalled') return 'Stalled';
+  if (kind === 'watchdog-released') return 'Watchdog released';
+  if (kind === 'read-only-violation') return 'Read-only violation';
+  if (kind === 'edit-conflict') return 'Edit conflict';
+  return 'No observed inspection evidence';
 }
 
 function agentLabel(agentId: AgentId): string {

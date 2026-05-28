@@ -577,9 +577,10 @@ describe('VeyraWebviewController', () => {
     const dispatched = service.dispatch.mock.calls[0][0].text;
     expect(dispatched).toContain('@all');
     expect(dispatched).toContain('Workflow: implement');
-    expect(dispatched).toContain('Claude: state the approach');
+    expect(dispatched).toContain('Claude: read-only planning; state the approach');
     expect(dispatched).toContain('Codex: implement the smallest safe code change and tests.');
-    expect(dispatched).toContain('Gemini: review the result');
+    expect(dispatched).toContain('Gemini: read-only review of the result');
+    expect(dispatched).toContain('Only Codex is write-capable in this workflow.');
     expect(dispatched).toContain('make a tiny test-only change');
     expect(service.dispatch.mock.calls[0][0]).not.toHaveProperty('readOnly');
   });

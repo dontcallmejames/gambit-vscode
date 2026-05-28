@@ -374,6 +374,7 @@ export class VeyraSessionService {
       : workspaceContextSourceText;
     const workspaceContextTextWithoutFiles = parseFileMentions(workspaceContextTextWithoutMention).remainingText;
     const workspaceContextQuery = parseMentions(workspaceContextTextWithoutFiles).remainingText;
+    const workflowCommand = workflowCommandForRequest(request);
     const workspaceContextResult = await this.retrieveWorkspaceContext(
       workspaceContextMention.enabled,
       workspaceContextQuery,
@@ -407,7 +408,7 @@ export class VeyraSessionService {
         workspaceContextResult,
         userMsg.id,
         Date.now(),
-        workflowCommandForRequest(request),
+        workflowCommand,
       );
       const sys: SystemMessage = {
         id: ulid(),
@@ -458,27 +459,39 @@ export class VeyraSessionService {
     const hangCheckTimer = this.hangSeconds > 0 ? setInterval(() => {
       if (activeAgentForHang === null) return;
       if (Date.now() - lastChunkAt >= this.hangSeconds * 1000) {
+        const text = `${activeAgentForHang} hasn't responded for ${this.hangSeconds}s - keep waiting or cancel?`;
         emitSystem({
           id: ulid(),
           role: 'system',
           kind: 'warning',
-          text: `${activeAgentForHang} hasn't responded for ${this.hangSeconds}s - keep waiting or cancel?`,
+          text,
           timestamp: Date.now(),
+          agentId: activeAgentForHang,
+          workflowState: {
+            kind: 'stalled',
+            severity: 'warning',
+            agentId: activeAgentForHang,
+            text,
+          },
         });
         lastChunkAt = Date.now();
       }
     }, 1000) : null;
+
+    const readOnlyForTarget = (targetId: AgentId): boolean | undefined =>
+      readOnlyForDispatchTarget(request, targetId);
 
     const composePromptForTarget = (_targetId: AgentId, baseText: string): string => {
       const session = this.store.snapshot();
       const sharedContext = buildSharedContext(session, { window: this.sharedContextWindow });
       const editAwareness = buildEditAwareness(session, _targetId);
       const rules = readWorkspaceRules(this.workspacePath);
+      const targetReadOnly = readOnlyForTarget(_targetId);
       return [
         agentRolePreamble(_targetId, this.agentRoleOverrides),
         composePrompt({
           rules,
-          autonomyPolicy: request.readOnly
+          autonomyPolicy: targetReadOnly
             ? [READ_ONLY_WORKFLOW_POLICY, DEFAULT_AUTONOMY_POLICY].join('\n\n')
             : DEFAULT_AUTONOMY_POLICY,
           sharedContext,
@@ -503,6 +516,7 @@ export class VeyraSessionService {
         {
           cwd: request.cwd ?? this.workspacePath,
           readOnly: request.readOnly,
+          readOnlyForTarget,
           composePromptForTarget,
           sharedContextForFacilitator,
         },
@@ -534,7 +548,8 @@ export class VeyraSessionService {
           continue;
         }
         if (event.kind === 'dispatch-start') {
-          if (!request.readOnly) {
+          const targetReadOnly = readOnlyForTarget(event.agentId) === true;
+          if (!targetReadOnly) {
             this.sentinel.dispatchStart(event.agentId);
           }
           const messageId = ulid();
@@ -564,7 +579,7 @@ export class VeyraSessionService {
             }
           }
           let checkpointId: string | undefined;
-          if (!request.readOnly && this.checkpointLedger) {
+          if (!targetReadOnly && this.checkpointLedger) {
             try {
               const checkpoint = await this.checkpointLedger.createCheckpoint({
                 source: 'automatic',
@@ -594,7 +609,7 @@ export class VeyraSessionService {
             checkpointId,
             agentId: event.agentId,
             timestamp,
-            readOnly: request.readOnly,
+            readOnly: targetReadOnly,
           });
           await emit({ kind: 'dispatch-start', agentId: event.agentId, messageId, timestamp });
           activeAgentForHang = event.agentId;
@@ -638,6 +653,16 @@ export class VeyraSessionService {
             }
           } else if (event.chunk.type === 'error') {
             inProgress.error = event.chunk.message;
+            if (isWatchdogReleaseMessage(event.chunk.message)) {
+              const sys = workflowStateSystemMessage({
+                kind: 'watchdog-released',
+                severity: 'warning',
+                agentId: event.agentId,
+                text: event.chunk.message,
+              });
+              this.store.appendSystem(sys);
+              await emit({ kind: 'system-message', message: sys });
+            }
           }
           lastChunkAt = Date.now();
           await emit({
@@ -656,6 +681,19 @@ export class VeyraSessionService {
           await this.emitChangeSetNoticeIfNeeded(inProgress, event.agentId, emit);
           const status: AgentMessage['status'] =
             inProgress.cancelled ? 'cancelled' : (inProgress.error ? 'errored' : 'complete');
+          if (
+            status === 'complete'
+            && workflowCommand
+            && inProgress.text.trim().length > 0
+            && !hasObservedInspectionEvidence(inProgress, attachedFiles.length > 0)
+          ) {
+            await this.emitWorkflowStateNotice({
+              kind: 'low-evidence-output',
+              severity: 'warning',
+              agentId: event.agentId,
+              text: `No observed inspection evidence from ${agentLabel(event.agentId)}.`,
+            }, emit);
+          }
           const finalized: AgentMessage = {
             id: inProgress.id,
             role: 'agent',
@@ -672,7 +710,7 @@ export class VeyraSessionService {
           await emit({ kind: 'dispatch-end', agentId: event.agentId, message: finalized });
           inProgressByAgent.delete(event.agentId);
           activeAgentForHang = null;
-          if (!request.readOnly) {
+          if (!inProgress.readOnly) {
             this.sentinel.dispatchEnd(event.agentId);
           }
         }
@@ -680,7 +718,7 @@ export class VeyraSessionService {
     } finally {
       if (hangCheckTimer) clearInterval(hangCheckTimer);
       for (const inProgress of inProgressByAgent.values()) {
-        if (!request.readOnly) {
+        if (!inProgress.readOnly) {
           this.sentinel.dispatchEnd(inProgress.agentId);
         }
       }
@@ -850,6 +888,15 @@ export class VeyraSessionService {
     await emit({ kind: 'system-message', message: sys });
   }
 
+  private async emitWorkflowStateNotice(
+    workflowState: NonNullable<SystemMessage['workflowState']>,
+    emit: VeyraDispatchEventSink,
+  ): Promise<void> {
+    const sys = workflowStateSystemMessage(workflowState);
+    this.store.appendSystem(sys);
+    await emit({ kind: 'system-message', message: sys });
+  }
+
   private async emitCheckpointNoticeIfNeeded(
     inProgress: InProgressDispatch,
     agentId: AgentId,
@@ -991,6 +1038,14 @@ export class VeyraSessionService {
       agentId,
       filePath,
       changeKind,
+      workflowState: {
+        kind: 'read-only-violation',
+        severity: 'error',
+        agentId,
+        filePath,
+        changeKind,
+        text: `Read-only workflow violation: ${agentLabel(agentId)} ${fileChangeVerb(changeKind)} ${filePath} during a read-only dispatch.`,
+      },
     };
     this.store.appendSystem(sys);
     await emit({ kind: 'system-message', message: sys });
@@ -1014,6 +1069,14 @@ export class VeyraSessionService {
       agentId,
       filePath,
       changeKind,
+      workflowState: {
+        kind: 'edit-conflict',
+        severity: 'warning',
+        agentId,
+        filePath,
+        changeKind,
+        text: `${agentLabel(agentId)} ${fileChangeVerb(changeKind)} ${filePath}, which was already edited by ${formatAgentList(priorEditors)} in this session.`,
+      },
     };
     this.store.appendSystem(sys);
     await emit({ kind: 'system-message', message: sys });
@@ -1112,6 +1175,39 @@ function workflowCommandFromText(text: string): RetrievalFeedbackSummary['workfl
   return command === 'review' || command === 'debate' || command === 'consensus' || command === 'implement'
     ? command
     : undefined;
+}
+
+function readOnlyForDispatchTarget(request: VeyraDispatchRequest, agentId: AgentId): boolean | undefined {
+  if (request.readOnly === true) return true;
+  if (workflowCommandForRequest(request) === 'implement') {
+    return agentId !== 'codex';
+  }
+  return request.readOnly;
+}
+
+function hasObservedInspectionEvidence(inProgress: InProgressDispatch, hasAttachedContext: boolean): boolean {
+  return hasAttachedContext
+    || inProgress.toolEvents.length > 0
+    || inProgress.editedFiles.length > 0
+    || inProgress.fileChanges.length > 0;
+}
+
+function isWatchdogReleaseMessage(message: string): boolean {
+  return /^Watchdog:/iu.test(message);
+}
+
+function workflowStateSystemMessage(workflowState: NonNullable<SystemMessage['workflowState']>): SystemMessage {
+  return {
+    id: ulid(),
+    role: 'system',
+    kind: workflowState.severity === 'error' ? 'error' : 'warning',
+    text: workflowState.text,
+    timestamp: Date.now(),
+    ...(workflowState.agentId ? { agentId: workflowState.agentId } : {}),
+    ...(workflowState.filePath ? { filePath: workflowState.filePath } : {}),
+    ...(workflowState.changeKind ? { changeKind: workflowState.changeKind } : {}),
+    workflowState,
+  };
 }
 
 function formatWorkspaceContextDiagnosticsBlock(result: WorkspaceContextResult): string {

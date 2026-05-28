@@ -785,6 +785,70 @@ describe('native chat workflow prompts', () => {
     expect(response.markdown).toHaveBeenCalledWith(expect.stringContaining('Read-only workflow violation'));
   });
 
+  it('keeps structured workflow-state notices visible without failing native chat', async () => {
+    const context = { subscriptions: [] as Array<{ dispose(): void }> };
+    const service = {
+      dispatch: vi.fn(async (_request, emit) => {
+        await emit({
+          kind: 'system-message',
+          message: {
+            id: 'sys1',
+            role: 'system',
+            kind: 'error',
+            text: 'Read-only workflow violation: Gemini edited docs/review.md during a read-only dispatch.',
+            timestamp: 1,
+            agentId: 'gemini',
+            filePath: 'docs/review.md',
+            workflowState: {
+              kind: 'read-only-violation',
+              severity: 'error',
+              agentId: 'gemini',
+              filePath: 'docs/review.md',
+              text: 'Read-only workflow violation: Gemini edited docs/review.md during a read-only dispatch.',
+            },
+          },
+        });
+        await emit({
+          kind: 'system-message',
+          message: {
+            id: 'sys2',
+            role: 'system',
+            kind: 'warning',
+            text: 'No observed inspection evidence from Claude.',
+            timestamp: 2,
+            agentId: 'claude',
+            workflowState: {
+              kind: 'low-evidence-output',
+              severity: 'warning',
+              agentId: 'claude',
+              text: 'No observed inspection evidence from Claude.',
+            },
+          },
+        });
+      }),
+      cancelAll: vi.fn(),
+    };
+
+    registerNativeChatParticipants(
+      context as any,
+      () => ({ service, workspacePath: '/workspace' } as any),
+    );
+
+    const handler = vscodeMocks.participantHandlers.get('veyra.veyra');
+    const response = { markdown: vi.fn(), progress: vi.fn(), reference: vi.fn() };
+    const result = await handler!(
+      { prompt: 'implement this', command: 'implement', references: [], toolReferences: [] },
+      {},
+      response,
+      cancellationToken(),
+    );
+
+    expect(response.reference).toHaveBeenCalledTimes(1);
+    expect(response.markdown).toHaveBeenCalledWith(expect.stringContaining('Read-only workflow violation'));
+    expect(response.markdown).toHaveBeenCalledWith(expect.stringContaining('No observed inspection evidence'));
+    expect(result).not.toHaveProperty('errorDetails');
+  });
+
   it('does not fail the whole native chat result for pre-agent attachment warnings', async () => {
     const context = { subscriptions: [] as Array<{ dispose(): void }> };
     const service = {

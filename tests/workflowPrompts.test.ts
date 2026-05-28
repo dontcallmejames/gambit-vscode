@@ -92,9 +92,11 @@ describe('veyraWorkflowPrompt', () => {
 
     expect(prompt).toContain('@all');
     expect(prompt).toContain('Workflow: implement');
-    expect(prompt).toContain('Claude: state the approach, assumptions, and correctness risks.');
+    expect(prompt).toContain('Claude: read-only planning; state the approach, assumptions, and correctness risks.');
     expect(prompt).toContain('Codex: implement the smallest safe code change and tests.');
-    expect(prompt).toContain('Gemini: review the result for missed cases, edit conflicts, and invisible changes.');
+    expect(prompt).toContain('Gemini: read-only review of the result for missed cases, edit conflicts, and invisible changes.');
+    expect(prompt).toContain('Only Codex is write-capable in this workflow.');
+    expect(prompt).toContain('Claude and Gemini must not create, edit, rename, or delete files.');
     expect(prompt).toContain('Each agent must build on prior replies, preserve shared context, and surface file changes clearly.');
     expect(prompt).toContain('Do not pause for brainstorming or approval checkpoints unless the next action is unsafe or impossible.');
     expect(prompt).toContain('Handoff Summary');

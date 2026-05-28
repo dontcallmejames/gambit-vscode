@@ -575,7 +575,7 @@ describe('extension manifest', () => {
     expect(userGuide).toContain('manual inline suggestion');
     expect(userGuide).toContain('read-only direct-agent request');
     expect(changelog).toContain('Inline Autocomplete v0.1');
-    expect(roadmap).toContain('Implementation note: Inline Autocomplete v0.1');
+    expect(roadmap).toContain('Inline Autocomplete v0.1');
   });
 
   it('contributes diff preview commands and settings', () => {

@@ -1,554 +1,303 @@
-# Veyra v1.0 Roadmap Design
+# Veyra Current Roadmap
 
-**Date:** 2026-05-11
-**Status:** Draft for review
+**Originally drafted:** 2026-05-11
+**Updated:** 2026-05-28
+**Current release:** 1.0.21
+**Status:** Living roadmap
 **Author:** Codex
 
-## 1. Summary
+This file keeps the original roadmap path so older implementation plans and audits keep linking to one source of truth. The content is now current to the 1.0.21 release instead of preserving the stale May 11 milestone ladder.
 
-Veyra v1.0 should optimize for professional parity without losing the product's core identity. It should not try to beat Copilot at inline autocomplete or Cursor at being a full AI-native editor. The v1.0 target is narrower and sharper:
+## 1. Product Thesis
 
-> Veyra understands enough of the workspace to route useful multi-agent work, shows every meaningful change, and lets the user inspect or roll back before trust is lost.
-
-This roadmap uses a **Context + Trust Spine**:
-
-1. Add enough workspace context for real repositories.
-2. Add diff and checkpoint controls so multi-agent edits feel safe.
-3. Deepen Veyra's unique multi-agent review, debate, and implementation workflows once context and trust are in place.
-4. Make the orchestration visible enough that Veyra feels like a professional workflow surface, not just a transcript.
-
-Inline autocomplete, browser testing, local models, deep Git hosting workflows, cost meters, auto-rollback, and workflow replay are deferred until after this spine and presentation layer are useful.
-
-## 2. Product Positioning
-
-Veyra's strongest position is not "another AI assistant inside VS Code." Its strongest position is:
+Veyra's strongest position is still:
 
 > The safest way to coordinate multiple strong coding agents inside the editor you already use.
 
-The differentiator is multi-agent collaboration:
+The May 11 roadmap framed this as a **Context + Trust Spine**:
 
-- Claude, Codex, and Gemini share conversation context.
-- Workflows route agents through review, debate, and implementation roles.
-- Agent file edits are visible through chat, panel state, file badges, session summaries, and commit attribution.
-- Cross-agent edit conflicts are surfaced instead of hidden.
+1. Give agents enough workspace context to be useful on real repositories.
+2. Show every meaningful change they make.
+3. Let the user inspect, accept, reject, or roll back work before trust is lost.
+4. Make multi-agent review, debate, consensus, and implementation visible as an engineering workflow, not just chat.
 
-The v1.0 roadmap should make that differentiator usable on real projects by adding workspace understanding and stronger user control around edits.
+That spine is now substantially shipped. The live roadmap should therefore focus less on "reach v1.0 parity" and more on making the shipped system easier to trust, easier to validate, and less noisy during real project work.
 
-## 3. Roadmap Principles
+Veyra should continue to avoid full competitor sprawl. Inline autocomplete, local models, browser context, GitHub/PR context, workflow replay, and retrieval feedback all matter, but they are useful because they strengthen the local, inspectable multi-agent loop. They should not turn Veyra into a hidden autonomous editor or a remote workflow bot.
 
-### Trust before breadth
+## 2. What Changed Since The Original Roadmap
 
-Veyra asks users to let several agents reason about and sometimes modify a workspace. That is inherently higher-trust than single-response chat. Diff preview, checkpoints, and rollback are therefore core v1.0 features, not polish.
+The original roadmap described a future v1.0. Since then, the product shipped the core spine and several later-parity candidates:
 
-### Context before autonomy
+| Original area | Current state |
+| --- | --- |
+| Preview hardening | Shipped through setup checks, diagnostic reports, README cleanup, smoke docs, live-readiness gates, package verification, and marketplace-focused copy. |
+| Workspace context | Shipped `@codebase`, `@file`, local lexical retrieval, prompt budgeting, retrieval evidence, retrieval feedback, and stronger ranking signals. |
+| Diff preview | Shipped pending-change ledgers, open diff, whole-dispatch accept/reject, per-file accept/reject, and file badges. |
+| Checkpoints and rollback | Shipped automatic/manual checkpoints, checkpoint listing, rollback commands, and overwrite warnings. |
+| Workflow intelligence | Shipped `/review`, `/debate`, `/consensus`, `/implement`, role customization, workflow templates, stronger workflow prompts, and structured outputs. |
+| Terminal awareness | Shipped terminal diagnosis, approved verification commands, project command hints, Git summary, CI/PR output review, and PR package drafts. |
+| Provider migration | Shipped Claude CLI, Codex CLI, Antigravity-first Google provider hardening, legacy Gemini fallback, readiness diagnostics, and provider transparency. |
+| Output polish | Shipped safe Markdown rendering, provider transparency, and clearer diagnostic reports. |
+| Presentation layer | Shipped Mission Control timeline, Structured Workflow Artifact Cards, Trust Center, Presentation Density v0.1, Workflow Replay, and Workflow Artifact History. |
+| Later parity candidates | Shipped conservative versions of Inline Autocomplete, Browser Testing Awareness, Local Model Support, GitHub/PR Workflow Awareness, retrieval measurement, and workflow replay. |
 
-More autonomy is only valuable if agents receive the right repo context. Veyra should first make context retrieval predictable, inspectable, and cheap enough for daily use.
+The roadmap's center of gravity is now evidence quality: how Veyra proves which context was used, what changed, which actions are user-approved, and when the next larger capability is actually justified.
 
-### Use simple retrieval first
+## 3. Shipped Foundation At 1.0.21
 
-Start with lexical and metadata-backed workspace retrieval before adding embeddings. Most near-term value can come from file inventory, symbol names, ripgrep-style search, package/test metadata, and prompt budgeting. Vector search should be introduced only when simpler retrieval stops being good enough.
+### Multi-agent workflow core
 
-### Preserve existing architecture
+Veyra coordinates Claude, Codex, and the Google agent path through a shared session service used by the docked view, native chat, and Language Model provider. The core workflows are:
 
-New roadmap work should reuse the current extension-host service path where possible:
+- `/review` for multi-agent code and risk review.
+- `/debate` for contrasting agent opinions.
+- `/consensus` for a facilitator synthesis and recommended next action.
+- `/implement` for write-capable implementation with visible trust controls.
 
-- `VeyraSessionService` remains the shared dispatch pipeline.
-- Native chat, the Language Model provider, and the panel should keep using one service path.
-- Existing file-edited events, workspace change detection, file badges, edit-conflict notices, and commit attribution should become inputs to the trust features instead of being replaced.
+The workflow layer now supports role customization, workflow templates, stronger handoff summaries, artifact headings, and manual replay preparation. These are still intentionally user-directed. Veyra should not silently replay workflows, rerun terminal work, mutate a transcript, or create hidden long-term learning state.
 
-### Do not chase every competitor feature for v1.0
+### Workspace context and retrieval
 
-Inline autocomplete, browser automation, local models, and PR workflows are real product opportunities. They are not required for the v1.0 promise unless the product strategy changes from "multi-agent trust and orchestration" to "full daily AI coding assistant replacement."
+`@codebase` is no longer just a concept. It uses local lexical retrieval, workspace inventory, query terms, selected-file evidence, omitted-match/budget notes, and prompt-budget controls to make context inspectable. Retrieval Quality and Embedding Readiness v0.1 established the core guardrails: no cloud indexing, no paid embedding calls, and no background repository scans.
 
-## 4. Milestone 0: Preview Hardening
+Retrieval Feedback v0.3 added the docked-view feedback panel for the latest `@codebase` turn. It shows selected files, omitted match counts, budget notes, and local lexical rationale. Its actions can open selected files, prepare visible refined `@codebase` drafts, prepare explicit `@file` mention drafts, and copy local retrieval reports. The guardrails remain explicit: these actions do not silently dispatch prompts, execute commands, call embeddings, upload code, create background indexes, or persist hidden memory.
 
-### Goal
+Retrieval Quality v0.4 added visible/manual missed-context feedback. Users can mark Known missing files, draft explicit file mentions, and copy reports that include marked evidence. Local lexical ranking now records file-name, symbol, test, and import signals. It does not add embeddings, uploads, background indexing, hidden memory, or automatic dispatch; the short guardrail remains no embeddings, no background indexing, and no hidden memory.
 
-Make the current preview easy to understand, install, verify, and demo.
+### Change trust and rollback
 
-### Ship
+The trust layer now includes pending-change capture, built-in VS Code diff views, whole-dispatch accept/reject, per-file accept/reject, file badges, edit-conflict detection, commit attribution, automatic and manual checkpoints, checkpoint lists, rollback commands, and warnings when rollback would overwrite later user edits.
 
-- Marketplace-ready README copy focused on Veyra's multi-agent promise.
-- Screenshot and demo script showing `/review`, `/debate`, and `/implement`.
-- Clean setup flow for Claude, Codex, Gemini, Node, and CLI path readiness.
-- First-run guidance that explains what Veyra is good for and what it is not trying to do yet.
-- Continued verification for native chat, Language Model provider, file edit visibility, smoke tests, packaging, and live readiness.
+This remains the product's central moat. Veyra can coordinate multiple agents because it gives the user a place to see what happened and decide what is allowed to stick.
 
-### Non-goals
+### Presentation Layer
 
-- No new AI capability.
-- No new indexing, diff, checkpoint, or terminal feature in this milestone.
+The docked view now has a real workflow surface:
 
-### Success criteria
+- Mission Control timeline shows agent stages, current floor, queued/active/complete/failed/cancelled/waiting state, pending file counts, checkpoint availability, verification state, and compact section controls.
+- Structured Workflow Artifact Cards render sections such as Veyra Synthesis, Recommendation, Blocking issues, Advisory risks, Missing tests, Follow-up suggestions, Next action, and Handoff Summary while keeping safe Markdown fallback for unknown or malformed prose.
+- Trust Center consolidates pending changes, checkpoints, file edits, edit conflicts, approved verification state, Git/CI context, PR-package actions, diagnostics, and rollback affordances through the same command paths used by inline notices.
+- Presentation Density v0.1 keeps Mission Control always visible, moves Trust Center and Workflows behind compact chips, combines Workflow Replay and Workflow Artifact History into one capped Workflows panel, persists expanded/collapsed panel state, and auto-opens Trust Center for urgent actionable signals.
 
-- A new user can understand Veyra's purpose from the README and first-run experience.
-- The extension can still pass the current local, smoke, package, and live-readiness gates.
-- Demo materials show the current differentiator without implying unbuilt features.
+Workflow Artifact History v0.2 derives a compact local-only history from existing session messages and creates no separate source of truth. It does not perform hidden terminal execution, file edits, Git/GitHub actions, network calls, automatic workflow reruns, or automatic replay.
 
-Implementation note: README/Marketplace Description Diet v0.1 keeps the Marketplace-facing README front door focused on the product story, quickstart, compact feature overview, required local CLIs, docked trust controls, local-first `@codebase` retrieval, and no-hidden-actions guardrails. Release-by-release feature detail belongs in the changelog and roadmap, not in the first screen a new user has to scan.
+### Explicit external context
 
-## 5. Milestone 1: Workspace Context
+Veyra has conservative local-first slices for context outside the immediate chat:
 
-### Goal
+- Browser Testing Awareness v0.1 accepts user-provided Playwright, Cypress, Vitest UI, browser console, network, screenshot-note, URL-note, and reproduction text, then asks agents for structured browser/test analysis. It does not launch browsers, scrape pages, rerun tests, edit files, or execute commands without separate approval.
+- GitHub/PR Workflow Awareness v0.2 adds `Veyra: Prepare PR Package Draft` from read-only Git state, pending-change evidence, checkpoint evidence, approved verification evidence, and optional user-provided CI/PR output. It does not make hidden network calls, perform GitHub API writes, create PRs, rerun CI, or run push/pull/merge/rebase/reset/clean actions.
+- Terminal diagnosis and approved verification commands bring build/test output into the agent loop without hidden shell execution.
 
-Make Veyra useful on repositories larger than toy projects.
+### Provider and runtime transparency
 
-### Ship
+Veyra now exposes Claude CLI, Codex CLI, and Antigravity CLI or legacy Gemini CLI fallback diagnostics without hardcoded model promises. Safe Markdown rendering and provider transparency are treated as trust features, not cosmetic polish. Diagnostics should continue to distinguish configured CLI paths, detected readiness, backend-reported model metadata when available, and what Veyra can or cannot prove.
 
-- Lightweight workspace inventory:
-  - tracked and untracked source files
-  - common ignored directories
-  - language and framework hints
-  - package manager and test command hints
-  - important project metadata files
-- `@codebase` mention for retrieval over workspace files.
-- Lexical search-backed retrieval using file names, symbols, and content matches.
-- Context budgeter that chooses snippets, summaries, recent session context, and attached files predictably.
-- Per-workspace cache invalidated by file changes.
-- Context section in prompts that clearly names why files were selected.
+Local Model Support v0.1 is diagnostics-only. Users can record a local/self-hosted provider label, endpoint, and model for diagnostic reports, but Veyra keeps Claude, Codex, and Gemini routing unchanged. It performs no automatic model downloads, no hidden server launches, and no background network probing.
 
-### Non-goals
+### Inline assistance
 
-- No embeddings in the first version.
-- No background cloud indexing.
-- No attempt to read entire repositories into prompts.
+Inline Autocomplete v0.1 is conservative and opt-in. It responds only to manual inline suggestion invocation when enabled, sends a small editor context window to one configured direct Veyra agent as a read-only request, and accepts only short insert-only ghost text. It should remain subordinate to Veyra's multi-agent trust surface unless usage data proves it deserves more investment.
 
-### Success criteria
+## 4. Current Guardrails
 
-- Users can ask broad questions such as "review the auth flow" or "where should this parser change go?" and Veyra can retrieve relevant files without explicit `@file` mentions.
-- Later agents in `/review`, `/debate`, and `/implement` see the same retrieved context and prior replies.
-- Retrieval is fast enough for normal VS Code use on medium repositories.
+These guardrails define what keeps Veyra distinct:
 
-### Design notes
+- **Local-first evidence:** workspace context comes from the local project unless the user explicitly supplies external text or configures a local/self-hosted diagnostic target.
+- **Visible drafts before action:** retrieval refinements, explicit file mentions, replay requests, PR packages, browser/test reviews, and verification follow-ups should prepare visible drafts or require explicit command approval.
+- **No hidden authority:** no hidden terminal execution, no hidden browser launches, no hidden Git/GitHub writes, no hidden network calls, no background indexes, no persisted hidden retrieval memory, and no automatic dispatch from feedback controls.
+- **One source of truth:** Mission Control, Trust Center, Workflows, file badges, inline notices, and diagnostics should derive from the same session events, change sets, checkpoint metadata, and command handlers.
+- **Evidence beats agent confidence:** badges and summaries should distinguish "agent said this" from "Veyra observed this file diff, checkpoint, terminal result, Git state, or CI/PR text."
 
-The first implementation should prefer explicit, explainable retrieval over opaque ranking. A response should make it possible to tell which files informed the agent. This matters because Veyra's product promise depends on trust, not just answer quality.
+When a proposed feature weakens these guardrails, it should either be redesigned as an explicit local action or deferred.
 
-## 6. Milestone 2: Diff Preview
+## 5. Active Roadmap
 
-### Goal
+### 5.1 Retrieval Quality v0.5
 
-Make agent changes inspectable before they feel risky.
+**Goal:** Turn the v0.4 missed-context loop into better day-to-day retrieval decisions without adding embeddings or hidden memory prematurely.
 
-### Ship
+**Ship:**
 
-- Pending change ledger for each write-capable dispatch.
-- Command to open a diff view from:
-  - native chat file-edited references
-  - the panel
-  - file badge or session surfaces where practical
-- Accept or reject a whole dispatch in the first version.
-- Later extension to accept or reject individual files or hunks.
-- Setting for diff behavior, likely one of:
-  - automatic edit with visible diff
-  - preview before final accept
-  - delegate approval to the underlying CLI where supported
+- A lightweight retrieval review flow that compares selected files, omitted files, marked Known missing files, and draft follow-up files across a single session.
+- Copyable report sections that make retrieval misses easier to paste into an issue, changelog note, or follow-up prompt.
+- Ranking diagnostics that explain whether file-name, symbol, test, import, or content signals dominated a result.
+- A focused set of dogfood examples from this repository, especially roadmap/docs, webview, manifest, retrieval, and workflow-history tasks.
+- Test coverage that proves the feedback loop remains visible/manual and does not silently dispatch, persist hidden memory, call embeddings, upload code, or create background indexes.
 
-### Non-goals
+**Non-goals:**
 
-- No custom diff renderer if VS Code's built-in diff editor is sufficient.
-- No per-hunk apply in the first version unless it falls out cheaply from the chosen implementation.
+- No embedding service.
+- No vector database.
+- No background repository indexing.
+- No cross-session hidden ranking store.
+- No automatic prompt rerun when a user marks a missing file.
 
-### Success criteria
+**Success criteria:**
 
-- After an agent changes files, the user can inspect the exact workspace diff from Veyra surfaces.
-- The user can accept or reject the full dispatch change set.
-- Diff state is associated with the agent, workflow, timestamp, and changed files.
+- A user can tell why retrieval picked each file and what it likely missed.
+- A missed-context report can be used to improve a follow-up prompt without manual reconstruction.
+- Dogfood reports produce enough evidence to decide whether lexical tuning is still enough or vector retrieval is justified.
 
-### Design notes
+### 5.2 Roadmap and docs consolidation
 
-This milestone should reuse existing workspace change detection and `file-edited` events. The product surface should feel like a natural expansion of current invisible-change prevention rather than a separate subsystem.
+**Goal:** Keep public docs, user docs, release notes, smoke docs, goal audits, and roadmap promises aligned now that the product has moved quickly past the original v1.0 plan.
 
-## 7. Milestone 3: Checkpoints And Rollback
+**Ship:**
 
-### Goal
+- Keep this roadmap as the live strategy document.
+- Keep README compact and product-focused.
+- Keep `docs/user-guide.md` as the feature-detail home.
+- Keep `CHANGELOG.md` as the release-by-release history.
+- Keep `docs/goal-completion-audit.md` as the verification/audit trail.
+- Keep manifest tests checking that shipped capabilities are documented in the right places without pinning stale implementation-note prose.
 
-Give users an escape hatch for multi-agent workflows.
+**Success criteria:**
 
-### Ship
+- A new user can read README first, then the user guide for depth, without falling into stale release archaeology.
+- A maintainer can read this roadmap and know what is shipped, active, deferred, and still undecided.
 
-- Auto-checkpoint before every write-capable dispatch.
-- Manual checkpoint command.
-- Rollback latest checkpoint.
-- Checkpoint list with:
-  - timestamp
-  - workflow or participant source
-  - participating agents
-  - changed files
-  - short user prompt summary
-- Warning when rollback would overwrite user edits made after the checkpoint.
+### 5.3 Provider adapter hardening v0.3
 
-### Non-goals
+**Goal:** Make the provider path boring and inspectable, especially around Antigravity and legacy Gemini fallback.
 
-- No cross-branch history browser.
-- No automatic commit creation.
-- No remote backup system.
+**Ship:**
 
-### Success criteria
+- Stronger readiness diagnostics for Antigravity CLI prompt limits, stdin fallback, configured paths, and backend-reported metadata.
+- Clearer docs around why the visible Google agent identity may remain Gemini while Antigravity powers the runtime path.
+- Tests around prompt-length fallback guidance and model/provider metadata wording.
+- A removal decision point for legacy Gemini CLI fallback after real tester evidence says Antigravity covers the needed non-interactive contract.
 
-- A user can run `/implement`, inspect the result, and roll back to the pre-dispatch state.
-- Rollback avoids silently overwriting unrelated user changes.
-- Checkpoint metadata makes it clear what is being restored.
+**Non-goals:**
 
-### Design notes
+- No hardcoded vendor model claims.
+- No visible rename from `@gemini` to `@antigravity` until user-facing clarity beats continuity.
+- No local-model runtime replacement in this pass.
 
-Checkpointing should be implemented as a trust feature, not as source-control replacement. Git remains the durable history tool. Veyra checkpoints cover local experimentation between user commits.
+### 5.4 Trust and workflow surface polish
 
-## 8. Milestone 4: Workflow Intelligence
+**Goal:** Reduce noise now that Mission Control, Trust Center, Workflows, artifact cards, replay, and retrieval feedback all share the top of the docked view.
 
-### Goal
+**Ship:**
 
-Make Veyra's unique multi-agent workflows more useful after workspace context and trust controls exist.
+- Better prioritization for urgent Trust Center states versus quiet historical signals.
+- Tighter Workflows panel copy for replay/history entries.
+- Clearer differentiation between pending changes, accepted changes, rejected changes, checkpoint availability, and rollback risk.
+- Artifact-card improvements where structured headings are stable, while unknown prose stays safe Markdown.
+- Accessibility and theme checks for dense controls in light, dark, and high-contrast modes.
 
-### Ship
+**Non-goals:**
 
-- Enhanced `/debate` or new `/consensus` workflow that produces a facilitator synthesis after agents respond.
-- Role customization for Claude, Codex, and Gemini at the workspace level.
-- Workflow templates for common use cases:
-  - architecture review
-  - security review
-  - test improvement
-  - refactor plan
-  - implementation with review
-- Review output categories:
-  - blocking issue
-  - advisory risk
-  - missing test
-  - follow-up suggestion
-- Better cross-agent handoff summaries.
+- No second source of truth for trust state.
+- No hidden verification loop.
+- No automatic rollback.
 
-### Non-goals
+### 5.5 Manual validation loop
 
-- No fully autonomous project manager.
-- No parallel worktree execution in v1.0.
-- No cross-agent long-term learning system.
+**Goal:** Make it easier to prove releases with the real extension host and real local CLIs.
 
-### Success criteria
+**Ship:**
 
-- `/review` produces clearer, more actionable findings.
-- `/debate` or `/consensus` ends with a concrete recommended next action.
-- `/implement` makes better use of prior agents' reasoning and retrieved context.
+- A smaller manual validation checklist for `/review`, `/debate`, `/consensus`, `/implement`, retrieval feedback, pending changes, checkpoints, rollback, Trust Center, and diagnostics.
+- Better copy/paste capture points for live tester evidence.
+- Continued separation between no-paid local verification, live-readiness checks, opt-in paid live tests, and residual manual Extension Host checks.
 
-### Design notes
+**Success criteria:**
 
-This milestone is where Veyra's moat becomes louder. It should not land before context and trust features, because more intelligent workflows without inspectable context and rollback would increase perceived risk.
+- A release pass can identify which behaviors were covered by automated tests, which were covered by local CLI readiness, and which still require a human Extension Host run.
 
-## 9. Milestone 5: Terminal Awareness
-
-### Goal
-
-Support realistic build, test, and debug loops from inside VS Code.
-
-### Ship
-
-- Capture selected terminal output and recent terminal errors.
-- Agent-visible project command metadata from workspace inventory.
-- Suggested commands with explicit approval.
-- Optional verification step after implementation workflows.
-- Clear handling for failed tests, lint errors, and compiler output.
-
-### Non-goals
-
-- No default destructive command automation.
-- No hidden terminal command execution.
-- No shell history scraping beyond explicit selected or recent bounded output.
-
-### Success criteria
-
-- A user can ask Veyra to diagnose selected terminal output.
-- `/implement` can recommend or run a verification command with clear approval semantics.
-- Test and lint failures can be brought into follow-up prompts without manual copy/paste.
-
-### Design notes
-
-The current agent CLIs can already run commands in some flows. This milestone is specifically about native VS Code terminal ergonomics and safer user control.
-
-## 10. Milestone 6: Provider Adapter Migration
-
-### Goal
-
-Keep Veyra aligned with the agent CLIs the user actually wants to trust: Claude CLI for Claude, Codex CLI for Codex, and Antigravity CLI as the successor path for Gemini.
-
-### Ship
-
-- Replace Claude's primary `@anthropic-ai/claude-agent-sdk` path with a Claude CLI-first adapter.
-- Remove the Anthropic agent SDK dependency once Claude CLI streaming, tool events, edit detection, cancellation, and write-approval behavior are covered by tests.
-- Keep Claude CLI command resolution simple and explicit:
-  - prefer `claude` / `claude.exe` on PATH
-  - add a `VEYRA_CLAUDE_CLI_PATH` / `veyra.claudeCliPath` override only if real tester environments need it
-  - keep `claude -p --output-format stream-json --verbose --permission-mode ...` as the initial non-interactive contract
-- Introduce an Antigravity CLI adapter to replace the Gemini CLI runtime path while preserving the existing Veyra agent identity as `gemini` unless product naming changes later.
-- Detect Antigravity CLI before Gemini CLI during transition, with a clear fallback and warning while Gemini CLI still works.
-- Rename settings, diagnostics, and setup guidance carefully:
-  - add Antigravity-specific path/settings support
-  - keep temporary compatibility for `VEYRA_GEMINI_CLI_PATH` / `veyra.geminiCliPath`
-  - update readiness guidance so users know Gemini CLI consumer access stops serving requests after Google's published transition date
-- Capture and surface backend-reported model metadata where Antigravity exposes it, especially the Gemini 3.5 Flash default.
-
-### Non-goals
-
-- No attempt to preserve the Anthropic SDK as a parallel default once the Claude CLI path is proven stable.
-- No claim that Antigravity CLI is a drop-in Gemini CLI replacement until its non-interactive JSON/streaming contract is verified.
-- No rename from `@gemini` to `@antigravity` in the first migration unless user testing shows that the visible label is misleading.
-- No automatic migration of user config files outside Veyra's own VS Code settings.
-
-### Success criteria
-
-- Claude dispatches use Claude CLI only, with no package dependency on `@anthropic-ai/claude-agent-sdk`.
-- Antigravity CLI can run the third-agent review role with streamed text, tool calls/results, edit detection, cancellation, and read-only/write-capable behavior equivalent to the current Gemini adapter.
-- Existing Veyra workflows still route through Claude, Codex, and the Google agent path without changing the user's common prompts.
-- Diagnostics clearly distinguish Claude CLI, Codex CLI, Antigravity CLI, and legacy Gemini CLI fallback.
-- The README, setup guide, smoke docs, live readiness, and Marketplace copy no longer point new users at deprecated Gemini CLI setup as the primary path.
-
-### Design notes
-
-This is now a near-term maintenance and trust milestone, not a later parity feature. The current Claude code already contains a CLI fallback, so the Claude change is mostly deleting the SDK-first branch, removing dependency surface, and strengthening CLI tests. The Google change is riskier: Antigravity CLI needs a verified non-interactive mode and event stream before it can replace Gemini CLI safely.
-
-Implementation note: Antigravity provider hardening v0.2 preserves the visible Gemini identity while tightening the Antigravity-first runtime path. If Antigravity `--print` hits a command-line prompt limit, Veyra falls back to the configured legacy Gemini CLI stdin path when available, otherwise it reports prompt-length guidance with the exact fallback settings. Readiness diagnostics now name the selected Google provider path, and provider transparency can surface backend-reported model metadata without hardcoded model promises.
-
-## 11. Milestone 7: Output Polish And Provider Transparency
-
-### Goal
-
-Make Veyra's output easier to read during large reviews and make the underlying agent model choices visible enough that users know what they are trusting.
-
-### Ship
-
-- Render Markdown in the docked Veyra view instead of showing raw `#`, `*`, table, and code-fence syntax as plain text.
-- Preserve important coding affordances while rendering:
-  - fenced code blocks
-  - inline code
-  - headings
-  - bullets and numbered lists
-  - tables where practical
-  - links and workspace file references
-- Keep tool-call cards, file-edit notices, checkpoints, and pending-change actions visually distinct from rendered agent prose.
-- Add model/provider transparency:
-  - document that Claude, Codex, and Gemini currently use their local CLI or SDK defaults unless Veyra passes an explicit model option
-  - show CLI/provider versions in diagnostics where available
-  - surface any reported model name from backend stream metadata when the CLI exposes it
-  - add optional model override settings only where the underlying provider supports a stable non-interactive flag or setting
-
-### Non-goals
-
-- No arbitrary HTML rendering from agent output.
-- No custom Markdown dialect beyond common GitHub-style Markdown affordances unless needed for VS Code compatibility.
-- No hardcoded vendor model promises when Veyra cannot prove the actual model selected by the local CLI.
-- No local-model runtime in this milestone; this is transparency over the existing Claude, Codex, and Gemini paths.
-
-### Success criteria
-
-- Large `/review`, `/debate`, `/consensus`, and `/implement` responses are scan-friendly in the docked Veyra view.
-- Users no longer see raw Markdown control characters when the agent meant headings, lists, or code blocks.
-- Diagnostics and docs clearly explain whether Veyra is using local CLI defaults, a configured override, or a backend-reported model.
-- The same response remains safe to display even when an agent outputs malformed Markdown or untrusted link text.
-
-### Design notes
-
-This should be treated as a trust and comprehension feature, not cosmetic polish. Veyra's multi-agent reviews can become long quickly; raw Markdown makes good reasoning look noisy and unprofessional. The renderer should be conservative and safe, but the default reading experience should feel like a real review document.
-
-Model transparency belongs in the same milestone because output quality and user trust are linked. Users should not have to guess whether a provider is using a default, a workspace override, or a backend-selected model.
-
-Implementation note: this provider transparency pass renders agent Markdown safely and reports Claude CLI, Codex CLI, and Antigravity CLI or legacy Gemini CLI fallback diagnostics without hardcoded model promises.
-
-## 12. Milestone 8: Presentation Layer And Mission Control
-
-### Goal
-
-Turn Veyra's docked view from a chat transcript into a visible engineering workflow dashboard. Users should be able to see what the agents are doing, what artifact they produced, and what trust controls are available without scrolling through every bubble.
-
-### Ship
-
-- Mission Control timeline:
-  - show the workflow lane for Claude, Codex, and Gemini
-  - show queued, active, completed, failed, cancelled, and waiting states
-  - show current floor holder, recent tool activity, pending change count, checkpoint state, and verification state where available
-  - derive the first version from existing webview/session events instead of adding a separate orchestration pipeline
-- Structured workflow artifact cards:
-  - render known Veyra sections such as `Veyra Synthesis`, `Recommendation`, `Blocking issues`, `Advisory risks`, `Missing tests`, `Follow-up suggestions`, `Next action`, and `Handoff Summary` as polished cards
-  - use severity chips, collapsible sections, and file/workspace links where the output already contains trustworthy references
-  - keep the raw rendered Markdown available as fallback and avoid treating parsed headings as authoritative facts
-- Trust Center:
-  - consolidate pending changes, checkpoints, file edits, edit conflicts, verification suggestions, and CI/PR review actions into one persistent inspectable surface
-  - route accept, reject, open diff, rollback, and verification actions through the same command paths already used by inline notices
-  - distinguish "agent said this is safe" from "Veyra observed this test/check/result"
-- Theme and accessibility polish:
-  - ensure the timeline, cards, and Trust Center work in dark, light, and high-contrast themes
-  - reuse contributed agent colors and VS Code theme variables instead of hardcoded tints
-  - keep the docked view dense and work-focused rather than marketing-styled
-
-### Non-goals
-
-- No cost or token meters until the provider CLIs expose reliable, comparable usage data.
-- No hidden terminal execution or fully autonomous verification loop. The Trust Center should build on the existing explicit verification runner and approval semantics.
-- No auto-rollback on verification failure in the first version. Rollback should remain explicit because restoring files is high-trust behavior.
-- No workflow replay in the first version. It is a good v1.1 candidate after sessions and artifact cards have a stable shape.
-- No second source of truth for pending changes, checkpoints, or conflicts. The new surface must derive from existing session state and command handlers.
-
-### Success criteria
-
-- A user can glance at the docked view during `/review`, `/debate`, `/consensus`, or `/implement` and understand which agent is active, which agents are queued or complete, and what trust actions are pending.
-- Final workflow outputs feel like professional engineering artifacts rather than long chat bubbles.
-- Pending changes, checkpoints, conflicts, and verification follow-up are discoverable from one place without removing the inline notices.
-- Light theme and high-contrast users can read and operate the same controls.
-- Existing smoke, package, local verification, and live-readiness gates remain covered.
-
-### Design notes
-
-This is the next "wow factor" milestone because it makes Veyra's core differentiator visible. The underlying value is already present: multi-agent sequencing, floor changes, streamed tool activity, checkpoint notices, pending change ledgers, verification commands, and CI/PR context. The first implementation should be mostly webview-side derivation over those streams.
-
-The order should be: Mission Control timeline first, structured artifact cards second, Trust Center third. Timeline has the smallest blast radius and the biggest immediate perceived value. Artifact cards build naturally on the safe Markdown renderer from Milestone 7. Trust Center is larger and should reuse the visual language established by the first two slices.
-
-Implementation note: the first Presentation Layer slice adds the compact Mission Control timeline, derived from existing webview/session events. The second slice adds Structured Workflow Artifact Cards v0.1 for known Veyra output sections while preserving safe Markdown fallback for malformed or unknown prose. The third slice adds Trust Center v0.1 as a persistent docked-view surface derived from existing session messages, change-set summaries, checkpoint summaries, approved verification context, and explicit Git/CI context, while reusing the same command paths as inline notices.
-
-Implementation note: Presentation Density v0.1 keeps Mission Control as the always-visible control strip, moves Trust Center and Workflows behind compact Mission Control chips, combines Workflow Replay and Workflow Artifact History into one capped Workflows panel, persists expanded/collapsed panel state in VS Code webview state, and auto-opens Trust Center for urgent actionable signals such as pending changes, edit conflicts, or failed approved verification. It preserves manual replay semantics and avoids hidden terminal execution, network calls, file edits, Git/GitHub actions, workflow reruns, and automatic replay.
-
-## 13. Milestone 9: Later Parity Candidates
-
-These features are valuable but should be deferred until after the v1.0 spine and presentation layer are useful.
-
-### Inline autocomplete
-
-Useful for daily coding parity, but it is expensive to make good and does not directly strengthen Veyra's multi-agent trust promise.
-
-Implementation note: Inline Autocomplete v0.1 keeps this conservative and opt-in. It registers a VS Code inline completion provider that only responds to manual inline suggestion invocation when `veyra.inlineAutocomplete.enabled` is true, sends a small editor context window to one configured direct Veyra agent as a read-only request, and accepts only a short insert-only ghost-text suffix. It deliberately avoids automatic trigger competition, hidden file edits, terminal execution, network scraping, or broad autonomous coding behavior.
-
-### Browser testing
-
-Useful for frontend workflows, especially visual debugging, but not core to v1.0 unless Veyra narrows its target market to web app development.
-
-Implementation note: Browser Testing Awareness v0.1 keeps the feature local-first by adding `Veyra: Review Browser/Test Output`. It accepts explicit user-provided Playwright, Cypress, Vitest UI, browser console, network, screenshot-note, URL-note, and reproduction text, combines it with local project command hints, and asks agents for Browser/Test Summary, Reproduction Evidence, User-Visible Risk, Likely Cause, Verification Gaps, and Suggested Follow-up Commands. It forbids hidden browser launches, page scraping, network inspection, automatic test reruns, file edits, Git operations, and command execution unless the user separately approves an exact command.
-
-### Local model support
-
-Useful for privacy-sensitive teams and cost control. It should come after the adapter and workflow surfaces stabilize.
-
-Implementation note: Local Model Support v0.1 keeps this conservative and diagnostics-only. It lets users record a local/self-hosted provider label, endpoint, and model in settings and diagnostic reports, validates obvious configuration mistakes, and explicitly avoids runtime routing changes: no automatic model downloads, no hidden server launches, no background network probing, and no replacement of Claude, Codex, or Gemini routing.
-
-### GitHub and GitLab workflows
-
-Useful for teams, but Veyra already has a local editor-first story. PR generation, CI inspection, and issue integration can follow once local change safety is mature.
-
-Implementation note: GitHub/PR Workflow Awareness v0.2 keeps the feature local-first by adding `Veyra: Prepare PR Package Draft` instead of creating or mutating remote PRs. It combines read-only Git state, pending-change and checkpoint evidence, approved verification evidence when Veyra can read it, and optional user-provided CI/PR output. The expected artifact sections are PR Summary, Changed File Explanation, Risk Checklist, Verification Evidence, Unresolved Blockers, and Suggested Follow-up Commands. It still forbids hidden network calls, GitHub API writes, automatic PR creation, CI reruns, and push/pull/merge/rebase/reset/clean actions.
+## 6. Deferred Bets
 
 ### Embedding or vector retrieval
 
-Useful if lexical retrieval cannot find the right context often enough. It should be measured against real failures before becoming required infrastructure.
+Still valuable, but only after v0.4/v0.5 missed-context evidence proves lexical retrieval is the bottleneck. The trigger should be repeated real misses that file-name, symbol, test, import, and content ranking cannot fix. Any vector plan must preserve local-first expectations and make indexing, storage, cost, and deletion behavior explicit.
 
-Implementation note: Retrieval Quality and Embedding Readiness v0.1 improves measurement before adding vectors. `@codebase` remains local lexical retrieval, but context blocks now explain why files were selected, where lexical retrieval may have missed context, and which prompt-budget limits omitted matching files. Diagnostic reports expose retrieval settings and inactive embedding readiness. Guardrails stay explicit: no cloud indexing, no paid embedding calls, and no background repository scans.
+### Deeper GitHub/GitLab writes
 
-Implementation note: Retrieval Feedback v0.3 closes the local feedback loop without adding a ranking store. After an `@codebase` turn, Veyra derives a compact docked-view summary from the session's local retrieval evidence. The summary shows selected files, omitted match counts or budget limits when available, and the local lexical rationale. User actions only open selected workspace files through the existing safe file-open path, prepare visible composer drafts that preserve the originating workflow command, or copy a retrieval report; they do not silently dispatch prompts, run commands, call embeddings, upload code, create background indexes, or persist hidden memory.
-
-Implementation note: Retrieval Quality v0.4 adds visible/manual missed-context feedback to that panel. Users can mark Known missing files, draft explicit file mentions, and copy reports that include the marked evidence while Veyra keeps the marks as current webview state rather than hidden memory. Local lexical ranking gains file-name, symbol, test, and import signals. It does not add embeddings, uploads, background indexing, hidden memory, or automatic dispatch, and the guardrails remain explicit as no embeddings, no uploads, no background indexing, and no hidden memory.
-
-### Workflow replay
-
-Useful for rerunning `/review`, `/consensus`, or `/implement` against a later commit to compare how the agents' opinion changed. It should wait until structured artifacts and session summaries have a stable persisted shape.
-
-Implementation note: Workflow Replay v0.1 is the first manual version. It derives the latest workflow from existing session messages, summarizes the original workflow command, prompt, and agents that participated, then prepares a fresh docked composer draft. It does not silently dispatch agents, execute terminal work, replay old tool calls, or mutate the original transcript.
-
-Implementation note: Workflow Artifact History v0.2 extends the replay surface with a compact local-only history of recent completed `/review`, `/debate`, `/consensus`, and `/implement` turns. It derives command, original prompt, participating agents, final artifact headings, pending-change signals, checkpoint signals, approved verification state, and completion status from existing persisted session messages, and each entry can copy a local summary with manual replay guardrails. It creates no separate source of truth and does not perform hidden terminal execution, file edits, Git/GitHub actions, network calls, automatic workflow reruns, or automatic replay.
+Creating PRs, mutating issues, rerunning CI, or pushing branches would be useful for teams, but those actions cross an authority boundary. Keep local PR package drafts and pasted CI/PR output first. Remote writes should wait until Trust Center provenance, approvals, and audit trails are stronger.
 
 ### Cost and token meters
 
-Useful for enterprise budgeting, but provider CLIs do not expose consistent enough token and cost metadata today. Do not block the presentation layer on this.
+Useful for enterprise budgeting, but provider CLIs still do not expose consistent, comparable usage metadata. Do not block retrieval, trust, or workflow polish on this.
 
 ### Auto-rollback on verification failure
 
-Useful in theory, but too easy to make scary. It should stay out of the roadmap until rollback warnings, Trust Center state, and verification result provenance are very mature.
+Useful in theory and scary in practice. Rollback should remain explicit until Veyra can prove verification provenance, file ownership, user edits after checkpoint, and Trust Center state with very high confidence.
 
-## 14. Sequencing
+### Local model runtime routing
 
-Recommended order:
+Diagnostics-only local/self-hosted support is enough for now. Runtime replacement should wait until provider adapter boundaries are cleaner and users can understand exactly when a local endpoint is receiving code.
 
-1. Preview hardening.
-2. Workspace context.
-3. Diff preview.
-4. Checkpoints and rollback.
-5. Workflow intelligence.
-6. Terminal awareness.
-7. Provider adapter migration.
-8. Output polish and provider transparency.
-9. Presentation layer and Mission Control.
-10. Later parity candidates.
+### Browser automation
 
-The first three implementation plans should be separate:
+Browser Testing Awareness is intentionally paste-in/context-in. Hidden browser launch, screenshot capture, network inspection, and automatic reruns should remain out of scope unless the product explicitly chooses a web-app testing lane.
 
-1. Workspace context and `@codebase`.
-2. Diff preview and pending change ledger.
-3. Checkpoints and rollback.
+### Parallel worktrees and autonomous project management
 
-Splitting them keeps each plan reviewable and reduces the risk of changing too many extension surfaces at once.
+Multi-worktree execution could become a powerful Veyra-native capability, but it would multiply trust, rollback, Git, and verification complexity. It should wait until the single-workspace trust surface is mature and boring.
 
-## 15. Risks
+## 7. Decisions Still Open
 
-### Retrieval quality may disappoint without embeddings
+- What missed-context evidence is strong enough to start an embedding/vector retrieval design.
+- Whether the visible Google agent label should stay `@gemini`, shift to `@antigravity`, or expose both provider identity and runtime identity.
+- Which backend-reported model metadata is reliable enough to label as "actual model used" rather than configured/default/provider-reported.
+- Whether workflow templates should remain VS Code settings, move into a workspace file, or support both.
+- How much Trust Center detail belongs in the docked view versus a separate contributed VS Code view if the surface keeps growing.
+- What the next named product promise should be after the v1.0 trust spine: retrieval quality, provider reliability, workflow evidence, or team handoff.
+- Which manual Extension Host checks are mandatory before publishing versus acceptable as post-release dogfood.
 
-Mitigation: make retrieval explainable, support manual `@file` override, and log missed-context feedback before adding vector search.
+## 8. Decisions Retired By Implementation
 
-### Diff preview may conflict with underlying CLI approval models
+These no longer need to appear as open product questions:
 
-Mitigation: define Veyra's diff model around workspace snapshots and VS Code diff views, then map CLI approval behavior into settings where possible.
+- `@codebase` has a local lexical first implementation with explainable ranking and budget evidence.
+- Diff preview uses workspace snapshots, pending-change ledgers, and VS Code diff views rather than a custom diff renderer.
+- Rollback uses Veyra-managed checkpoints and warns before overwriting later user edits.
+- Diff, checkpoint, rollback, Git, CI/PR, diagnostic, and verification commands now have contributed command names.
+- Safe Markdown rendering is in place for agent prose, with structured cards layered above it.
+- Mission Control, Trust Center, Workflows, retrieval feedback, and artifact cards live in the docked Veyra view and derive from existing session state.
+- Workflow Replay is manual draft preparation, not automatic rerun.
+- Local Model Support is diagnostics-only, not runtime routing.
 
-### Checkpoints can overwrite user work if implemented carelessly
+## 9. Recommended Sequence
 
-Mitigation: compare current workspace state against checkpoint metadata before rollback and warn when files changed after the checkpoint.
+1. Finish this roadmap cleanup and keep tests aligned with the new document shape.
+2. Dogfood Retrieval Quality v0.4 on real Veyra maintenance tasks and capture concrete misses.
+3. Implement Retrieval Quality v0.5 only from that evidence.
+4. Run provider adapter hardening v0.3 while the Google provider transition is still fresh.
+5. Polish Trust Center, Workflows, retrieval feedback, and artifact-card density where the docked view feels crowded.
+6. Reassess embedding/vector retrieval after v0.5 reports show whether lexical retrieval still misses important context.
+7. Choose the next named product promise for the post-v1.0 roadmap.
 
-### Multi-agent workflows can become noisy
+## 10. Risks
 
-Mitigation: add facilitator synthesis and structured review categories instead of simply increasing agent output.
+### Retrieval quality may plateau before embeddings
 
-### Provider CLI contracts may shift under Veyra
+Mitigation: keep missed-context evidence visible and copyable, tune local ranking with real examples, and define a clear threshold for adding vector retrieval instead of treating embeddings as inevitable infrastructure.
 
-Mitigation: prefer documented non-interactive streaming modes, keep adapter parsing isolated per provider, and add focused live-readiness checks before replacing Gemini CLI with Antigravity CLI by default.
+### Docked-view surfaces may become too crowded
 
-### Long reviews may be hard to read if Markdown is not rendered
+Mitigation: keep Mission Control compact, open Trust Center only for urgent actionable signals, cap Workflow Artifact History, and prefer progressive disclosure over additional always-open panels.
 
-Mitigation: render agent Markdown safely in the docked Veyra view while keeping tool calls, file edits, and action controls as structured UI elements.
+### Provider CLI contracts may shift
 
-### Users may assume Veyra chose exact vendor models
+Mitigation: isolate adapter parsing by provider, keep readiness diagnostics explicit, test prompt-length fallback paths, and avoid hardcoded model promises.
 
-Mitigation: document that current providers use local CLI or SDK defaults unless an explicit override is configured, and surface backend-reported model metadata when available.
+### Users may overtrust agent-written summaries
 
-### Presentation polish could add UI complexity without adding trust
+Mitigation: continue separating agent claims from Veyra-observed evidence such as diffs, checkpoints, terminal output, Git state, CI/PR text, and approved verification results.
 
-Mitigation: keep Mission Control, artifact cards, and Trust Center dense, work-focused, and derived from existing evidence. Avoid decorative chrome that does not answer "what is happening, what changed, and what can I do safely?"
+### Documentation may drift again
 
-### Structured artifact cards may misrepresent agent prose
+Mitigation: keep manifest/docs tests focused on current source-of-truth coverage rather than stale implementation-note phrases, and update this roadmap during release passes when product direction changes.
 
-Mitigation: treat parsed Markdown sections as view hints only. Keep the raw rendered Markdown available, tolerate malformed sections, and never execute actions based solely on an agent heading or badge.
+## 11. Definition Of The Next Stable Phase
 
-### Trust Center could duplicate or drift from inline notices
+The next stable phase should be considered healthy when:
 
-Mitigation: derive Trust Center state from the same system messages, change-set summaries, checkpoint summaries, and command handlers as the current inline controls.
-
-### Roadmap may drift into full competitor parity
-
-Mitigation: use the v1.0 thesis as a scope guard. Features that do not improve workspace context, edit trust, or multi-agent workflow quality move out of v1.0.
-
-## 16. Open Product Decisions
-
-These decisions should be made during implementation planning, not blocked here:
-
-- Exact `@codebase` retrieval ranking formula.
-- Whether diff preview stores patch files, workspace snapshots, or both.
-- Whether the first rollback implementation uses Git where available or a Veyra-managed snapshot format everywhere.
-- Final names for diff and checkpoint commands.
-- Whether workflow templates live in VS Code settings, a `veyra.md` section, or a separate workspace config file.
-- Whether the visible Google agent label stays `@gemini` while Antigravity CLI powers it, or whether Veyra eventually exposes `@antigravity`.
-- Whether legacy Gemini CLI fallback should be kept after the consumer cutoff or removed completely.
-- Which Markdown renderer should be used in the webview, and how tightly it should sanitize links and generated HTML.
-- Which provider model metadata is reliable enough to expose as "actual model used" versus "configured/default model."
-- What the Mission Control timeline should show in its compact default state versus expanded detail state.
-- Which workflow artifact sections should become structured cards first, and how much malformed or extra Markdown should remain plain prose.
-- Whether Trust Center should be an expandable header section inside the existing Veyra view or a separate contributed VS Code view.
-- What evidence is strong enough for Trust Center verification badges, especially when output comes from agents versus observed terminal/CI results.
-
-## 17. Definition Of v1.0
-
-Veyra is ready to call v1.0 when:
-
-- It can retrieve relevant workspace context without explicit file mentions.
-- It can show a user what changed during an agent dispatch.
-- It can roll back a write-capable dispatch safely.
-- Its multi-agent workflows produce clearer final recommendations than a single-agent chat loop.
-- Current native chat, Language Model provider, panel, file badge, edit-conflict, commit attribution, packaging, smoke, and live readiness gates remain covered.
+- Retrieval feedback produces actionable missed-context evidence without hidden memory or background indexing.
+- Provider diagnostics make the active Claude, Codex, and Google runtime paths clear to users.
+- Trust Center and Workflows feel dense but not crowded during real `/review`, `/debate`, `/consensus`, and `/implement` runs.
+- README, user guide, changelog, smoke docs, goal audit, and roadmap agree on what is shipped versus deferred.
+- Automated verification and manual Extension Host validation tell a coherent release story.

@@ -774,6 +774,53 @@ body {
   gap: 6px;
 }
 
+/* First-launch empty state: centered orientation for the docked conversation. */
+.message-list-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 24px 18px;
+  text-align: center;
+}
+.message-list-empty .codicon,
+.message-list-empty .icon-fallback {
+  font-size: 26px;
+  line-height: 1;
+  margin-bottom: 4px;
+  color: var(--veyra-fg-muted);
+}
+.message-list-empty-title {
+  margin: 0;
+  font-weight: 600;
+  color: var(--veyra-fg-default);
+}
+.message-list-empty-subtitle {
+  margin: 0;
+  color: var(--veyra-fg-muted);
+}
+.message-list-empty-hints {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 320px;
+  font-size: 12px;
+  color: var(--veyra-fg-muted);
+}
+.message-list-empty-hints code {
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 11px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--veyra-bg-code);
+  color: var(--veyra-fg-default);
+}
+
 /* Flat, row-based messages (Enterprise Polish v0.1 Phase 1): full-width rows
    with a 2px agent-colored left stripe and whitespace between, no bubbles. */
 .msg {

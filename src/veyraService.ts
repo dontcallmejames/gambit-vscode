@@ -1184,10 +1184,21 @@ function workflowCommandFromText(text: string): RetrievalFeedbackSummary['workfl
 
 function readOnlyForDispatchTarget(request: VeyraDispatchRequest, agentId: AgentId): boolean | undefined {
   if (request.readOnly === true) return true;
-  if (workflowCommandForRequest(request) === 'implement') {
+  // Only an actual routed /implement workflow (the @all dispatch that injects a
+  // "Workflow: implement" marker via veyraWorkflowPrompt) forces non-Codex agents
+  // read-only. A direct single-agent request that merely mentions "/implement" in
+  // prose must keep the write access the user explicitly routed to it.
+  if (routedWorkflowCommand(request.text) === 'implement') {
     return agentId !== 'codex';
   }
   return request.readOnly;
+}
+
+function routedWorkflowCommand(text: string): RetrievalFeedbackSummary['workflowCommand'] {
+  const routed = text.match(/(?:^|\n)Workflow:\s*(review|debate|consensus|implement)\b/iu)?.[1]?.toLowerCase();
+  return routed === 'review' || routed === 'debate' || routed === 'consensus' || routed === 'implement'
+    ? routed
+    : undefined;
 }
 
 function hasObservedInspectionEvidence(inProgress: InProgressDispatch, hasAttachedContext: boolean): boolean {

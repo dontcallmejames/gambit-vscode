@@ -217,6 +217,9 @@ describe('verify-package script', () => {
     expect(contentTypesXml()).toContain('Extension="vsixmanifest"');
     expect(contentTypesXml()).toContain('Extension="png"');
     expect(contentTypesXml()).toContain('Extension="txt"');
+    // Codicon assets (dist/codicon.css, dist/codicon.ttf) must declare content types.
+    expect(contentTypesXml()).toContain('Extension="css"');
+    expect(contentTypesXml()).toContain('Extension="ttf"');
   });
 });
 

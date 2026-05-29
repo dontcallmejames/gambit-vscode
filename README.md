@@ -6,6 +6,14 @@ Veyra is a local-first VS Code extension for developers who want Claude, Codex, 
 
 Veyra is not a hosted agent service. It uses the local CLIs you already authenticate, and it does not run hidden commands, does not upload your repository, and does not approve destructive follow-up work on its own.
 
+## Screenshots
+
+![Claude, Codex, and Gemini answering one prompt on a shared timeline](resources/screenshots/01-conversation-dark.png)
+
+![Trust Center reviewing pending file changes before accepting them](resources/screenshots/02-trust-center-light.png)
+
+![A multi-agent review workflow with its synthesis, in High Contrast](resources/screenshots/03-workflow-high-contrast.png)
+
 ## Quickstart
 
 1. Install or update Veyra, then run `Developer: Reload Window`.

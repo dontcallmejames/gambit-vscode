@@ -1127,6 +1127,9 @@ describe('extension manifest', () => {
       'LICENSE.txt',
       'CHANGELOG.md',
       'resources/icon.png',
+      'resources/screenshots/01-conversation-dark.png',
+      'resources/screenshots/02-trust-center-light.png',
+      'resources/screenshots/03-workflow-high-contrast.png',
       'dist/extension.js',
       'dist/extension.js.map',
       'dist/index.html',
@@ -1141,6 +1144,7 @@ describe('extension manifest', () => {
       'docs/vscode-smoke-test.md',
     ]);
     expect(packageVerifier).toContain("'LICENSE.txt'");
+    expect(packageVerifier).toContain("'resources/screenshots/01-conversation-dark.png'");
     expect(packageVerifier).toContain("'CHANGELOG.md'");
     expect(packageVerifier).toContain("'resources/icon.png'");
     expect(packageVerifier).toContain("'docs/user-guide.md'");
@@ -1154,6 +1158,10 @@ describe('extension manifest', () => {
     const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8');
     expect(readme).toContain('## Quickstart');
     expect(readme).toContain('## Troubleshooting');
+    expect(readme).toContain('## Screenshots');
+    expect(readme).toContain('resources/screenshots/01-conversation-dark.png');
+    expect(readme).toContain('resources/screenshots/02-trust-center-light.png');
+    expect(readme).toContain('resources/screenshots/03-workflow-high-contrast.png');
     expect(readme).toContain('docs/user-guide.md');
     expect(readme).toContain('docs/developer-verification.md');
     expect(readme).toContain('docs/preview-demo-script.md');

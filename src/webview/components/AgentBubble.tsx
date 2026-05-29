@@ -27,6 +27,13 @@ function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+function agentLabel(agentId: string): string {
+  if (agentId === 'claude') return 'Claude';
+  if (agentId === 'codex') return 'Codex';
+  if (agentId === 'gemini') return 'Gemini';
+  return agentId;
+}
+
 function BrailleSpinner({ agentId }: { agentId: string }) {
   const frames = SPINNER_FRAMES[agentId] ?? SPINNER_FRAMES.claude;
   const [frame, setFrame] = useState(0);
@@ -153,15 +160,13 @@ export function AgentBubble({ message, streaming, settings, send }: Props) {
     () => pickRandom(THINKING_VERBS[message.agentId] ?? THINKING_VERBS.claude),
     [message.agentId],
   );
-  const classes = ['bubble', 'agent', `agent-${message.agentId}`];
+  const classes = ['msg', 'msg-agent', `msg-${message.agentId}`];
   if (streaming) classes.push('streaming');
   if (isThinking) classes.push('thinking');
 
   return (
     <div class={classes.join(' ')}>
-      <div class="role" style="font-size:10px;text-transform:uppercase;opacity:0.6;margin-bottom:3px">
-        {message.agentId}
-      </div>
+      <div class="msg-role">{agentLabel(message.agentId)}</div>
       {isThinking ? (
         <div class="thinking-line">{verb} <BrailleSpinner agentId={message.agentId} /></div>
       ) : (

@@ -814,48 +814,54 @@ body {
 .message-list {
   flex: 1;
   overflow-y: auto;
-  padding: 12px;
+  padding: 8px 2px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
 }
 
-.bubble {
-  max-width: 75%;
-  padding: 8px 12px;
-  border-radius: 10px;
-  background: var(--bubble-bg);
-  border: 1px solid var(--border);
+/* Flat, row-based messages (Enterprise Polish v0.1 Phase 1): full-width rows
+   with a 2px agent-colored left stripe and whitespace between, no bubbles. */
+.msg {
+  padding: 5px 12px 6px 14px;
+  box-shadow: inset 2px 0 0 var(--veyra-border-default);
   white-space: pre-wrap;
   word-wrap: break-word;
 }
-.bubble.user {
-  align-self: flex-end;
-  background: var(--user-bg);
-  /* Pair the foreground with the selection background so the user bubble stays
-     readable on saturated selection colors (e.g. Light+). */
-  color: var(--vscode-list-activeSelectionForeground, var(--veyra-fg-default));
+.msg-role {
+  margin-bottom: 3px;
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--veyra-fg-muted);
 }
-.bubble.agent { align-self: flex-start; }
-.bubble.agent-claude {
-  background: var(--veyra-agent-claude-surface);
-  border-color: var(--veyra-agent-claude-line);
+.msg-body {
+  min-width: 0;
 }
-.bubble.agent-codex {
-  background: var(--veyra-agent-codex-surface);
-  border-color: var(--veyra-agent-codex-line);
+.msg-claude {
+  box-shadow: inset 2px 0 0 var(--veyra-agent-claude);
 }
-.bubble.agent-gemini {
-  background: var(--veyra-agent-gemini-surface);
-  border-color: var(--veyra-agent-gemini-line);
+.msg-claude .msg-role {
+  color: var(--veyra-agent-claude);
 }
-.bubble.streaming::after {
+.msg-codex {
+  box-shadow: inset 2px 0 0 var(--veyra-agent-codex);
+}
+.msg-codex .msg-role {
+  color: var(--veyra-agent-codex);
+}
+.msg-gemini {
+  box-shadow: inset 2px 0 0 var(--veyra-agent-gemini);
+}
+.msg-gemini .msg-role {
+  color: var(--veyra-agent-gemini);
+}
+.msg.streaming::after {
   content: '\2588';
   display: inline-block;
   margin-left: 2px;
   animation: blink 1s steps(2) infinite;
 }
-.bubble.thinking::after {
+.msg.thinking::after {
   display: none;
 }
 .markdown-prose {

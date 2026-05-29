@@ -1,5 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import { h, type VNode } from 'preact';
+
+// PanelSection renders <Icon>, which uses hooks; stub them so the panels can be
+// rendered synchronously in tests.
+vi.mock('preact/hooks', () => ({
+  useState: (init: unknown) => [typeof init === 'function' ? (init as () => unknown)() : init, vi.fn()],
+  useEffect: vi.fn(),
+}));
+
 import { initialState, reduce } from '../src/webview/state.js';
 import { buildMissionControlSnapshot } from '../src/webview/missionControl.js';
 import { MissionControlTimeline } from '../src/webview/components/MissionControlTimeline.js';

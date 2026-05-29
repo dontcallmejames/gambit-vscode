@@ -1269,6 +1269,42 @@ describe('VeyraSessionService', () => {
     }));
   });
 
+  it('keeps a direct agent write-capable when the prompt only mentions /implement in prose', async () => {
+    const optionsByAgent = new Map<AgentId, { readOnly?: boolean }>();
+    const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-direct-implement-'));
+    const agent = (id: AgentId): Agent => ({
+      id,
+      status: async () => 'ready',
+      cancel: async () => {},
+      async *send(_prompt: string, opts) {
+        optionsByAgent.set(id, opts ?? {});
+        yield { type: 'done' } as AgentChunk;
+      },
+    });
+    const service = new VeyraSessionService(
+      workspacePath,
+      { claude: agent('claude'), codex: agent('codex'), gemini: agent('gemini') },
+      { hangSeconds: 0 },
+    );
+
+    await service.dispatch(
+      {
+        text: 'Please update the docs that describe the /implement workflow.',
+        source: 'native-chat',
+        cwd: workspacePath,
+        forcedTarget: 'claude',
+      },
+      () => {},
+    );
+
+    // A prose "/implement" mention is not a routed workflow, so the direct agent must
+    // keep the write access the user routed to it (not be forced read-only).
+    expect(optionsByAgent.has('claude')).toBe(true);
+    expect(optionsByAgent.get('codex')).toBeUndefined();
+    expect(optionsByAgent.get('gemini')).toBeUndefined();
+    expect(optionsByAgent.get('claude')?.readOnly).not.toBe(true);
+  });
+
   it('adds explicit no-write instructions to read-only dispatch prompts', async () => {
     const prompts = new Map<AgentId, string>();
     const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-service-'));

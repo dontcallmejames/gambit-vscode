@@ -82,7 +82,7 @@ describe('verify-package script', () => {
       });
 
       expect(result.status, result.stderr || result.stdout || String(result.error)).toBe(0);
-      expect(result.stdout).toContain('Package dry-run verified 15 files.');
+      expect(result.stdout).toContain('Package dry-run verified 17 files.');
     } finally {
       rmSync(unexpectedFile, { force: true });
     }
@@ -217,6 +217,9 @@ describe('verify-package script', () => {
     expect(contentTypesXml()).toContain('Extension="vsixmanifest"');
     expect(contentTypesXml()).toContain('Extension="png"');
     expect(contentTypesXml()).toContain('Extension="txt"');
+    // Codicon assets (dist/codicon.css, dist/codicon.ttf) must declare content types.
+    expect(contentTypesXml()).toContain('Extension="css"');
+    expect(contentTypesXml()).toContain('Extension="ttf"');
   });
 });
 

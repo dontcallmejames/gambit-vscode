@@ -15,6 +15,8 @@ export const allowedPackageFiles = [
   'dist/webview.js',
   'dist/webview.js.map',
   'dist/index.html',
+  'dist/codicon.css',
+  'dist/codicon.ttf',
   'docs/user-guide.md',
   'docs/developer-verification.md',
   'docs/preview-demo-script.md',

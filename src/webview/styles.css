@@ -10,6 +10,82 @@ body {
   height: 100vh;
 }
 
+/* Shared panel chrome (Enterprise Polish v0.1 Phase 2). The docked panels render
+   through <PanelSection>, which owns the section, header, and body wrapper;
+   panel-local CSS owns only body layout. */
+.panel-section {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--veyra-border-default);
+  background: var(--veyra-bg-panel);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+}
+.panel-section-open {
+  max-height: 24vh;
+  overflow: auto;
+}
+.panel-section-active {
+  box-shadow: inset 2px 0 0 var(--veyra-border-focus);
+}
+.panel-section-warning {
+  box-shadow: inset 2px 0 0 var(--veyra-status-warning-border);
+}
+.panel-section-head {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.panel-section-heading {
+  min-width: 0;
+}
+.panel-section-kicker {
+  opacity: 0.65;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  margin-right: 6px;
+}
+.panel-section-label {
+  font-weight: 700;
+}
+.panel-section-aside {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.panel-section-summary {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+}
+.panel-section-summary span {
+  max-width: 160px;
+  padding: 1px 6px;
+  border: 1px solid var(--veyra-border-default);
+  border-radius: 999px;
+  background: var(--veyra-bg-card);
+  color: var(--veyra-fg-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.panel-section-toggle {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.panel-section-toggle .codicon {
+  font-size: 13px;
+}
+
 .mission-control {
   padding: 8px 10px;
   border-bottom: 1px solid var(--border);
@@ -162,64 +238,8 @@ body {
   color: var(--vscode-foreground, inherit);
 }
 
-.trust-center {
-  padding: 8px 10px 9px;
-  border-bottom: 1px solid var(--border);
-  background: var(--veyra-bg-card);
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  font-size: 11px;
-}
-.trust-center-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  align-items: baseline;
-}
-.trust-center-kicker {
-  opacity: 0.65;
-  text-transform: uppercase;
-  letter-spacing: 0;
-  margin-right: 6px;
-}
-.trust-center-label {
-  font-weight: 700;
-}
-.trust-center-summary {
-  min-width: 0;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 5px;
-}
-.trust-center-summary span {
-  max-width: 160px;
-  padding: 1px 6px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--veyra-bg-card);
-  color: var(--vscode-descriptionForeground, inherit);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.trust-center-toggle {
-  flex: 0 0 auto;
-}
-.trust-center-active {
-  box-shadow: inset 2px 0 0 var(--veyra-border-focus);
-}
-.trust-center-empty {
-  color: var(--vscode-descriptionForeground, inherit);
-}
-.trust-center-expanded {
-  max-height: 24vh;
-  overflow: auto;
-}
-.trust-center-collapsed {
-  max-height: none;
-}
+/* Trust Center chrome (section, head, kicker, label, summary, toggle, state)
+   now lives in the shared .panel-section rules. */
 .trust-center-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -264,9 +284,7 @@ body {
   flex-wrap: wrap;
   gap: 5px;
 }
-.trust-center button,
-.workflow-panel button,
-.retrieval-feedback-panel button {
+.panel-section button {
   min-width: 0;
   border: 1px solid var(--vscode-button-border, var(--border));
   border-radius: 4px;
@@ -279,9 +297,7 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.trust-center button:hover,
-.workflow-panel button:hover,
-.retrieval-feedback-panel button:hover {
+.panel-section button:hover {
   background: var(--veyra-bg-hover);
 }
 .trust-file-list,
@@ -345,12 +361,9 @@ body {
   .trust-panel-changes {
     grid-column: span 1;
   }
-  .trust-center-head {
+  .panel-section-head {
     align-items: flex-start;
     flex-direction: column;
-  }
-  .trust-center-summary {
-    justify-content: flex-start;
   }
 }
 
@@ -551,20 +564,8 @@ body {
   }
 }
 
-.workflow-panel {
-  padding: 7px 10px;
-  border-bottom: 1px solid var(--border);
-  background: var(--veyra-bg-panel);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 11px;
-}
-.workflow-panel-expanded {
-  max-height: 24vh;
-}
-.workflow-panel-head,
-.workflow-panel-summary,
+/* Workflows panel chrome (section, head, kicker, label, summary) now lives in
+   the shared .panel-section rules. */
 .workflow-panel-subhead,
 .workflow-panel-replay,
 .workflow-panel-main,
@@ -574,23 +575,14 @@ body {
   align-items: center;
   gap: 8px;
 }
-.workflow-panel-head,
 .workflow-panel-subhead,
 .workflow-panel-replay {
   justify-content: space-between;
 }
-.workflow-panel-kicker {
-  opacity: 0.65;
-  text-transform: uppercase;
-  letter-spacing: 0;
-  margin-right: 6px;
-}
-.workflow-panel-label,
 .workflow-panel-subhead span:first-child,
 .workflow-panel-command {
   font-weight: 700;
 }
-.workflow-panel-summary span,
 .workflow-panel-subhead span:last-child,
 .workflow-panel-muted,
 .workflow-panel-replay p,
@@ -665,21 +657,8 @@ body {
   gap: 5px;
 }
 
-.retrieval-feedback-panel {
-  padding: 7px 10px;
-  border-bottom: 1px solid var(--border);
-  background: var(--veyra-bg-panel);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 11px;
-  box-shadow: inset 2px 0 0 var(--veyra-border-focus);
-}
-.retrieval-feedback-panel-expanded {
-  max-height: 24vh;
-}
-.retrieval-feedback-head,
-.retrieval-feedback-summary,
+/* Retrieval Feedback panel chrome (section, head, kicker, label, summary) now
+   lives in the shared .panel-section rules. */
 .retrieval-feedback-card-head,
 .retrieval-feedback-actions {
   min-width: 0;
@@ -687,22 +666,14 @@ body {
   align-items: center;
   gap: 8px;
 }
-.retrieval-feedback-head,
 .retrieval-feedback-card-head {
   justify-content: space-between;
 }
-.retrieval-feedback-kicker {
-  opacity: 0.65;
-  text-transform: uppercase;
-  letter-spacing: 0;
-  margin-right: 6px;
-}
-.retrieval-feedback-label,
 .retrieval-feedback-card-head span:first-child,
 .retrieval-feedback-file-path {
   font-weight: 700;
 }
-.retrieval-feedback-summary span,
+.retrieval-feedback-card-head span:last-child,
 .retrieval-feedback-card-head span:last-child,
 .retrieval-feedback-muted,
 .retrieval-feedback-card p,
@@ -750,8 +721,7 @@ body {
   border-top: 1px solid var(--border);
 }
 .retrieval-feedback-file-path,
-.retrieval-feedback-card-head span:last-child,
-.retrieval-feedback-summary span {
+.retrieval-feedback-card-head span:last-child {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -785,10 +755,8 @@ body {
   overflow-wrap: anywhere;
 }
 @media (max-width: 520px) {
-  .workflow-panel-head,
   .workflow-panel-replay,
   .workflow-panel-main,
-  .retrieval-feedback-head,
   .retrieval-feedback-card-head,
   .retrieval-feedback-actions {
     align-items: flex-start;

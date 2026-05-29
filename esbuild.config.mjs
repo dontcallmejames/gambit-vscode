@@ -77,12 +77,18 @@ const nodeFsResolverPlugin = {
   },
 };
 
-const copyHtmlPlugin = {
-  name: 'copy-html',
+const copyWebviewAssetsPlugin = {
+  name: 'copy-webview-assets',
   setup(build) {
     build.onEnd(() => {
       mkdirSync('dist', { recursive: true });
       copyFileSync('src/webview/index.html', 'dist/index.html');
+      // Ship codicons (font + class map) alongside the webview bundle so the
+      // panels can use native VS Code icons. codicon.css references ./codicon.ttf
+      // relatively, which resolves correctly when loaded via asWebviewUri.
+      const codiconDir = dirname(require.resolve('@vscode/codicons/dist/codicon.css'));
+      copyFileSync(join(codiconDir, 'codicon.css'), 'dist/codicon.css');
+      copyFileSync(join(codiconDir, 'codicon.ttf'), 'dist/codicon.ttf');
     });
   },
 };
@@ -119,7 +125,7 @@ const webviewConfig = {
   sourcemap: true,
   jsx: 'automatic',
   jsxImportSource: 'preact',
-  plugins: [nodeFsResolverPlugin, copyHtmlPlugin],
+  plugins: [nodeFsResolverPlugin, copyWebviewAssetsPlugin],
   logLevel: 'info',
 };
 

@@ -1,4 +1,5 @@
 import { h } from 'preact';
+import { PanelSection } from './PanelSection.js';
 import type { FromWebview, VeyraCommandActionId } from '../../shared/protocol.js';
 import type { TrustCenterSnapshot } from '../trustCenter.js';
 
@@ -11,13 +12,19 @@ type TrustCenterProps = {
 
 export function TrustCenter({ snapshot, send, expanded = true, onToggle }: TrustCenterProps) {
   return (
-    <section class={`trust-center ${expanded ? 'trust-center-expanded' : 'trust-center-collapsed'} ${snapshot.hasSignals ? 'trust-center-active' : 'trust-center-empty'}`} aria-label="Trust Center">
-      <div class="trust-center-head">
-        <div>
-          <span class="trust-center-kicker">Trust Center</span>
-          <span class="trust-center-label">{snapshot.hasSignals ? 'Observed by Veyra' : 'No active trust signals'}</span>
-        </div>
-        <div class="trust-center-summary">
+    <PanelSection
+      kind="trust"
+      kicker="Trust Center"
+      label={snapshot.hasSignals ? 'Observed by Veyra' : 'No active trust signals'}
+      ariaLabel="Trust Center"
+      state={snapshot.hasSignals ? 'active' : 'empty'}
+      collapsed={!expanded}
+      onToggleCollapse={() => onToggle?.(!expanded)}
+      toggleNoun="Trust Center"
+      bodyId="veyra-trust-center-body"
+      bodyClass="trust-center-grid"
+      summary={(
+        <>
           {snapshot.pendingChangeCount > 0 && <span>{plural(snapshot.pendingChangeCount, 'pending file')}</span>}
           {snapshot.checkpointCount > 0 && <span>{`${plural(snapshot.checkpointCount, 'checkpoint')} available`}</span>}
           {snapshot.verificationState && <span>{`verification ${snapshot.verificationState}`}</span>}
@@ -27,19 +34,9 @@ export function TrustCenter({ snapshot, send, expanded = true, onToggle }: Trust
           {snapshot.browserTestingPresent && <span>browser/test context</span>}
           {snapshot.editConflictCount > 0 && <span>{plural(snapshot.editConflictCount, 'edit conflict')}</span>}
           {snapshot.workflowWarningCount > 0 && <span>{plural(snapshot.workflowWarningCount, 'workflow warning')}</span>}
-        </div>
-        <button
-          type="button"
-          class="trust-center-toggle"
-          aria-expanded={expanded}
-          aria-controls="veyra-trust-center-body"
-          onClick={() => onToggle?.(!expanded)}
-        >
-          {expanded ? 'Collapse Trust Center' : 'Open Trust Center'}
-        </button>
-      </div>
-
-      {expanded && <div id="veyra-trust-center-body" class="trust-center-grid">
+        </>
+      )}
+    >
         <section class="trust-panel trust-panel-changes">
           <div class="trust-panel-head">
             <span>Pending Changes</span>
@@ -192,8 +189,7 @@ export function TrustCenter({ snapshot, send, expanded = true, onToggle }: Trust
             <p class="trust-muted">No workflow state warnings.</p>
           )}
         </section>
-      </div>}
-    </section>
+    </PanelSection>
   );
 }
 

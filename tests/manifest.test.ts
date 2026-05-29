@@ -1132,6 +1132,8 @@ describe('extension manifest', () => {
       'dist/index.html',
       'dist/webview.js',
       'dist/webview.js.map',
+      'dist/codicon.css',
+      'dist/codicon.ttf',
       'docs/user-guide.md',
       'docs/developer-verification.md',
       'docs/goal-completion-audit.md',

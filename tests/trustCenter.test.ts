@@ -7,6 +7,13 @@ import type { FromWebview, SystemMessage, UserMessage } from "../src/shared/prot
 
 vi.stubGlobal("React", { createElement: h });
 
+// PanelSection renders <Icon>, which uses hooks; stub them so the panel can be
+// rendered synchronously in tests.
+vi.mock("preact/hooks", () => ({
+  useState: (init: unknown) => [typeof init === "function" ? (init as () => unknown)() : init, vi.fn()],
+  useEffect: vi.fn(),
+}));
+
 function pendingChangeSetNotice(status: "pending" | "accepted" = "pending"): SystemMessage {
   return {
     id: `change-set-${status}`,
@@ -98,6 +105,7 @@ function flattenText(node: unknown): string {
   if (typeof node === "string" || typeof node === "number") return String(node);
   if (Array.isArray(node)) return node.map(flattenText).join(" ");
   const vnode = node as VNode;
+  if (typeof vnode.type === "function") return flattenText((vnode.type as any)(vnode.props));
   return flattenText(vnode.props?.children);
 }
 

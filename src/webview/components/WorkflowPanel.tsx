@@ -40,7 +40,6 @@ export function WorkflowPanel({
       ariaLabel="Workflows"
       collapsed={!expanded}
       onToggleCollapse={() => onToggle(!expanded)}
-      toggleNoun="Workflows"
       bodyId="veyra-workflow-panel-body"
       bodyClass="workflow-panel-body"
       summary={<span>{`History ${history.entries.length}`}</span>}

@@ -35,30 +35,30 @@ body {
 .panel-section-head {
   min-width: 0;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
 .panel-section-heading {
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .panel-section-kicker {
   opacity: 0.65;
   text-transform: uppercase;
   letter-spacing: 0;
-  margin-right: 6px;
 }
 .panel-section-label {
-  font-weight: 700;
-}
-.panel-section-aside {
-  flex: 0 1 auto;
   min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .panel-section-summary {
+  flex: 0 1 auto;
   min-width: 0;
   display: flex;
   flex-wrap: wrap;
@@ -76,14 +76,32 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* The chevron + kicker form the collapse control (no separate Open/Close button). */
 .panel-section-toggle {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
 }
-.panel-section-toggle .codicon {
-  font-size: 13px;
+.panel-section-toggle:hover .panel-section-kicker {
+  opacity: 1;
+}
+.panel-section-toggle:focus-visible {
+  outline: 1px solid var(--veyra-border-focus);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+.panel-section-toggle .codicon,
+.panel-section-toggle .icon-fallback {
+  font-size: 12px;
+  opacity: 0.8;
 }
 
 .mission-control {
@@ -124,32 +142,31 @@ body {
 }
 .mission-stage {
   min-width: 0;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 2px 6px;
+  display: flex;
   align-items: center;
-  padding: 5px 6px;
+  gap: 6px;
+  padding: 4px 7px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--veyra-bg-card);
 }
 .mission-stage-dot {
+  flex: 0 0 auto;
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: var(--veyra-fg-muted);
 }
-.mission-stage-label,
-.mission-stage-state {
+.mission-stage-label {
+  min-width: 0;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.mission-stage-label {
-  font-weight: 600;
-}
 .mission-stage-state {
-  grid-column: 2;
+  flex: 0 0 auto;
+  margin-left: auto;
   opacity: 0.72;
 }
 .mission-stage-active {
@@ -177,37 +194,6 @@ body {
 }
 .mission-stage-gemini {
   box-shadow: inset 2px 0 0 var(--veyra-agent-gemini);
-}
-.mission-control-indicators,
-.mission-control-actions {
-  min-height: 16px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.mission-control-indicators span,
-.mission-control-chip {
-  padding: 1px 6px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--veyra-bg-card);
-  color: var(--vscode-descriptionForeground, inherit);
-}
-.mission-control-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font: inherit;
-  cursor: pointer;
-}
-.mission-control-chip:hover,
-.mission-control-chip-active {
-  background: var(--veyra-bg-hover);
-  color: var(--vscode-foreground);
-}
-.mission-control-chip-urgent {
-  border-color: var(--veyra-status-warning-border);
-  color: var(--veyra-status-warning);
 }
 .mission-control-workflow-warnings {
   display: flex;
@@ -284,7 +270,7 @@ body {
   flex-wrap: wrap;
   gap: 5px;
 }
-.panel-section button {
+.panel-section-body button {
   min-width: 0;
   border: 1px solid var(--vscode-button-border, var(--border));
   border-radius: 4px;
@@ -297,7 +283,7 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.panel-section button:hover {
+.panel-section-body button:hover {
   background: var(--veyra-bg-hover);
 }
 .trust-file-list,

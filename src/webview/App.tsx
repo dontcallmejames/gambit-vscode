@@ -7,7 +7,6 @@ import { addMarkedMissingFile, buildRetrievalFeedbackSnapshot } from './retrieva
 import { buildWorkflowReplaySnapshot } from './workflowReplay.js';
 import { buildWorkflowHistorySnapshot } from './workflowHistory.js';
 import {
-  buildPresentationDensityChips,
   effectivePresentationPanelExpanded,
   isTrustCenterUrgent,
   mergePresentationDensityState,
@@ -56,14 +55,6 @@ export function App() {
     workflows: effectivePresentationPanelExpanded(density, 'workflows', { trustUrgent }),
     retrieval: effectivePresentationPanelExpanded(density, 'retrieval', { trustUrgent }),
   };
-  const actionChips = buildPresentationDensityChips({
-    trustCenter,
-    workflowReplay,
-    workflowHistory,
-    retrievalFeedback,
-    expandedPanels,
-  });
-
   useEffect(() => {
     const handler = (e: MessageEvent) => dispatch(e.data as FromExtension);
     window.addEventListener('message', handler);
@@ -106,11 +97,7 @@ export function App() {
 
   return (
     <div class="app">
-      <MissionControlTimeline
-        snapshot={missionControl}
-        actionChips={actionChips}
-        onOpenPanel={(panelId) => setPanelExpanded(panelId, true)}
-      />
+      <MissionControlTimeline snapshot={missionControl} />
       <TrustCenter
         snapshot={trustCenter}
         expanded={expandedPanels.trust}

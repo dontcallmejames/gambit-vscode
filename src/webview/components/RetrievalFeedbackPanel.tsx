@@ -45,7 +45,6 @@ export function RetrievalFeedbackPanel({
       state="active"
       collapsed={!expanded}
       onToggleCollapse={() => onToggle(!expanded)}
-      toggleNoun="Retrieval Feedback"
       bodyId="veyra-retrieval-feedback-body"
       bodyClass="retrieval-feedback-body"
       summary={(

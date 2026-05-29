@@ -18,7 +18,6 @@ import { buildWorkflowReplaySnapshot } from '../src/webview/workflowReplay.js';
 import { buildWorkflowHistorySnapshot } from '../src/webview/workflowHistory.js';
 import {
   DEFAULT_PRESENTATION_DENSITY_STATE,
-  buildPresentationDensityChips,
   effectivePresentationPanelExpanded,
   isTrustCenterUrgent,
   mergePresentationDensityState,
@@ -73,65 +72,6 @@ describe('presentation density state', () => {
   });
 });
 
-describe('Mission Control density chips', () => {
-  it('opens Trust, checkpoint, replay, and history sections from compact Mission Control buttons', () => {
-    const state = workflowState();
-    const chips = buildPresentationDensityChips({
-      trustCenter: buildTrustCenterSnapshot(state),
-      workflowReplay: buildWorkflowReplaySnapshot(state),
-      workflowHistory: buildWorkflowHistorySnapshot(state),
-      expandedPanels: { trust: false, workflows: false, retrieval: false },
-    });
-    const opened: string[] = [];
-
-    const vnode = MissionControlTimeline({
-      snapshot: buildMissionControlSnapshot(state),
-      actionChips: chips,
-      onOpenPanel: (panelId) => opened.push(panelId),
-    });
-    const text = flattenText(vnode);
-
-    expect(text).toContain('Trust');
-    expect(text).toContain('2 pending files');
-    expect(text).toContain('checkpoint available');
-    expect(text).toContain('Replay /review');
-    expect(text).toContain('History 1');
-
-    clickButtonContaining(vnode, 'Trust');
-    clickButtonContaining(vnode, 'checkpoint available');
-    clickButtonContaining(vnode, 'Replay /review');
-    clickButtonContaining(vnode, 'History 1');
-
-    expect(opened).toEqual(['trust', 'trust', 'workflows', 'workflows']);
-  });
-
-  it('opens Retrieval Feedback from Mission Control only when @codebase evidence exists', () => {
-    const state = workflowState();
-    const chips = buildPresentationDensityChips({
-      trustCenter: buildTrustCenterSnapshot(state),
-      workflowReplay: buildWorkflowReplaySnapshot(state),
-      workflowHistory: buildWorkflowHistorySnapshot(state),
-      retrievalFeedback: { latest: retrievalSummary() },
-      expandedPanels: { trust: false, workflows: false, retrieval: false },
-    });
-    const opened: string[] = [];
-
-    const vnode = MissionControlTimeline({
-      snapshot: buildMissionControlSnapshot(state),
-      actionChips: chips,
-      onOpenPanel: (panelId) => opened.push(panelId),
-    });
-    const text = flattenText(vnode);
-
-    expect(text).toContain('Retrieval @codebase');
-    expect(text).toContain('1 selected');
-
-    clickButtonContaining(vnode, 'Retrieval @codebase');
-
-    expect(opened).toEqual(['retrieval']);
-  });
-});
-
 describe('collapsible density panels', () => {
   it('keeps Trust Center collapsed until opened while preserving actionable summary text', () => {
     const state = workflowState();
@@ -150,7 +90,7 @@ describe('collapsible density panels', () => {
     expect(text).not.toContain('Pending Changes');
     expect(text).not.toContain('Run verification');
 
-    clickButtonContaining(vnode, 'Open Trust Center');
+    clickButtonContaining(vnode, 'Trust Center');
 
     expect(onToggle).toHaveBeenCalledWith(true);
     expect(sent).toEqual([]);

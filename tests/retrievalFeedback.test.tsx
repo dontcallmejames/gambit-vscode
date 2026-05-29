@@ -181,7 +181,7 @@ describe('RetrievalFeedbackPanel', () => {
     expect(collapsedText).toContain('2 omitted');
     expect(collapsedText).not.toContain('Selected files');
 
-    clickButtonContaining(collapsed, 'Open Retrieval Feedback');
+    clickButtonContaining(collapsed, 'Retrieval Feedback');
 
     expect(onToggle).toHaveBeenCalledWith(true);
     expect(onPrepareDraft).not.toHaveBeenCalled();

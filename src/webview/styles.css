@@ -1,12 +1,4 @@
-:root {
-  --bubble-bg: var(--vscode-editorWidget-background, rgba(255,255,255,0.05));
-  --border: var(--vscode-widget-border, rgba(255,255,255,0.15));
-  --user-bg: var(--vscode-list-activeSelectionBackground, rgba(74,158,255,0.2));
-  --error-bg: rgba(255, 80, 80, 0.1);
-  --error-border: rgba(255, 80, 80, 0.4);
-  --ok-color: #6dd47e;
-  --error-color: #ff7070;
-}
+/* Color tokens live in tokens.css (imported before this file in main.tsx). */
 
 body {
   font-size: var(--vscode-font-size, 13px);
@@ -21,7 +13,7 @@ body {
 .mission-control {
   padding: 8px 10px;
   border-bottom: 1px solid var(--border);
-  background: var(--vscode-sideBar-background, rgba(255,255,255,0.02));
+  background: var(--veyra-bg-panel);
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -63,13 +55,13 @@ body {
   padding: 5px 6px;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: var(--vscode-editorWidget-background, rgba(255,255,255,0.04));
+  background: var(--veyra-bg-card);
 }
 .mission-stage-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--vscode-descriptionForeground, rgba(255,255,255,0.45));
+  background: var(--veyra-fg-muted);
 }
 .mission-stage-label,
 .mission-stage-state {
@@ -85,7 +77,7 @@ body {
   opacity: 0.72;
 }
 .mission-stage-active {
-  border-color: var(--vscode-focusBorder, var(--ok-color));
+  border-color: var(--veyra-border-focus);
 }
 .mission-stage-active .mission-stage-dot {
   background: var(--ok-color);
@@ -99,16 +91,16 @@ body {
   background: var(--error-color);
 }
 .mission-stage-queued .mission-stage-dot {
-  background: var(--vscode-progressBar-background, #4daafc);
+  background: var(--veyra-status-info);
 }
 .mission-stage-claude {
-  box-shadow: inset 2px 0 0 var(--vscode-veyra-claudeColor, #d97757);
+  box-shadow: inset 2px 0 0 var(--veyra-agent-claude);
 }
 .mission-stage-codex {
-  box-shadow: inset 2px 0 0 var(--vscode-veyra-codexColor, #10a37f);
+  box-shadow: inset 2px 0 0 var(--veyra-agent-codex);
 }
 .mission-stage-gemini {
-  box-shadow: inset 2px 0 0 var(--vscode-veyra-geminiColor, #4a8df0);
+  box-shadow: inset 2px 0 0 var(--veyra-agent-gemini);
 }
 .mission-control-indicators,
 .mission-control-actions {
@@ -122,7 +114,7 @@ body {
   padding: 1px 6px;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: rgba(255,255,255,0.04);
+  background: var(--veyra-bg-card);
   color: var(--vscode-descriptionForeground, inherit);
 }
 .mission-control-chip {
@@ -134,12 +126,12 @@ body {
 }
 .mission-control-chip:hover,
 .mission-control-chip-active {
-  background: var(--vscode-button-secondaryHoverBackground, rgba(255,255,255,0.12));
+  background: var(--veyra-bg-hover);
   color: var(--vscode-foreground);
 }
 .mission-control-chip-urgent {
-  border-color: var(--vscode-inputValidation-warningBorder, rgba(255, 184, 74, 0.55));
-  color: var(--vscode-inputValidation-warningForeground, #ffce85);
+  border-color: var(--veyra-status-warning-border);
+  color: var(--veyra-status-warning);
 }
 .mission-control-workflow-warnings {
   display: flex;
@@ -150,7 +142,7 @@ body {
   padding: 1px 7px;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: rgba(255,255,255,0.04);
+  background: var(--veyra-bg-card);
   color: var(--vscode-descriptionForeground, inherit);
   white-space: nowrap;
   overflow: hidden;
@@ -158,12 +150,12 @@ body {
   max-width: 100%;
 }
 .mission-control-workflow-chip-warning {
-  border-color: var(--vscode-inputValidation-warningBorder, rgba(255, 184, 74, 0.55));
-  color: var(--vscode-inputValidation-warningForeground, #ffce85);
+  border-color: var(--veyra-status-warning-border);
+  color: var(--veyra-status-warning);
 }
 .mission-control-workflow-chip-error {
-  border-color: var(--vscode-inputValidation-errorBorder, var(--error-border));
-  color: var(--vscode-errorForeground, var(--error-color));
+  border-color: var(--veyra-status-error-border);
+  color: var(--veyra-status-error);
 }
 .mission-control-workflow-chip-info {
   border-color: var(--vscode-focusBorder, var(--border));
@@ -173,7 +165,7 @@ body {
 .trust-center {
   padding: 8px 10px 9px;
   border-bottom: 1px solid var(--border);
-  background: var(--vscode-editorWidget-background, rgba(255,255,255,0.04));
+  background: var(--veyra-bg-card);
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -206,7 +198,7 @@ body {
   padding: 1px 6px;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: rgba(255,255,255,0.04);
+  background: var(--veyra-bg-card);
   color: var(--vscode-descriptionForeground, inherit);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -216,7 +208,7 @@ body {
   flex: 0 0 auto;
 }
 .trust-center-active {
-  box-shadow: inset 2px 0 0 var(--vscode-focusBorder, #4daafc);
+  box-shadow: inset 2px 0 0 var(--veyra-border-focus);
 }
 .trust-center-empty {
   color: var(--vscode-descriptionForeground, inherit);
@@ -238,7 +230,7 @@ body {
   padding: 7px;
   border: 1px solid var(--border);
   border-radius: 7px;
-  background: var(--vscode-sideBar-background, rgba(0,0,0,0.10));
+  background: var(--veyra-bg-panel-sunken);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -278,7 +270,7 @@ body {
   min-width: 0;
   border: 1px solid var(--vscode-button-border, var(--border));
   border-radius: 4px;
-  background: var(--vscode-button-secondaryBackground, rgba(255,255,255,0.07));
+  background: var(--veyra-bg-button);
   color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
   padding: 3px 7px;
   font: inherit;
@@ -290,7 +282,7 @@ body {
 .trust-center button:hover,
 .workflow-panel button:hover,
 .retrieval-feedback-panel button:hover {
-  background: var(--vscode-button-secondaryHoverBackground, rgba(255,255,255,0.12));
+  background: var(--veyra-bg-hover);
 }
 .trust-file-list,
 .trust-signal-list {
@@ -324,8 +316,8 @@ body {
   text-align: left;
 }
 .trust-conflict-link {
-  color: var(--vscode-inputValidation-warningForeground, #ffce85);
-  border-color: var(--vscode-inputValidation-warningBorder, rgba(255, 184, 74, 0.45));
+  color: var(--veyra-status-warning);
+  border-color: var(--veyra-status-warning-border);
 }
 .trust-workflow-warning {
   display: flex;
@@ -335,15 +327,15 @@ body {
   border: 1px solid var(--border);
   border-left-width: 2px;
   border-radius: 4px;
-  background: rgba(255,255,255,0.03);
+  background: var(--veyra-bg-card);
 }
 .trust-workflow-warning-warning {
-  border-left-color: var(--vscode-inputValidation-warningBorder, rgba(255, 184, 74, 0.55));
-  color: var(--vscode-inputValidation-warningForeground, #ffce85);
+  border-left-color: var(--veyra-status-warning-border);
+  color: var(--veyra-status-warning);
 }
 .trust-workflow-warning-error {
-  border-left-color: var(--vscode-inputValidation-errorBorder, var(--error-border));
-  color: var(--vscode-errorForeground, var(--error-color));
+  border-left-color: var(--veyra-status-error-border);
+  color: var(--veyra-status-error);
 }
 .trust-workflow-warning-info {
   border-left-color: var(--vscode-focusBorder, var(--border));
@@ -365,7 +357,7 @@ body {
 .workflow-replay {
   padding: 7px 10px;
   border-bottom: 1px solid var(--border);
-  background: var(--vscode-sideBar-background, rgba(255,255,255,0.02));
+  background: var(--veyra-bg-panel);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -408,17 +400,17 @@ body {
   flex: 0 0 auto;
   border: 1px solid var(--vscode-button-border, var(--border));
   border-radius: 4px;
-  background: var(--vscode-button-secondaryBackground, rgba(255,255,255,0.07));
+  background: var(--veyra-bg-button);
   color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
   padding: 3px 8px;
   font: inherit;
   cursor: pointer;
 }
 .workflow-replay button:hover {
-  background: var(--vscode-button-secondaryHoverBackground, rgba(255,255,255,0.12));
+  background: var(--veyra-bg-hover);
 }
 .workflow-replay-active {
-  box-shadow: inset 2px 0 0 var(--vscode-progressBar-background, #4daafc);
+  box-shadow: inset 2px 0 0 var(--veyra-status-info);
 }
 .workflow-replay-empty {
   color: var(--vscode-descriptionForeground, inherit);
@@ -436,7 +428,7 @@ body {
   overflow: auto;
   padding: 7px 10px;
   border-bottom: 1px solid var(--border);
-  background: var(--vscode-sideBar-background, rgba(255,255,255,0.02));
+  background: var(--veyra-bg-panel);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -473,7 +465,7 @@ body {
   padding: 6px;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: var(--vscode-editorWidget-background, rgba(255,255,255,0.04));
+  background: var(--veyra-bg-card);
 }
 .workflow-history-main,
 .workflow-history-meta {
@@ -528,17 +520,17 @@ body {
 .workflow-history button {
   border: 1px solid var(--vscode-button-border, var(--border));
   border-radius: 4px;
-  background: var(--vscode-button-secondaryBackground, rgba(255,255,255,0.07));
+  background: var(--veyra-bg-button);
   color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
   padding: 3px 8px;
   font: inherit;
   cursor: pointer;
 }
 .workflow-history button:hover {
-  background: var(--vscode-button-secondaryHoverBackground, rgba(255,255,255,0.12));
+  background: var(--veyra-bg-hover);
 }
 .workflow-history-active {
-  box-shadow: inset 2px 0 0 var(--vscode-focusBorder, #4daafc);
+  box-shadow: inset 2px 0 0 var(--veyra-border-focus);
 }
 .workflow-history-empty {
   color: var(--vscode-descriptionForeground, inherit);
@@ -562,7 +554,7 @@ body {
 .workflow-panel {
   padding: 7px 10px;
   border-bottom: 1px solid var(--border);
-  background: var(--vscode-sideBar-background, rgba(255,255,255,0.02));
+  background: var(--veyra-bg-panel);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -639,7 +631,7 @@ body {
   padding: 6px;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: var(--vscode-editorWidget-background, rgba(255,255,255,0.04));
+  background: var(--veyra-bg-card);
 }
 .workflow-panel-prompt {
   flex: 1 1 auto;
@@ -676,12 +668,12 @@ body {
 .retrieval-feedback-panel {
   padding: 7px 10px;
   border-bottom: 1px solid var(--border);
-  background: var(--vscode-sideBar-background, rgba(255,255,255,0.02));
+  background: var(--veyra-bg-panel);
   display: flex;
   flex-direction: column;
   gap: 6px;
   font-size: 11px;
-  box-shadow: inset 2px 0 0 var(--vscode-focusBorder, #4daafc);
+  box-shadow: inset 2px 0 0 var(--veyra-border-focus);
 }
 .retrieval-feedback-panel-expanded {
   max-height: 24vh;
@@ -738,7 +730,7 @@ body {
   padding: 7px;
   border: 1px solid var(--border);
   border-radius: 7px;
-  background: var(--vscode-editorWidget-background, rgba(255,255,255,0.04));
+  background: var(--veyra-bg-card);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -843,16 +835,16 @@ body {
 }
 .bubble.agent { align-self: flex-start; }
 .bubble.agent-claude {
-  background: rgba(217, 119, 87, 0.10);
-  border-color: rgba(217, 119, 87, 0.40);
+  background: var(--veyra-agent-claude-surface);
+  border-color: var(--veyra-agent-claude-line);
 }
 .bubble.agent-codex {
-  background: rgba(16, 163, 127, 0.10);
-  border-color: rgba(16, 163, 127, 0.40);
+  background: var(--veyra-agent-codex-surface);
+  border-color: var(--veyra-agent-codex-line);
 }
 .bubble.agent-gemini {
-  background: rgba(74, 141, 240, 0.10);
-  border-color: rgba(74, 141, 240, 0.40);
+  background: var(--veyra-agent-gemini-surface);
+  border-color: var(--veyra-agent-gemini-line);
 }
 .bubble.streaming::after {
   content: '\2588';
@@ -906,13 +898,13 @@ body {
 .markdown-prose :not(pre) > code {
   padding: 0 0.25em;
   border-radius: 3px;
-  background: rgba(0,0,0,0.22);
+  background: var(--veyra-bg-code);
 }
 .markdown-prose pre {
   overflow-x: auto;
   padding: 8px;
   border-radius: 6px;
-  background: rgba(0,0,0,0.25);
+  background: var(--veyra-bg-code);
   white-space: pre;
 }
 .markdown-prose pre code {
@@ -931,7 +923,7 @@ body {
 }
 .markdown-prose a,
 .markdown-link {
-  color: var(--vscode-textLink-foreground, #4daafc);
+  color: var(--veyra-fg-link);
 }
 .markdown-link-unsafe {
   color: inherit;
@@ -945,7 +937,7 @@ body {
 .workflow-artifact-card {
   border: 1px solid var(--border);
   border-radius: 7px;
-  background: var(--vscode-editorWidget-background, rgba(255,255,255,0.05));
+  background: var(--veyra-bg-card);
   overflow: hidden;
   white-space: normal;
 }
@@ -973,7 +965,7 @@ body {
   font-size: 10px;
   line-height: 1.5;
   color: var(--vscode-descriptionForeground, inherit);
-  background: rgba(255,255,255,0.04);
+  background: var(--veyra-bg-card);
 }
 .workflow-artifact-card-body {
   border-top: 1px solid var(--border);
@@ -986,13 +978,13 @@ body {
   box-shadow: inset 2px 0 0 var(--error-color);
 }
 .workflow-artifact-tone-warning {
-  box-shadow: inset 2px 0 0 #ffce85;
+  box-shadow: inset 2px 0 0 var(--veyra-status-warning);
 }
 .workflow-artifact-tone-test {
-  box-shadow: inset 2px 0 0 var(--vscode-progressBar-background, #4daafc);
+  box-shadow: inset 2px 0 0 var(--veyra-status-info);
 }
 .workflow-artifact-tone-action {
-  box-shadow: inset 2px 0 0 var(--vscode-focusBorder, #4daafc);
+  box-shadow: inset 2px 0 0 var(--veyra-border-focus);
 }
 .thinking-line {
   font-style: italic;
@@ -1015,7 +1007,7 @@ body {
   align-self: center;
   padding: 6px 12px;
   border-radius: 6px;
-  background: rgba(255,255,255,0.04);
+  background: var(--veyra-bg-card);
   border: 1px dashed var(--border);
   font-size: 12px;
   font-style: italic;
@@ -1026,20 +1018,20 @@ body {
   color: var(--error-color);
 }
 .system-notice.warning {
-  background: rgba(255, 184, 74, 0.08);
-  border-color: rgba(255, 184, 74, 0.45);
-  color: #ffce85;
+  background: var(--veyra-status-warning-bg);
+  border-color: var(--veyra-status-warning-border);
+  color: var(--veyra-status-warning);
 }
 .system-notice.edit-conflict {
-  background: rgba(255, 184, 74, 0.08);
-  border-color: rgba(255, 184, 74, 0.45);
-  color: #ffce85;
+  background: var(--veyra-status-warning-bg);
+  border-color: var(--veyra-status-warning-border);
+  color: var(--veyra-status-warning);
   font-style: normal;
 }
 .system-notice.facilitator {
-  background: rgba(255, 184, 74, 0.08);
-  border: 1px solid rgba(255, 184, 74, 0.45);
-  color: #ffce85;
+  background: var(--veyra-status-warning-bg);
+  border: 1px solid var(--veyra-status-warning-border);
+  color: var(--veyra-status-warning);
   font-style: normal;
   display: inline-flex;
   align-items: center;
@@ -1102,7 +1094,7 @@ body {
   border: 0;
   padding: 0;
   background: transparent;
-  color: var(--vscode-textLink-foreground, #4daafc);
+  color: var(--veyra-fg-link);
   font: inherit;
   text-decoration: underline;
   cursor: pointer;
@@ -1111,7 +1103,7 @@ body {
 .tool-card {
   margin-top: 6px;
   padding: 6px 10px;
-  background: rgba(0,0,0,0.2);
+  background: var(--veyra-bg-code);
   border: 1px solid var(--border);
   border-radius: 6px;
   font-family: var(--vscode-editor-font-family, monospace);
@@ -1135,7 +1127,7 @@ body {
   margin-top: 6px;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: rgba(0,0,0,0.18);
+  background: var(--veyra-bg-code);
   font-family: var(--vscode-editor-font-family, monospace);
   font-size: 11px;
   white-space: normal;
@@ -1166,7 +1158,7 @@ body {
   padding: 1px 5px;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: rgba(255,255,255,0.04);
+  background: var(--veyra-bg-card);
 }
 .tool-activity-latest {
   min-width: 0;
@@ -1211,7 +1203,7 @@ body {
   resize: none;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: var(--vscode-input-background, rgba(0,0,0,0.3));
+  background: var(--veyra-bg-input);
   color: var(--vscode-input-foreground);
   padding: 8px;
   font: inherit;
@@ -1231,7 +1223,7 @@ body {
   cursor: pointer;
 }
 .composer button.cancel {
-  background: var(--vscode-errorForeground, #ff7070);
+  background: var(--veyra-status-error);
   color: white;
 }
 
@@ -1247,18 +1239,18 @@ body {
   gap: 4px;
   padding: 1px 8px;
   border-radius: 99px;
-  background: rgba(255,255,255,0.05);
+  background: var(--veyra-bg-card);
   border: 1px solid var(--border);
   cursor: default;
 }
-.health-pill.ok { color: var(--ok-color); border-color: rgba(109,212,126,0.4); }
-.health-pill.error { color: var(--error-color); border-color: rgba(255,112,112,0.4); cursor: pointer; }
+.health-pill.ok { color: var(--ok-color); border-color: var(--veyra-status-ok-border); }
+.health-pill.error { color: var(--error-color); border-color: var(--veyra-status-error-border); cursor: pointer; }
 
 .mention-popover {
   position: absolute;
   bottom: 100%;
   left: 8px;
-  background: var(--vscode-editorWidget-background, #2a2a2a);
+  background: var(--veyra-bg-popover);
   border: 1px solid var(--border);
   border-radius: 6px;
   font-size: 12px;
@@ -1296,8 +1288,8 @@ body {
   animation: pulse 1.6s infinite;
 }
 @keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(109,212,126,0.6); }
-  100% { box-shadow: 0 0 0 8px rgba(109,212,126,0); }
+  0% { box-shadow: 0 0 0 0 var(--veyra-status-ok-glow); }
+  100% { box-shadow: 0 0 0 8px transparent; }
 }
 
 .file-chip-row {
@@ -1313,7 +1305,7 @@ body {
   padding: 2px 8px;
   font-size: 11px;
   font-family: var(--vscode-editor-font-family, monospace);
-  background: rgba(255,255,255,0.05);
+  background: var(--veyra-bg-card);
   border: 1px solid var(--border);
   border-radius: 4px;
   opacity: 0.85;
@@ -1330,7 +1322,7 @@ body {
   opacity: 0.65;
 }
 .edited-file-chip {
-  color: var(--vscode-textLink-foreground, #4daafc);
+  color: var(--veyra-fg-link);
   cursor: pointer;
 }
 .attached-files {
@@ -1344,6 +1336,6 @@ body {
 }
 .health-pill.rules {
   cursor: pointer;
-  color: #ffce85;
-  border-color: rgba(255, 184, 74, 0.45);
+  color: var(--veyra-status-warning);
+  border-color: var(--veyra-status-warning-border);
 }

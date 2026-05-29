@@ -1,0 +1,72 @@
+/*
+ * Veyra webview design tokens — the single source of truth for color.
+ *
+ * Every --veyra-* token resolves through a VS Code theme variable first, then a
+ * system color (Canvas, CanvasText, ButtonFace, Highlight, LinkText, ...) or a
+ * documented fallback, so the UI stays readable across Light+, Dark+, and High
+ * Contrast themes.
+ *
+ * Raw color literals (#, rgb(, rgba() must live ONLY in this file. Components and
+ * styles.css reference --veyra-* (or the transitional legacy aliases at the
+ * bottom). A few alpha tints are kept here on purpose where a VS Code theme
+ * variable does not exist; those rows are commented with the reason.
+ */
+:root {
+  /* Surfaces */
+  --veyra-bg-panel: var(--vscode-sideBar-background, Canvas);
+  --veyra-bg-panel-sunken: var(--vscode-sideBar-background, rgba(0, 0, 0, 0.1)); /* nested panel: subtle inset when no sideBar token */
+  --veyra-bg-card: var(--vscode-editorWidget-background, ButtonFace);
+  --veyra-bg-input: var(--vscode-input-background, Field);
+  --veyra-bg-button: var(--vscode-button-secondaryBackground, ButtonFace);
+  --veyra-bg-hover: var(--vscode-button-secondaryHoverBackground, Highlight);
+  --veyra-bg-popover: var(--vscode-editorWidget-background, Menu);
+  --veyra-bg-selection: var(--vscode-list-activeSelectionBackground, Highlight);
+  --veyra-bg-code: var(--vscode-textCodeBlock-background, rgba(0, 0, 0, 0.22)); /* code/tool blocks: dark overlay fallback aids contrast on code */
+
+  /* Borders */
+  --veyra-border-default: var(--vscode-widget-border, ButtonBorder);
+  --veyra-border-focus: var(--vscode-focusBorder, Highlight);
+  --veyra-border-button: var(--vscode-button-border, var(--veyra-border-default));
+
+  /* Foreground */
+  --veyra-fg-default: var(--vscode-foreground, CanvasText);
+  --veyra-fg-muted: var(--vscode-descriptionForeground, GrayText);
+  --veyra-fg-link: var(--vscode-textLink-foreground, LinkText);
+
+  /* Status */
+  --veyra-status-ok: var(--vscode-testing-iconPassed, #6dd47e);
+  --veyra-status-ok-border: var(--vscode-testing-iconPassed, #6dd47e);
+  --veyra-status-ok-glow: rgba(109, 212, 126, 0.6); /* pulse keyframe accent; no theme token for a glow */
+  --veyra-status-error: var(--vscode-errorForeground, #ff7070);
+  --veyra-status-error-border: var(--vscode-inputValidation-errorBorder, #ff7070);
+  --veyra-status-error-bg: var(--vscode-inputValidation-errorBackground, rgba(255, 80, 80, 0.1)); /* tinted error surface */
+  --veyra-status-warning: var(--vscode-inputValidation-warningForeground, #ffce85);
+  --veyra-status-warning-border: var(--vscode-inputValidation-warningBorder, #ffce85);
+  --veyra-status-warning-bg: var(--vscode-inputValidation-warningBackground, rgba(255, 184, 74, 0.08)); /* tinted warning surface */
+  --veyra-status-info: var(--vscode-progressBar-background, #4daafc);
+
+  /* Agent accents */
+  --veyra-agent-claude: var(--vscode-veyra-claudeColor, #d97757);
+  --veyra-agent-codex: var(--vscode-veyra-codexColor, #10a37f);
+  --veyra-agent-gemini: var(--vscode-veyra-geminiColor, #4a8df0);
+  /* Agent message tints (alpha intentional: a per-agent surface/line that VS Code has no token for). */
+  --veyra-agent-claude-surface: rgba(217, 119, 87, 0.1);
+  --veyra-agent-claude-line: rgba(217, 119, 87, 0.4);
+  --veyra-agent-codex-surface: rgba(16, 163, 127, 0.1);
+  --veyra-agent-codex-line: rgba(16, 163, 127, 0.4);
+  --veyra-agent-gemini-surface: rgba(74, 141, 240, 0.1);
+  --veyra-agent-gemini-line: rgba(74, 141, 240, 0.4);
+
+  /*
+   * Transitional legacy aliases. Existing rules in styles.css reference these
+   * short names; they now resolve to the tokens above. Prefer --veyra-* in new
+   * code; these can be retired once styles.css is fully migrated.
+   */
+  --border: var(--veyra-border-default);
+  --bubble-bg: var(--veyra-bg-card);
+  --user-bg: var(--veyra-bg-selection);
+  --ok-color: var(--veyra-status-ok);
+  --error-color: var(--veyra-status-error);
+  --error-bg: var(--veyra-status-error-bg);
+  --error-border: var(--veyra-status-error-border);
+}

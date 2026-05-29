@@ -27,3 +27,50 @@ describe('webview styles: workflow-state chip classes', () => {
     expect(selector.test(styles)).toBe(true);
   });
 });
+
+// Enterprise Polish v0.1 — Phase 1 acceptance gate: raw color literals (#, rgb(,
+// rgba() must live only in tokens.css. Everything else references --veyra-* tokens.
+describe('webview styles: color token discipline', () => {
+  const webviewDir = path.join(repoRoot, 'src', 'webview');
+  const RAW_COLOR = /#[0-9a-fA-F]{3,8}\b|rgba?\(/;
+
+  function collectStyleFiles(dir: string): string[] {
+    const out: string[] = [];
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        out.push(...collectStyleFiles(full));
+      } else if (/\.(css|tsx)$/.test(entry.name) && entry.name !== 'tokens.css') {
+        out.push(full);
+      }
+    }
+    return out;
+  }
+
+  it.each(collectStyleFiles(webviewDir).map((f) => path.relative(repoRoot, f)))(
+    'has no raw color literal in %s',
+    (relativePath) => {
+      const content = fs.readFileSync(path.join(repoRoot, relativePath), 'utf8');
+      const offenders = content
+        .split(/\r?\n/)
+        .map((line, i) => ({ line: line.trim(), n: i + 1 }))
+        .filter(({ line }) => RAW_COLOR.test(line));
+      expect(offenders, `Move color literals to tokens.css: ${JSON.stringify(offenders)}`).toEqual([]);
+    },
+  );
+
+  it('defines every Veyra token referenced in styles.css', () => {
+    // Only validate Veyra-owned custom properties. --vscode-* vars are supplied by
+    // VS Code at runtime; everything else must be defined in tokens.css.
+    const isVeyraToken = (token: string) => !token.startsWith('--vscode-');
+    const tokens = fs.readFileSync(path.join(webviewDir, 'tokens.css'), 'utf8');
+    const defined = new Set(
+      [...tokens.matchAll(/(--[A-Za-z0-9-]+)\s*:/g)].map((m) => m[1]),
+    );
+    const referenced = new Set(
+      [...styles.matchAll(/var\((--[A-Za-z0-9-]+)/g)].map((m) => m[1]).filter(isVeyraToken),
+    );
+    const missing = [...referenced].filter((token) => !defined.has(token));
+    expect(missing, `Undefined Veyra tokens referenced in styles.css: ${missing.join(', ')}`).toEqual([]);
+  });
+});

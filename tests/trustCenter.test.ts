@@ -98,6 +98,7 @@ function flattenText(node: unknown): string {
   if (typeof node === "string" || typeof node === "number") return String(node);
   if (Array.isArray(node)) return node.map(flattenText).join(" ");
   const vnode = node as VNode;
+  if (typeof vnode.type === "function") return flattenText((vnode.type as any)(vnode.props));
   return flattenText(vnode.props?.children);
 }
 

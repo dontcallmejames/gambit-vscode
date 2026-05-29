@@ -1,4 +1,5 @@
 import { h } from 'preact';
+import { PanelSection } from './PanelSection.js';
 import {
   buildFileMentionDraft,
   buildMissingFileDraft,
@@ -36,31 +37,24 @@ export function RetrievalFeedbackPanel({
   if (!summary) return null;
 
   return (
-    <section
-      class={`retrieval-feedback-panel ${expanded ? 'retrieval-feedback-panel-expanded' : 'retrieval-feedback-panel-collapsed'}`}
-      aria-label="Retrieval Feedback"
-    >
-      <div class="retrieval-feedback-head">
-        <div>
-          <span class="retrieval-feedback-kicker">Retrieval Feedback</span>
-          <span class="retrieval-feedback-label">@codebase</span>
-        </div>
-        <div class="retrieval-feedback-summary">
+    <PanelSection
+      kind="retrieval"
+      kicker="Retrieval Feedback"
+      label="@codebase"
+      ariaLabel="Retrieval Feedback"
+      state="active"
+      collapsed={!expanded}
+      onToggleCollapse={() => onToggle(!expanded)}
+      toggleNoun="Retrieval Feedback"
+      bodyId="veyra-retrieval-feedback-body"
+      bodyClass="retrieval-feedback-body"
+      summary={(
+        <>
           <span>{plural(summary.selectedFileCount, 'selected')}</span>
           {summary.omittedMatchedFileCount > 0 && <span>{plural(summary.omittedMatchedFileCount, 'omitted')}</span>}
-          <button
-            type="button"
-            aria-expanded={expanded}
-            aria-controls="veyra-retrieval-feedback-body"
-            onClick={() => onToggle(!expanded)}
-          >
-            {expanded ? 'Collapse Retrieval Feedback' : 'Open Retrieval Feedback'}
-          </button>
-        </div>
-      </div>
-
-      {expanded && (
-        <div id="veyra-retrieval-feedback-body" class="retrieval-feedback-body">
+        </>
+      )}
+    >
           <div class="retrieval-feedback-grid">
             <section class="retrieval-feedback-card">
               <div class="retrieval-feedback-card-head">
@@ -146,9 +140,7 @@ export function RetrievalFeedbackPanel({
             </button>
             <span>{summary.guardrails.join(', ')}</span>
           </div>
-        </div>
-      )}
-    </section>
+    </PanelSection>
   );
 }
 

@@ -1,4 +1,5 @@
 import { h } from 'preact';
+import { PanelSection } from './PanelSection.js';
 import {
   buildWorkflowReplayDraft,
   workflowReplayAgentLabel,
@@ -32,27 +33,18 @@ export function WorkflowPanel({
 }: WorkflowPanelProps) {
   const workflow = replay.latestWorkflow;
   return (
-    <section class={`workflow-panel ${expanded ? 'workflow-panel-expanded' : 'workflow-panel-collapsed'}`} aria-label="Workflows">
-      <div class="workflow-panel-head">
-        <div>
-          <span class="workflow-panel-kicker">Workflows</span>
-          <span class="workflow-panel-label">{workflow ? `Replay /${workflow.command}` : 'Replay none'}</span>
-        </div>
-        <div class="workflow-panel-summary">
-          <span>{`History ${history.entries.length}`}</span>
-          <button
-            type="button"
-            aria-expanded={expanded}
-            aria-controls="veyra-workflow-panel-body"
-            onClick={() => onToggle(!expanded)}
-          >
-            {expanded ? 'Collapse Workflows' : 'Open Workflows'}
-          </button>
-        </div>
-      </div>
-
-      {expanded && (
-        <div id="veyra-workflow-panel-body" class="workflow-panel-body">
+    <PanelSection
+      kind="workflow"
+      kicker="Workflows"
+      label={workflow ? `Replay /${workflow.command}` : 'Replay none'}
+      ariaLabel="Workflows"
+      collapsed={!expanded}
+      onToggleCollapse={() => onToggle(!expanded)}
+      toggleNoun="Workflows"
+      bodyId="veyra-workflow-panel-body"
+      bodyClass="workflow-panel-body"
+      summary={<span>{`History ${history.entries.length}`}</span>}
+    >
           <section class="workflow-panel-latest">
             <div class="workflow-panel-subhead">
               <span>Latest replay</span>
@@ -111,9 +103,7 @@ export function WorkflowPanel({
               <p class="workflow-panel-muted">Completed workflows will appear here.</p>
             )}
           </section>
-        </div>
-      )}
-    </section>
+    </PanelSection>
   );
 }
 

@@ -832,6 +832,9 @@ body {
 .bubble.user {
   align-self: flex-end;
   background: var(--user-bg);
+  /* Pair the foreground with the selection background so the user bubble stays
+     readable on saturated selection colors (e.g. Light+). */
+  color: var(--vscode-list-activeSelectionForeground, var(--veyra-fg-default));
 }
 .bubble.agent { align-self: flex-start; }
 .bubble.agent-claude {

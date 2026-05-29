@@ -17,7 +17,7 @@
   --veyra-bg-panel-sunken: var(--vscode-sideBar-background, rgba(0, 0, 0, 0.1)); /* nested panel: subtle inset when no sideBar token */
   --veyra-bg-card: var(--vscode-editorWidget-background, ButtonFace);
   --veyra-bg-input: var(--vscode-input-background, Field);
-  --veyra-bg-button: var(--vscode-button-secondaryBackground, ButtonFace);
+  --veyra-bg-button: var(--vscode-button-secondaryBackground, transparent); /* outline button when no secondary-button token (e.g. High Contrast) */
   --veyra-bg-hover: var(--vscode-button-secondaryHoverBackground, Highlight);
   --veyra-bg-popover: var(--vscode-editorWidget-background, Menu);
   --veyra-bg-selection: var(--vscode-list-activeSelectionBackground, Highlight);
@@ -69,4 +69,22 @@
   --error-color: var(--veyra-status-error);
   --error-bg: var(--veyra-status-error-bg);
   --error-border: var(--veyra-status-error-border);
+}
+
+/*
+ * Resolve CSS system colors (Canvas, ButtonFace, Field, Highlight, ...) used in
+ * token fallbacks to the active VS Code theme. Without an explicit color-scheme
+ * the webview renders system colors in their light UA defaults even on dark
+ * themes, which makes a fallback surface (e.g. ButtonFace) light while the text
+ * stays light — invisible, most visibly in High Contrast. VS Code tags the body
+ * with vscode-{light,dark,high-contrast,high-contrast-light}; color-scheme
+ * inherits to all descendants from there.
+ */
+body.vscode-light,
+body.vscode-high-contrast-light {
+  color-scheme: light;
+}
+body.vscode-dark,
+body.vscode-high-contrast {
+  color-scheme: dark;
 }

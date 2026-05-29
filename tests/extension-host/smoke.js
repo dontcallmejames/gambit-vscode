@@ -103,14 +103,23 @@ async function run() {
     };
     languageModelResponses[model.id] = await collectLanguageModelResponse(model);
   }
-  const implementModel = models.find((model) => model.id === 'veyra-implement');
-  assert.ok(implementModel, 'Expected veyra-implement language model for edit conflict smoke validation.');
   const orchestratorModel = models.find((model) => model.id === 'veyra-orchestrator');
   assert.ok(orchestratorModel, 'Expected veyra-orchestrator language model for request-tool context smoke validation.');
+  const implementModel = models.find((model) => model.id === 'veyra-implement');
+  assert.ok(implementModel, 'Expected veyra-implement language model for shared-context relay smoke validation.');
+  const codexModel = models.find((model) => model.id === 'veyra-codex');
+  assert.ok(codexModel, 'Expected veyra-codex language model for edit conflict smoke validation.');
+  // The LM provider wraps prompts as "User: ..." so a bare "@all" in the prompt is no
+  // longer a leading mention and will not fan out. Route the multi-agent features through
+  // models that fan out correctly:
+  //   - shared context: the implement workflow prepends @all (Claude read-only ->
+  //     Codex write -> Gemini read-only), all three run and relay prior replies.
+  //   - edit conflict: a single Codex write that collides with the conflict file the
+  //     native @all conflict request already seeded earlier in this session.
   const editConflictEvidence = {
     nativeChat: smokeDiagnostics.nativeChatResponses?.['veyra.veyra/conflict'] ?? '',
     languageModel: await collectLanguageModelResponse(
-      implementModel,
+      codexModel,
       'Veyra Language Model edit conflict smoke request. [veyra-smoke-conflict]',
     ),
   };

@@ -661,6 +661,44 @@ describe('per-target prompt composition (v2)', () => {
     expect(calls.find((c) => c.id === 'gemini')?.prompt).toBe('[gemini-prompt] hi');
   });
 
+  it('applies per-target read-only overrides without changing direct dispatch defaults', async () => {
+    const calls: Array<{ id: AgentId; readOnly: boolean | undefined }> = [];
+    const make = (id: AgentId): Agent => ({
+      id,
+      status: vi.fn().mockResolvedValue('ready'),
+      cancel: vi.fn().mockResolvedValue(undefined),
+      async *send(_prompt: string, opts) {
+        calls.push({ id, readOnly: opts?.readOnly });
+        yield { type: 'done' };
+      },
+    });
+
+    const router = new MessageRouter({ claude: make('claude'), codex: make('codex'), gemini: make('gemini') });
+
+    for await (const _ of router.handle('@all implement this', {
+      readOnly: false,
+      readOnlyForTarget: (targetId) => targetId !== 'codex',
+    })) {
+      // drain
+    }
+
+    expect(calls).toEqual([
+      { id: 'claude', readOnly: true },
+      { id: 'codex', readOnly: false },
+      { id: 'gemini', readOnly: true },
+    ]);
+
+    calls.length = 0;
+    for await (const _ of router.handle('@codex implement this', {
+      readOnly: false,
+      readOnlyForTarget: () => undefined,
+    })) {
+      // drain
+    }
+
+    expect(calls).toEqual([{ id: 'codex', readOnly: false }]);
+  });
+
   it('forwards sharedContext to facilitator', async () => {
     const facilitator = vi.fn(async (_text: string, _avail: any, _ctx?: string) => ({
       agent: 'claude' as AgentId,

@@ -113,8 +113,13 @@ const SMOKE_CONFLICT_EDIT_FILE = 'src/veyra-smoke-conflict.ts';
 const SMOKE_SHARED_CONTEXT_MARKER = '[veyra-smoke-shared-context]';
 const SMOKE_TOOL_CONTEXT_MARKER = '[veyra-smoke-tool-context]';
 const SMOKE_CODEBASE_MARKER = '[veyra-smoke-codebase]';
-const SMOKE_CLAUDE_WRITE_MARKER = '[smoke:claude] write-capable request reached Veyra provider.';
-const SMOKE_CODEX_WRITE_MARKER = '[smoke:codex] write-capable request reached Veyra provider.';
+// Match an agent's prior reply by its [smoke:<id>] prefix regardless of read-only vs
+// write-capable mode. In /implement, Claude and Gemini are read-only (they emit a
+// "read-only request reached Veyra provider" marker, not "write-capable"), but shared
+// context still relays their replies to later agents, so the relay detection must be
+// mode-independent.
+const SMOKE_CLAUDE_REPLY_MARKER = '[smoke:claude]';
+const SMOKE_CODEX_REPLY_MARKER = '[smoke:codex]';
 
 function smokeEditFileForPrompt(agentId: AgentId, prompt: string): string {
   return prompt.trimEnd().endsWith(SMOKE_CONFLICT_MARKER)
@@ -124,13 +129,13 @@ function smokeEditFileForPrompt(agentId: AgentId, prompt: string): string {
 
 function smokeSharedContextRelayMarker(agentId: AgentId, prompt: string): string | null {
   if (!prompt.trimEnd().endsWith(SMOKE_SHARED_CONTEXT_MARKER)) return null;
-  if (agentId === 'codex' && prompt.includes(SMOKE_CLAUDE_WRITE_MARKER)) {
+  if (agentId === 'codex' && prompt.includes(SMOKE_CLAUDE_REPLY_MARKER)) {
     return '[smoke:codex] saw prior Claude reply in shared context.';
   }
   if (
     agentId === 'gemini' &&
-    prompt.includes(SMOKE_CLAUDE_WRITE_MARKER) &&
-    prompt.includes(SMOKE_CODEX_WRITE_MARKER)
+    prompt.includes(SMOKE_CLAUDE_REPLY_MARKER) &&
+    prompt.includes(SMOKE_CODEX_REPLY_MARKER)
   ) {
     return '[smoke:gemini] saw prior Claude and Codex replies in shared context.';
   }

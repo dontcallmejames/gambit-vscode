@@ -141,6 +141,31 @@ describe('Mission Control timeline state', () => {
     expect(snapshot.availableCheckpointCount).toBe(1);
   });
 
+  it('derives compact workflow warning chips from structured workflow-state notices', () => {
+    let state = initialState();
+    state = reduce(state, {
+      kind: 'user-message-appended',
+      message: { id: 'u1', role: 'user', text: '@veyra /implement fix this', timestamp: 1 },
+    });
+    state = reduce(state, { kind: 'system-message', message: workflowNotice('stalled', 'Gemini stalled', 10, 'gemini') });
+    state = reduce(state, { kind: 'system-message', message: workflowNotice('low-evidence-output', 'No observed inspection evidence from Claude.', 11, 'claude') });
+
+    const snapshot = buildMissionControlSnapshot(state);
+
+    expect(snapshot.workflowWarnings).toEqual([
+      expect.objectContaining({
+        kind: 'low-evidence-output',
+        label: 'No observed inspection evidence',
+        agentId: 'claude',
+      }),
+      expect.objectContaining({
+        kind: 'stalled',
+        label: 'Stalled',
+        agentId: 'gemini',
+      }),
+    ]);
+  });
+
   it('derives verification state only from approved verification command context', () => {
     let state = initialState();
     state = reduce(state, {
@@ -212,7 +237,45 @@ describe('MissionControlTimeline component', () => {
     expect(text).toContain('2 pending files');
     expect(text).toContain('checkpoint available');
   });
+
+  it('renders workflow-state warnings as compact Mission Control signals', () => {
+    let state = initialState();
+    state = reduce(state, {
+      kind: 'user-message-appended',
+      message: { id: 'u1', role: 'user', text: '@veyra /implement fix this', timestamp: 1 },
+    });
+    state = reduce(state, { kind: 'system-message', message: workflowNotice('watchdog-released', 'Watchdog released Claude.', 10, 'claude') });
+    state = reduce(state, { kind: 'system-message', message: workflowNotice('read-only-violation', 'Read-only workflow violation.', 11, 'gemini') });
+
+    const vnode = MissionControlTimeline({ snapshot: buildMissionControlSnapshot(state) });
+    const text = flattenText(vnode);
+
+    expect(text).toContain('Watchdog released');
+    expect(text).toContain('Read-only violation');
+  });
 });
+
+function workflowNotice(
+  kind: NonNullable<SystemMessage['workflowState']>['kind'],
+  text: string,
+  timestamp: number,
+  agentId: NonNullable<SystemMessage['workflowState']>['agentId'],
+): SystemMessage {
+  return {
+    id: `workflow-${kind}-${timestamp}`,
+    role: 'system',
+    kind: kind === 'read-only-violation' ? 'error' : 'warning',
+    text,
+    timestamp,
+    agentId,
+    workflowState: {
+      kind,
+      severity: kind === 'read-only-violation' ? 'error' : 'warning',
+      agentId,
+      text,
+    },
+  };
+}
 
 function pendingChangeSetNotice(): SystemMessage {
   return {

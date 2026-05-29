@@ -378,6 +378,15 @@ describe('extension manifest', () => {
     expect(userGuide).toContain('veyra.workspaceContext.maxFileBytes');
   });
 
+  it('keeps the Enterprise Polish design doc aligned with the current workflow-first roadmap', () => {
+    const design = repoText('docs', 'superpowers', 'specs', '2026-05-28-veyra-enterprise-polish-v0.1-design.md');
+
+    expect(design).not.toContain('Tracked in Milestone 4');
+    expect(design).not.toContain('Tracked in Milestone 5');
+    expect(design).toContain('Workflow Professionalism v0.1 is a prerequisite pass before visual Phase 1');
+    expect(design).toContain('current roadmap');
+  });
+
   it('documents retrieval quality and embedding readiness guardrails', () => {
     const userGuide = userGuideText();
     const changelog = readFileSync(join(process.cwd(), 'CHANGELOG.md'), 'utf8');
@@ -575,7 +584,7 @@ describe('extension manifest', () => {
     expect(userGuide).toContain('manual inline suggestion');
     expect(userGuide).toContain('read-only direct-agent request');
     expect(changelog).toContain('Inline Autocomplete v0.1');
-    expect(roadmap).toContain('Implementation note: Inline Autocomplete v0.1');
+    expect(roadmap).toContain('Inline Autocomplete v0.1');
   });
 
   it('contributes diff preview commands and settings', () => {

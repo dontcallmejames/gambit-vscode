@@ -62,6 +62,28 @@ function editConflictNotice(): SystemMessage {
   };
 }
 
+function workflowNotice(
+  kind: NonNullable<SystemMessage["workflowState"]>["kind"],
+  text: string,
+  timestamp: number,
+  agentId: NonNullable<SystemMessage["workflowState"]>["agentId"] = "gemini",
+): SystemMessage {
+  return {
+    id: `workflow-${kind}-${timestamp}`,
+    role: "system",
+    agentId,
+    timestamp,
+    text,
+    kind: kind === "read-only-violation" ? "error" : "warning",
+    workflowState: {
+      kind,
+      severity: kind === "read-only-violation" ? "error" : "warning",
+      agentId,
+      text,
+    },
+  };
+}
+
 function userMessage(text: string): UserMessage {
   return {
     id: `user-${text.length}`,
@@ -162,6 +184,35 @@ describe("buildTrustCenterSnapshot", () => {
     expect(snapshot.browserTestingPresent).toBe(true);
   });
 
+  it("derives workflow-state notices as trust signals", () => {
+    let state = initialState();
+    state = reduce(state, {
+      kind: "system-message",
+      message: workflowNotice("read-only-violation", "Read-only workflow violation: Gemini edited docs/review.md.", 60),
+    });
+    state = reduce(state, {
+      kind: "system-message",
+      message: workflowNotice("low-evidence-output", "No observed inspection evidence from Claude.", 61, "claude"),
+    });
+
+    const snapshot = buildTrustCenterSnapshot(state);
+
+    expect(snapshot.hasSignals).toBe(true);
+    expect(snapshot.workflowWarningCount).toBe(2);
+    expect(snapshot.recentWorkflowWarnings).toEqual([
+      expect.objectContaining({
+        kind: "low-evidence-output",
+        label: "No observed inspection evidence",
+        agentId: "claude",
+      }),
+      expect.objectContaining({
+        kind: "read-only-violation",
+        label: "Read-only violation",
+        agentId: "gemini",
+      }),
+    ]);
+  });
+
   it("uses the latest change-set notice so resolved inline notices do not drift", () => {
     let state = initialState();
     state = reduce(state, { kind: "system-message", message: pendingChangeSetNotice("pending") });
@@ -237,6 +288,31 @@ describe("TrustCenter", () => {
       { kind: "run-command", command: "veyra.preparePrPackageDraft" },
       { kind: "run-command", command: "veyra.copyDiagnosticReport" },
     ]);
+  });
+
+  it("renders workflow-state notices without adding new actions", () => {
+    let state = initialState();
+    state = reduce(state, {
+      kind: "system-message",
+      message: workflowNotice("edit-conflict", "Edit conflict: Codex and Gemini touched the same file.", 60, "codex"),
+    });
+    state = reduce(state, {
+      kind: "system-message",
+      message: workflowNotice("low-evidence-output", "No observed inspection evidence from Gemini.", 61, "gemini"),
+    });
+    const sent: FromWebview[] = [];
+
+    const vnode = TrustCenter({
+      snapshot: buildTrustCenterSnapshot(state),
+      send: (message) => sent.push(message),
+    });
+    const text = flattenText(vnode);
+
+    expect(text).toContain("2 workflow warnings");
+    expect(text).toContain("Workflow state");
+    expect(text).toContain("Edit conflict");
+    expect(text).toContain("No observed inspection evidence");
+    expect(sent).toEqual([]);
   });
 
   it("keeps an empty fallback inspectable with manual safety actions", () => {

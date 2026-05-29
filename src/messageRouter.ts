@@ -105,6 +105,7 @@ export class MessageRouter {
     opts: SendOptions & {
       composePromptForTarget?: (targetId: AgentId, baseText: string) => string;
       sharedContextForFacilitator?: string;
+      readOnlyForTarget?: (targetId: AgentId) => boolean | undefined;
     } = {},
   ): AsyncIterable<RouterEvent> {
     const { targets, remainingText } = parseMentions(input);
@@ -173,8 +174,14 @@ export class MessageRouter {
         const finalPrompt = opts.composePromptForTarget
           ? opts.composePromptForTarget(targetId, promptText)
           : promptText;
+        const targetReadOnly = opts.readOnlyForTarget?.(targetId) ?? opts.readOnly;
+        const sendOpts: SendOptions = {
+          ...(opts.signal ? { signal: opts.signal } : {}),
+          ...(opts.cwd ? { cwd: opts.cwd } : {}),
+          ...(targetReadOnly !== undefined ? { readOnly: targetReadOnly } : {}),
+        };
         try {
-          for await (const chunk of withAbort(agent.send(finalPrompt, opts), ac.signal)) {
+          for await (const chunk of withAbort(agent.send(finalPrompt, sendOpts), ac.signal)) {
             yield { kind: 'chunk', agentId: targetId, chunk };
           }
           if (watchdogFired) {

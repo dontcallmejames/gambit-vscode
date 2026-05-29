@@ -269,12 +269,18 @@ export async function nativeChatSmokeResponses(registration: NativeChatRegistrat
       prompt: 'Veyra native chat implement smoke request.',
     },
     {
+      // Edit conflict needs two agents writing the same file. /implement is now
+      // Codex-only-write, so exercise it through a plain write-capable @all dispatch:
+      // Claude writes the conflict file first, then Codex writes it and reports the
+      // conflict. (@all must lead the prompt so parseMentions fans out.)
       key: 'veyra.veyra/conflict',
       participantId: 'veyra.veyra',
-      command: 'implement',
-      prompt: 'Veyra native chat edit conflict smoke request. [veyra-smoke-conflict]',
+      prompt: '@all Veyra native chat edit conflict smoke request. [veyra-smoke-conflict]',
     },
     {
+      // Shared-context relay runs through /implement (Claude read-only -> Codex write ->
+      // Gemini read-only). All three still run serially and relay prior replies; the smoke
+      // relay markers are mode-independent so the read-only planner/reviewer count.
       key: 'veyra.veyra/shared-context',
       participantId: 'veyra.veyra',
       command: 'implement',
@@ -509,7 +515,7 @@ function renderNativeChatEvent(
     if (event.message.kind === 'error' && event.message.filePath) {
       response.reference(editedFileUri(workspacePath, event.message.filePath));
       response.markdown(`\n\n> ${event.message.text.replace(/\r?\n/g, '\n> ')}`);
-      return { sawText: false, sawError: Boolean(event.message.agentId) };
+      return { sawText: true, sawError: Boolean(event.message.agentId) && !event.message.workflowState };
     }
     if (event.message.kind === 'warning') {
       response.markdown(`\n\n> ${event.message.text.replace(/\r?\n/g, '\n> ')}`);

@@ -144,9 +144,11 @@ export function veyraWorkflowPrompt(
     '@all',
     'Workflow: implement',
     'Work as a serial implementation team with minimal human blocking.',
-    'Claude: state the approach, assumptions, and correctness risks.',
+    'Claude: read-only planning; state the approach, assumptions, and correctness risks.',
     'Codex: implement the smallest safe code change and tests.',
-    'Gemini: review the result for missed cases, edit conflicts, and invisible changes.',
+    'Gemini: read-only review of the result for missed cases, edit conflicts, and invisible changes.',
+    'Only Codex is write-capable in this workflow.',
+    'Claude and Gemini must not create, edit, rename, or delete files.',
     'Each agent must build on prior replies, preserve shared context, and surface file changes clearly.',
     'Gemini runs last and must end with this exact Handoff Summary outline:',
     [

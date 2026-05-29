@@ -1033,6 +1033,11 @@ describe('VeyraSessionService', () => {
         event.message.text.includes("hasn't responded")
       );
       expect(warning?.message.kind).toBe('warning');
+      expect(warning?.message.workflowState).toMatchObject({
+        kind: 'stalled',
+        severity: 'warning',
+        agentId: 'gemini',
+      });
 
       finishGemini();
       await dispatch;
@@ -1042,6 +1047,134 @@ describe('VeyraSessionService', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('emits low-evidence workflow state only for the write-capable agent that completes a workflow without observed inspection evidence', async () => {
+    const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-low-evidence-'));
+    const service = new VeyraSessionService(
+      workspacePath,
+      {
+        // Read-only planner — prose only is expected, must NOT warn.
+        claude: agentText('claude', 'Here is the plan.'),
+        // Write-capable in /implement — prose with no tool/edit evidence IS suspicious.
+        codex: agentText('codex', 'I implemented it.'),
+        // Read-only reviewer — prose only is expected, must NOT warn.
+        gemini: agentText('gemini', 'Looks good.'),
+      },
+      { hangSeconds: 0 },
+    );
+
+    const events: any[] = [];
+    await service.dispatch(
+      {
+        text: veyraWorkflowPrompt('implement', 'Apply the parser fix.'),
+        source: 'native-chat',
+        cwd: workspacePath,
+      },
+      (event) => {
+        events.push(event);
+      },
+    );
+
+    const lowEvidence = events.filter((event) =>
+      event.kind === 'system-message' &&
+      event.message.workflowState?.kind === 'low-evidence-output'
+    );
+    // Exactly one warning, attributed to the only write-capable agent (Codex).
+    expect(lowEvidence).toHaveLength(1);
+    expect(lowEvidence[0].message).toMatchObject({
+      kind: 'warning',
+      agentId: 'codex',
+      text: expect.stringContaining('No observed inspection evidence'),
+      workflowState: {
+        kind: 'low-evidence-output',
+        severity: 'warning',
+        agentId: 'codex',
+        text: expect.stringContaining('No observed inspection evidence'),
+      },
+    });
+  });
+
+  it('does not emit low-evidence for read-only workflows where reasoning prose without inspection is expected', async () => {
+    const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-low-evidence-readonly-'));
+    const service = new VeyraSessionService(
+      workspacePath,
+      {
+        claude: agentText('claude', 'I reviewed it.'),
+        codex: agentText('codex', 'I reviewed it.'),
+        gemini: agentText('gemini', 'I reviewed it.'),
+      },
+      { hangSeconds: 0 },
+    );
+
+    const events: any[] = [];
+    await service.dispatch(
+      {
+        text: ['@all', '', 'Workflow: review', '', 'Review the parser.'].join('\n'),
+        source: 'native-chat',
+        cwd: workspacePath,
+        readOnly: true,
+      },
+      (event) => {
+        events.push(event);
+      },
+    );
+
+    const lowEvidence = events.filter((event) =>
+      event.kind === 'system-message' &&
+      event.message.workflowState?.kind === 'low-evidence-output'
+    );
+    expect(lowEvidence).toHaveLength(0);
+  });
+
+  it('emits a structured watchdog-released state when the watchdog frees a stalled agent', async () => {
+    const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-watchdog-'));
+    const service = new VeyraSessionService(
+      workspacePath,
+      {
+        claude: {
+          id: 'claude',
+          status: async () => 'ready',
+          cancel: vi.fn().mockResolvedValue(undefined),
+          send: (() => {
+            return (async function* () {
+              await new Promise(() => { /* never resolves */ });
+            })();
+          }) as Agent['send'],
+        },
+        codex: agentNoop('codex'),
+        gemini: agentNoop('gemini'),
+      },
+      { hangSeconds: 0, watchdogMs: 5 },
+    );
+
+    const events: any[] = [];
+    await service.dispatch(
+      {
+        text: ['@claude', '', 'Workflow: review', '', 'Review slowly.'].join('\n'),
+        source: 'panel',
+        cwd: workspacePath,
+        readOnly: true,
+      },
+      (event) => {
+        events.push(event);
+      },
+    );
+
+    const watchdog = events.find((event) =>
+      event.kind === 'system-message' &&
+      event.message.workflowState?.kind === 'watchdog-released'
+    );
+    expect(watchdog?.message).toMatchObject({
+      kind: 'warning',
+      agentId: 'claude',
+      text: expect.stringContaining('held the floor'),
+      workflowState: {
+        kind: 'watchdog-released',
+        severity: 'warning',
+        agentId: 'claude',
+      },
+    });
   });
 
   it('forwards readOnly dispatches to every targeted agent send call', async () => {
@@ -1074,6 +1207,66 @@ describe('VeyraSessionService', () => {
     expect(optionsByAgent.get('claude')).toMatchObject({ readOnly: true });
     expect(optionsByAgent.get('codex')).toMatchObject({ readOnly: true });
     expect(optionsByAgent.get('gemini')).toMatchObject({ readOnly: true });
+  });
+
+  it('treats /implement as Claude read-only, Codex write-capable, and Gemini read-only', async () => {
+    const optionsByAgent = new Map<AgentId, { readOnly?: boolean }>();
+    const prompts = new Map<AgentId, string>();
+    const sentinelDuringSend = new Map<AgentId, boolean>();
+    const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-implement-policy-'));
+    const sentinelFile = path.join(workspacePath, '.vscode', 'veyra', 'active-dispatch');
+    const tracker = {
+      snapshot: vi.fn().mockResolvedValue('before-turn'),
+      changedFilesSince: vi.fn().mockResolvedValue([]),
+      changedFileChangesSince: vi.fn().mockResolvedValue([]),
+    };
+    const checkpointLedger = fakeCheckpointLedger();
+    const agent = (id: AgentId): Agent => ({
+      id,
+      status: async () => 'ready',
+      cancel: async () => {},
+      async *send(prompt: string, opts) {
+        prompts.set(id, prompt);
+        optionsByAgent.set(id, opts ?? {});
+        sentinelDuringSend.set(id, fs.existsSync(sentinelFile));
+        yield { type: 'done' } as AgentChunk;
+      },
+    });
+    const service = new VeyraSessionService(
+      workspacePath,
+      {
+        claude: agent('claude'),
+        codex: agent('codex'),
+        gemini: agent('gemini'),
+      },
+      { hangSeconds: 0, workspaceChangeTracker: tracker, checkpointLedger } as any,
+    );
+
+    await service.dispatch(
+      {
+        text: veyraWorkflowPrompt('implement', 'Apply the parser fix.'),
+        source: 'native-chat',
+        cwd: workspacePath,
+        forcedTarget: 'veyra',
+      },
+      () => {},
+    );
+
+    expect(optionsByAgent.get('claude')).toMatchObject({ readOnly: true });
+    expect(optionsByAgent.get('codex')).toMatchObject({ readOnly: false });
+    expect(optionsByAgent.get('gemini')).toMatchObject({ readOnly: true });
+    expect(prompts.get('claude')).toContain('[Read-only workflow]');
+    expect(prompts.get('codex')).not.toContain('[Read-only workflow]');
+    expect(prompts.get('gemini')).toContain('[Read-only workflow]');
+    expect(sentinelDuringSend.get('claude')).toBe(false);
+    expect(sentinelDuringSend.get('codex')).toBe(true);
+    expect(sentinelDuringSend.get('gemini')).toBe(false);
+    expect(fs.existsSync(sentinelFile)).toBe(false);
+    expect(checkpointLedger.createCheckpoint).toHaveBeenCalledTimes(1);
+    expect(checkpointLedger.createCheckpoint).toHaveBeenCalledWith(expect.objectContaining({
+      agentId: 'codex',
+      label: 'Before Codex dispatch',
+    }));
   });
 
   it('adds explicit no-write instructions to read-only dispatch prompts', async () => {
@@ -1196,6 +1389,79 @@ describe('VeyraSessionService', () => {
       agentId: 'claude',
       path: 'src/review.ts',
     }));
+  });
+
+  it('surfaces reviewer edits in /implement as held read-only violations with pending change controls', async () => {
+    const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-reviewer-edit-'));
+    const changeLedger = fakeChangeLedger('change-set-gemini-reviewer');
+    const service = new VeyraSessionService(
+      workspacePath,
+      {
+        claude: agentNoop('claude'),
+        codex: agentNoop('codex'),
+        gemini: {
+          id: 'gemini',
+          status: async () => 'ready',
+          cancel: async () => {},
+          async *send() {
+            yield { type: 'tool-call', name: 'Edit', input: { file_path: 'docs/review.md' } } as AgentChunk;
+            yield { type: 'tool-result', name: 'Edit', output: 'ok' } as AgentChunk;
+            yield { type: 'done' } as AgentChunk;
+          },
+        },
+      },
+      {
+        hangSeconds: 0,
+        changeLedger: changeLedger as ChangeLedger,
+        getEditedPathForAgent: (_agentId, _toolName, input) => {
+          if (typeof input === 'object' && input && 'file_path' in input) {
+            return String(input.file_path);
+          }
+          return null;
+        },
+      },
+    );
+
+    const events: any[] = [];
+    await service.dispatch(
+      {
+        text: veyraWorkflowPrompt('implement', 'Update the docs safely.'),
+        source: 'panel',
+        cwd: workspacePath,
+        forcedTarget: 'veyra',
+      },
+      (event) => {
+        events.push(event);
+      },
+    );
+
+    const violation = events.find((event) =>
+      event.kind === 'system-message' &&
+      event.message.workflowState?.kind === 'read-only-violation'
+    );
+    expect(violation?.message).toMatchObject({
+      kind: 'error',
+      agentId: 'gemini',
+      filePath: 'docs/review.md',
+      workflowState: {
+        kind: 'read-only-violation',
+        severity: 'error',
+        agentId: 'gemini',
+        filePath: 'docs/review.md',
+      },
+    });
+
+    const changeSetNotice = events.find((event) =>
+      event.kind === 'system-message' &&
+      event.message.kind === 'change-set'
+    );
+    expect(changeSetNotice?.message.changeSet).toMatchObject({
+      id: 'change-set-gemini-reviewer',
+      agentId: 'gemini',
+      readOnly: true,
+      status: 'pending',
+      files: [{ path: 'docs/review.md', changeKind: 'edited' }],
+    });
   });
 
   it('stops registering file badge edits after the badge controller is removed from options', async () => {
@@ -2039,6 +2305,12 @@ describe('VeyraSessionService', () => {
     expect(conflict.message.filePath).toBe('src/shared.ts');
     expect(conflict.message.text).toContain('Claude');
     expect(conflict.message.text).toContain('Codex');
+    expect(conflict.message.workflowState).toMatchObject({
+      kind: 'edit-conflict',
+      severity: 'warning',
+      agentId: 'codex',
+      filePath: 'src/shared.ts',
+    });
   });
 
   it('detects edit conflicts when agents report the same workspace file with absolute and relative paths', async () => {
@@ -2508,6 +2780,18 @@ function agentNoop(id: AgentId): Agent {
     status: async () => 'ready',
     cancel: async () => {},
     async *send() {
+      yield { type: 'done' } as AgentChunk;
+    },
+  };
+}
+
+function agentText(id: AgentId, text: string): Agent {
+  return {
+    id,
+    status: async () => 'ready',
+    cancel: async () => {},
+    async *send() {
+      yield { type: 'text', text } as AgentChunk;
       yield { type: 'done' } as AgentChunk;
     },
   };

@@ -26,6 +26,7 @@ export function TrustCenter({ snapshot, send, expanded = true, onToggle }: Trust
           {snapshot.prPackageWorkflowPresent && <span>PR package</span>}
           {snapshot.browserTestingPresent && <span>browser/test context</span>}
           {snapshot.editConflictCount > 0 && <span>{plural(snapshot.editConflictCount, 'edit conflict')}</span>}
+          {snapshot.workflowWarningCount > 0 && <span>{plural(snapshot.workflowWarningCount, 'workflow warning')}</span>}
         </div>
         <button
           type="button"
@@ -168,9 +169,38 @@ export function TrustCenter({ snapshot, send, expanded = true, onToggle }: Trust
             <p class="trust-muted">No recent file edits or conflicts.</p>
           ) : null}
         </section>
+
+        <section class="trust-panel">
+          <div class="trust-panel-head">
+            <span>Workflow state</span>
+            <span>{snapshot.workflowWarningCount > 0 ? plural(snapshot.workflowWarningCount, 'warning') : 'clear'}</span>
+          </div>
+          {snapshot.recentWorkflowWarnings.length > 0 ? (
+            <div class="trust-signal-list">
+              {snapshot.recentWorkflowWarnings.map((warning) => (
+                <div
+                  class={`trust-workflow-warning trust-workflow-warning-${warning.severity}`}
+                  key={`${warning.kind}-${warning.timestamp}-${warning.agentId ?? 'workflow'}`}
+                  title={warning.text}
+                >
+                  <span>{warning.label}</span>
+                  {warning.agentId && <span>{` - ${agentLabel(warning.agentId)}`}</span>}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p class="trust-muted">No workflow state warnings.</p>
+          )}
+        </section>
       </div>}
     </section>
   );
+}
+
+function agentLabel(agentId: string): string {
+  if (agentId === 'claude') return 'Claude';
+  if (agentId === 'codex') return 'Codex';
+  return 'Gemini';
 }
 
 function CommandButton({

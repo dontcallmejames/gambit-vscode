@@ -65,6 +65,24 @@ export type RetrievalFeedbackSummary = {
   guardrails: string[];
 };
 
+export type WorkflowStateKind =
+  | 'stalled'
+  | 'watchdog-released'
+  | 'read-only-violation'
+  | 'edit-conflict'
+  | 'low-evidence-output';
+
+export type WorkflowStateSeverity = 'info' | 'warning' | 'error';
+
+export type WorkflowStateNotice = {
+  kind: WorkflowStateKind;
+  severity: WorkflowStateSeverity;
+  text: string;
+  agentId?: AgentId;
+  filePath?: string;
+  changeKind?: FileChangeKind;
+};
+
 export type RollbackCheckpointPreview = {
   checkpointId: string;
   status: 'ready' | 'stale';
@@ -138,6 +156,7 @@ export type SystemMessage = {
   changeSet?: DispatchChangeSetSummary;
   checkpoint?: CheckpointSummary;
   retrievalFeedback?: RetrievalFeedbackSummary;
+  workflowState?: WorkflowStateNotice;
 };
 
 export type SessionMessage = UserMessage | AgentMessage | SystemMessage;

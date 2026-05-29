@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => {
   const service = {
     id: 'service',
     flush: vi.fn().mockResolvedValue(undefined),
+    onFloorChange: vi.fn(() => () => {}),
     invalidateWorkspaceContext: vi.fn(),
     listPendingChangeSets: vi.fn(),
     changeSetDiffInputs: vi.fn(),
@@ -23,6 +24,7 @@ const mocks = vi.hoisted(() => {
   };
   const smokeAgents = { id: 'smoke-agents' };
   const fileDecorationProviderDisposable = { dispose: vi.fn() };
+  const statusBarItems: Array<Record<string, unknown>> = [];
   const webviewControllerInstances: Array<{
     attach: ReturnType<typeof vi.fn>;
     dispatchExternalMessage: ReturnType<typeof vi.fn>;
@@ -35,6 +37,20 @@ const mocks = vi.hoisted(() => {
     smokeAgents,
     webviewControllerInstances,
     fileDecorationProviderDisposable,
+    statusBarItems,
+    createStatusBarItem: vi.fn(() => {
+      const item: Record<string, unknown> = {
+        text: '',
+        tooltip: '',
+        command: '',
+        name: '',
+        show: vi.fn(),
+        hide: vi.fn(),
+        dispose: vi.fn(),
+      };
+      statusBarItems.push(item);
+      return item;
+    }),
     configGet: vi.fn((_key: string, dflt: unknown) => dflt),
     registerCommand: vi.fn((command: string, callback: (...args: unknown[]) => unknown) => {
       commandCallbacks.set(command, callback);
@@ -134,6 +150,8 @@ const mocks = vi.hoisted(() => {
       this.registerFileDecorationProvider.mockClear();
       this.fileDecorationProviderDisposable.dispose.mockClear();
       this.webviewControllerInstances.length = 0;
+      this.createStatusBarItem.mockClear();
+      this.statusBarItems.length = 0;
       this.showInformationMessage.mockClear();
       this.showErrorMessage.mockClear();
       this.showWarningMessage.mockClear();
@@ -146,6 +164,7 @@ const mocks = vi.hoisted(() => {
       this.openTextDocument.mockClear();
       this.showTextDocument.mockClear();
       this.service.flush.mockClear();
+      this.service.onFloorChange.mockClear();
       this.service.flush.mockResolvedValue(undefined);
       this.service.invalidateWorkspaceContext.mockClear();
       this.service.listPendingChangeSets.mockReset();
@@ -269,12 +288,17 @@ vi.mock('vscode', () => ({
   window: {
     registerWebviewViewProvider: mocks.registerWebviewViewProvider,
     registerFileDecorationProvider: mocks.registerFileDecorationProvider,
+    createStatusBarItem: mocks.createStatusBarItem,
     showInformationMessage: mocks.showInformationMessage,
     showErrorMessage: mocks.showErrorMessage,
     showWarningMessage: mocks.showWarningMessage,
     showQuickPick: mocks.showQuickPick,
     showInputBox: mocks.showInputBox,
     showTextDocument: mocks.showTextDocument,
+  },
+  StatusBarAlignment: {
+    Left: 1,
+    Right: 2,
   },
   commands: {
     registerCommand: mocks.registerCommand,
@@ -387,6 +411,20 @@ describe('activate', () => {
       status: 'installed',
       path: '/workspace/.git/hooks/prepare-commit-msg',
     });
+  });
+
+  it('registers a Veyra status bar item wired to open the view', () => {
+    const ctx = context();
+
+    activate(ctx as any);
+
+    expect(mocks.createStatusBarItem).toHaveBeenCalledWith(1, 100);
+    const item = mocks.statusBarItems[0];
+    expect(item).toBeTruthy();
+    expect(item.command).toBe('veyra.openPanel');
+    expect(String(item.text)).toContain('Veyra');
+    expect(item.show).toHaveBeenCalled();
+    expect(ctx.subscriptions).toContain(item);
   });
 
   it('registers the native VS Code integration surface', () => {

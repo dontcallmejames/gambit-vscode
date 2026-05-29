@@ -25,7 +25,7 @@ import {
 } from './diagnosticReport.js';
 import { collectProviderDiagnostics, type GoogleRuntimeSelection } from './providerDiagnostics.js';
 import type { NativeChatRegistration } from './nativeChat.js';
-import type { AgentStatus } from './types.js';
+import type { AgentId, AgentStatus } from './types.js';
 import type { DetectedCliBundlePath } from './cliPathDetection.js';
 
 type FlushableVeyraService = { flush(): Promise<void> };
@@ -162,6 +162,28 @@ export function activate(context: vscode.ExtensionContext): void {
 
   ensureBadgeController();
 
+  // Status bar item: real-time Veyra state (idle vs. which agent is working).
+  const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+  statusBarItem.name = 'Veyra';
+  statusBarItem.command = 'veyra.openPanel';
+  const setStatusIdle = (): void => {
+    statusBarItem.text = '$(comment-discussion) Veyra';
+    statusBarItem.tooltip = 'Veyra is idle. Click to open the Veyra view.';
+  };
+  const updateDispatchStatus = (holder: AgentId | null): void => {
+    if (holder) {
+      statusBarItem.text = `$(sync~spin) Veyra: ${agentDisplayName(holder)}`;
+      statusBarItem.tooltip = `${agentDisplayName(holder)} is working through Veyra. Click to open the Veyra view.`;
+    } else {
+      setStatusIdle();
+    }
+  };
+  setStatusIdle();
+  statusBarItem.show();
+  context.subscriptions.push(statusBarItem);
+  let floorStatusUnsubscribe: (() => void) | undefined;
+  context.subscriptions.push({ dispose: () => floorStatusUnsubscribe?.() });
+
   let nativeRegistration: NativeChatRegistration | undefined;
   const ensureNativeRegistration = (): NativeChatRegistration | undefined => {
     const folder = vscode.workspace.workspaceFolders?.[0];
@@ -173,6 +195,9 @@ export function activate(context: vscode.ExtensionContext): void {
         ? createVeyraSessionService(folder.uri.fsPath, currentBadgeController, smokeAgents)
         : createVeyraSessionService(folder.uri.fsPath, currentBadgeController);
       activeVeyraServices.add(service);
+      floorStatusUnsubscribe?.();
+      floorStatusUnsubscribe = service.onFloorChange(updateDispatchStatus);
+      updateDispatchStatus(null);
       nativeRegistration = {
         workspacePath: folder.uri.fsPath,
         service,
@@ -492,6 +517,12 @@ export async function deactivate(): Promise<void> {
       console.error('Veyra session flush failed during deactivation:', err);
     })
   ));
+}
+
+function agentDisplayName(agentId: AgentId): string {
+  if (agentId === 'claude') return 'Claude';
+  if (agentId === 'codex') return 'Codex';
+  return 'Gemini';
 }
 
 function formatAgentStatus(status: AgentStatus): string {

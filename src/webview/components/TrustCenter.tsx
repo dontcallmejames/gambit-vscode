@@ -20,7 +20,6 @@ export function TrustCenter({ snapshot, send, expanded = true, onToggle }: Trust
       state={snapshot.hasSignals ? 'active' : 'empty'}
       collapsed={!expanded}
       onToggleCollapse={() => onToggle?.(!expanded)}
-      toggleNoun="Trust Center"
       bodyId="veyra-trust-center-body"
       bodyClass="trust-center-grid"
       summary={(

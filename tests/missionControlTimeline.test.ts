@@ -215,7 +215,7 @@ describe('Mission Control timeline state', () => {
 });
 
 describe('MissionControlTimeline component', () => {
-  it('renders stage labels and compact trust indicators', () => {
+  it('renders stage labels without restating trust/checkpoint summaries', () => {
     let state = initialState();
     state = reduce(state, {
       kind: 'user-message-appended',
@@ -234,8 +234,10 @@ describe('MissionControlTimeline component', () => {
     expect(text).toContain('active');
     expect(text).toContain('Codex');
     expect(text).toContain('queued');
-    expect(text).toContain('2 pending files');
-    expect(text).toContain('checkpoint available');
+    // Pending-change and checkpoint summaries now live only in the Trust Center
+    // header, not duplicated in Mission Control.
+    expect(text).not.toContain('pending files');
+    expect(text).not.toContain('checkpoint available');
   });
 
   it('renders workflow-state warnings as compact Mission Control signals', () => {

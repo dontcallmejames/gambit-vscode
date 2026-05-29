@@ -1,22 +1,10 @@
 import type { TrustCenterSnapshot } from './trustCenter.js';
-import type { RetrievalFeedbackSnapshot } from './retrievalFeedback.js';
-import type { WorkflowHistorySnapshot } from './workflowHistory.js';
-import type { WorkflowReplaySnapshot } from './workflowReplay.js';
 
 export type PresentationPanelId = 'trust' | 'workflows' | 'retrieval';
 
 export type PresentationDensityState = {
   expandedPanels: Record<PresentationPanelId, boolean>;
   lastUrgentTrustKey: string | null;
-};
-
-export type MissionControlActionChip = {
-  id: 'trust' | 'checkpoints' | 'replay' | 'history' | 'retrieval';
-  panelId: PresentationPanelId;
-  label: string;
-  detail: string;
-  urgent?: boolean;
-  expanded: boolean;
 };
 
 export const DEFAULT_PRESENTATION_DENSITY_STATE: PresentationDensityState = {
@@ -100,87 +88,6 @@ export function trustCenterUrgencyKey(snapshot: TrustCenterSnapshot): string | n
     snapshot.verificationState === 'failed' ? 'verification:failed' : '',
   ].filter(Boolean);
   return signals.length > 0 ? signals.join('|') : null;
-}
-
-export function buildPresentationDensityChips({
-  trustCenter,
-  workflowReplay,
-  workflowHistory,
-  retrievalFeedback,
-  expandedPanels,
-}: {
-  trustCenter: TrustCenterSnapshot;
-  workflowReplay: WorkflowReplaySnapshot;
-  workflowHistory: WorkflowHistorySnapshot;
-  retrievalFeedback?: RetrievalFeedbackSnapshot;
-  expandedPanels: Record<PresentationPanelId, boolean>;
-}): MissionControlActionChip[] {
-  const chips: MissionControlActionChip[] = [
-    {
-      id: 'trust',
-      panelId: 'trust',
-      label: 'Trust',
-      detail: trustDetail(trustCenter),
-      urgent: isTrustCenterUrgent(trustCenter),
-      expanded: expandedPanels.trust,
-    },
-    {
-      id: 'checkpoints',
-      panelId: 'trust',
-      label: checkpointLabel(trustCenter.checkpointCount),
-      detail: '',
-      expanded: expandedPanels.trust,
-    },
-    {
-      id: 'replay',
-      panelId: 'workflows',
-      label: workflowReplay.latestWorkflow ? `Replay /${workflowReplay.latestWorkflow.command}` : 'Replay none',
-      detail: '',
-      expanded: expandedPanels.workflows,
-    },
-    {
-      id: 'history',
-      panelId: 'workflows',
-      label: `History ${workflowHistory.entries.length}`,
-      detail: '',
-      expanded: expandedPanels.workflows,
-    },
-  ];
-  if (retrievalFeedback?.latest) {
-    chips.push({
-      id: 'retrieval',
-      panelId: 'retrieval',
-      label: 'Retrieval @codebase',
-      detail: retrievalDetail(retrievalFeedback.latest),
-      expanded: expandedPanels.retrieval,
-    });
-  }
-  return chips;
-}
-
-function trustDetail(snapshot: TrustCenterSnapshot): string {
-  if (snapshot.pendingChangeCount > 0) return plural(snapshot.pendingChangeCount, 'pending file');
-  if (snapshot.editConflictCount > 0) return plural(snapshot.editConflictCount, 'edit conflict');
-  if (snapshot.verificationState === 'failed') return 'verification failed';
-  if (snapshot.verificationState) return `verification ${snapshot.verificationState}`;
-  if (snapshot.hasSignals) return 'observed';
-  return 'clear';
-}
-
-function checkpointLabel(count: number): string {
-  if (count === 0) return 'No checkpoints';
-  return count === 1 ? 'checkpoint available' : `${count} checkpoints available`;
-}
-
-function retrievalDetail(summary: NonNullable<RetrievalFeedbackSnapshot['latest']>): string {
-  const selected = plural(summary.selectedFileCount, 'selected');
-  return summary.omittedMatchedFileCount > 0
-    ? `${selected}, ${plural(summary.omittedMatchedFileCount, 'omitted')}`
-    : selected;
-}
-
-function plural(count: number, singular: string): string {
-  return `${count} ${singular}${count === 1 ? '' : 's'}`;
 }
 
 function isRecord(value: unknown): value is Record<string, any> {

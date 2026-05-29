@@ -349,12 +349,10 @@ describe('VS Code smoke runner script', () => {
         'veyra-debate': '[smoke:claude] read-only request reached Veyra provider.\n[smoke:codex] read-only request reached Veyra provider.\n[smoke:gemini] read-only request reached Veyra provider.',
         'veyra-consensus': '[smoke:claude] read-only request reached Veyra provider.\n[smoke:codex] read-only request reached Veyra provider.\n[smoke:gemini] read-only request reached Veyra provider.',
         'veyra-implement': [
-          '[smoke:claude] write-capable request reached Veyra provider.',
-          languageModelSmokeEditEvidence('Claude', 'src/veyra-smoke-claude.ts'),
+          '[smoke:claude] read-only request reached Veyra provider.',
           '[smoke:codex] write-capable request reached Veyra provider.',
           languageModelSmokeEditEvidence('Codex', 'src/veyra-smoke-codex.ts'),
-          '[smoke:gemini] write-capable request reached Veyra provider.',
-          languageModelSmokeEditEvidence('Gemini', 'src/veyra-smoke-gemini.ts'),
+          '[smoke:gemini] read-only request reached Veyra provider.',
         ].join('\n'),
         'veyra-claude': [
           '[smoke:claude] write-capable request reached Veyra provider.',
@@ -434,12 +432,10 @@ describe('VS Code smoke runner script', () => {
         'veyra.veyra/debate': '[smoke:claude] read-only request reached Veyra provider.\n[smoke:codex] read-only request reached Veyra provider.\n[smoke:gemini] read-only request reached Veyra provider.',
         'veyra.veyra/consensus': '[smoke:claude] read-only request reached Veyra provider.\n[smoke:codex] read-only request reached Veyra provider.\n[smoke:gemini] read-only request reached Veyra provider.',
         'veyra.veyra/implement': [
-          '[smoke:claude] write-capable request reached Veyra provider.',
-          nativeSmokeEditEvidence('Claude', 'src/veyra-smoke-claude.ts'),
+          '[smoke:claude] read-only request reached Veyra provider.',
           '[smoke:codex] write-capable request reached Veyra provider.',
           nativeSmokeEditEvidence('Codex', 'src/veyra-smoke-codex.ts'),
-          '[smoke:gemini] write-capable request reached Veyra provider.',
-          nativeSmokeEditEvidence('Gemini', 'src/veyra-smoke-gemini.ts'),
+          '[smoke:gemini] read-only request reached Veyra provider.',
         ].join('\n'),
         'veyra.claude': [
           '[smoke:claude] write-capable request reached Veyra provider.',
@@ -523,18 +519,18 @@ describe('VS Code smoke runner script', () => {
       nativeChatResponses: {
         ...completeSmokeResult.nativeChatResponses,
         'veyra.veyra/implement': completeSmokeResult.nativeChatResponses['veyra.veyra/implement']
-          .replace(nativeSmokeEditEvidence('Claude', 'src/veyra-smoke-claude.ts'), ''),
+          .replace(nativeSmokeEditEvidence('Codex', 'src/veyra-smoke-codex.ts'), ''),
       },
-    }))).toContain('Missing native chat visible edit evidence: veyra.veyra/implement must show Claude created src/veyra-smoke-claude.ts with a file reference.');
+    }))).toContain('Missing native chat visible edit evidence: veyra.veyra/implement must show Codex created src/veyra-smoke-codex.ts with a file reference.');
 
     expect(validateSmokeResultContent(JSON.stringify({
       ...completeSmokeResult,
       languageModelResponses: {
         ...completeSmokeResult.languageModelResponses,
         'veyra-implement': completeSmokeResult.languageModelResponses['veyra-implement']
-          .replace(languageModelSmokeEditEvidence('Gemini', 'src/veyra-smoke-gemini.ts'), ''),
+          .replace(languageModelSmokeEditEvidence('Codex', 'src/veyra-smoke-codex.ts'), ''),
       },
-    }))).toContain('Missing language model visible edit evidence: veyra-implement must show Gemini created src/veyra-smoke-gemini.ts as a workspace link.');
+    }))).toContain('Missing language model visible edit evidence: veyra-implement must show Codex created src/veyra-smoke-codex.ts as a workspace link.');
 
     expect(validateSmokeResultContent(JSON.stringify({
       ...completeSmokeResult,

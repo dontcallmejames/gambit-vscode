@@ -187,9 +187,9 @@ export const requiredSmokeLanguageModelResponseMarkers = {
     '[smoke:gemini] read-only request reached Veyra provider.',
   ],
   'veyra-implement': [
-    '[smoke:claude] write-capable request reached Veyra provider.',
+    '[smoke:claude] read-only request reached Veyra provider.',
     '[smoke:codex] write-capable request reached Veyra provider.',
-    '[smoke:gemini] write-capable request reached Veyra provider.',
+    '[smoke:gemini] read-only request reached Veyra provider.',
   ],
   'veyra-claude': [
     '[smoke:claude] write-capable request reached Veyra provider.',
@@ -233,9 +233,9 @@ export const requiredSmokeNativeChatResponseMarkers = {
     '[smoke:gemini] read-only request reached Veyra provider.',
   ],
   'veyra.veyra/implement': [
-    '[smoke:claude] write-capable request reached Veyra provider.',
+    '[smoke:claude] read-only request reached Veyra provider.',
     '[smoke:codex] write-capable request reached Veyra provider.',
-    '[smoke:gemini] write-capable request reached Veyra provider.',
+    '[smoke:gemini] read-only request reached Veyra provider.',
   ],
   'veyra.claude': [
     '[smoke:claude] write-capable request reached Veyra provider.',
@@ -269,14 +269,15 @@ const requiredToolContextMarker = '[smoke:codex] saw VS Code request tool worksp
 const requiredModelOptionsContextMarker = '[smoke:codex] saw VS Code model option temperature in provider context.';
 const requiredSmokeNativeVisibleEditEvidence = {
   'veyra.veyra': ['codex'],
-  'veyra.veyra/implement': ['claude', 'codex', 'gemini'],
+  // /implement is Codex-only-write: Claude plans and Gemini reviews read-only, only Codex edits.
+  'veyra.veyra/implement': ['codex'],
   'veyra.claude': ['claude'],
   'veyra.codex': ['codex'],
   'veyra.gemini': ['gemini'],
 };
 const requiredSmokeLanguageModelVisibleEditEvidence = {
   'veyra-orchestrator': ['codex'],
-  'veyra-implement': ['claude', 'codex', 'gemini'],
+  'veyra-implement': ['codex'],
   'veyra-claude': ['claude'],
   'veyra-codex': ['codex'],
   'veyra-gemini': ['gemini'],

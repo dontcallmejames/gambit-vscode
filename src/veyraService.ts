@@ -684,9 +684,14 @@ export class VeyraSessionService {
           if (
             status === 'complete'
             && workflowCommand
+            && !inProgress.readOnly
             && inProgress.text.trim().length > 0
             && !hasObservedInspectionEvidence(inProgress, attachedFiles.length > 0)
           ) {
+            // Only flag agents that were dispatched write-capable. Read-only workflows
+            // (/review, /debate, /consensus) and the forced read-only planner/reviewer
+            // roles in /implement are *expected* to produce reasoning prose with no
+            // file inspection, so warning there is a false positive.
             await this.emitWorkflowStateNotice({
               kind: 'low-evidence-output',
               severity: 'warning',

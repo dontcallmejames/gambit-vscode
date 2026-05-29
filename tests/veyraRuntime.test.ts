@@ -23,6 +23,7 @@ import {
   refreshVeyraSessionOptions,
   shouldUseSmokeAgents,
 } from '../src/veyraRuntime.js';
+import { veyraWorkflowPrompt } from '../src/workflowPrompts.js';
 
 function makeSmokeWorkspace(prefix: string): string {
   const smokeRoot = join(process.cwd(), '.vscode-test');
@@ -106,6 +107,66 @@ describe('Veyra runtime smoke agents', () => {
 
     expect(chunks).toContain('[smoke:codex] saw prior Claude reply in shared context.');
     expect(chunks).toContain('[smoke:gemini] saw prior Claude and Codex replies in shared context.');
+  });
+
+  it('relays shared context through the /implement workflow where Claude and Gemini are read-only', async () => {
+    const workspace = makeSmokeWorkspace('veyra-shared-implement-');
+    const service = createVeyraSessionService(workspace, undefined, createSmokeAgents());
+    const chunks: string[] = [];
+
+    try {
+      await service.dispatch(
+        {
+          text: veyraWorkflowPrompt('implement', 'Veyra shared context smoke request. [veyra-smoke-shared-context]'),
+          source: 'language-model',
+          cwd: workspace,
+          forcedTarget: 'veyra',
+        },
+        (event) => {
+          if (event.kind === 'chunk' && event.chunk.type === 'text') {
+            chunks.push(event.chunk.text);
+          }
+        },
+      );
+    } finally {
+      await service.flush();
+      rmSync(workspace, { recursive: true, force: true });
+    }
+
+    // Claude (read-only planner) and Gemini (read-only reviewer) still run and relay;
+    // the relay markers must be mode-independent, not gated on write-capable replies.
+    expect(chunks).toContain('[smoke:codex] saw prior Claude reply in shared context.');
+    expect(chunks).toContain('[smoke:gemini] saw prior Claude and Codex replies in shared context.');
+  });
+
+  it('detects an edit conflict when a later single-agent write collides with a file edited earlier in the session', async () => {
+    const workspace = makeSmokeWorkspace('veyra-conflict-xdispatch-');
+    const service = createVeyraSessionService(workspace, undefined, createSmokeAgents());
+    const conflictTexts: string[] = [];
+
+    try {
+      // Seed the conflict file with a prior Claude write (write-capable single agent).
+      await service.dispatch(
+        { text: '@claude Edit conflict setup. [veyra-smoke-conflict]', source: 'language-model', cwd: workspace },
+        () => {},
+      );
+      // A later single Codex write to the same file must surface the cross-dispatch conflict.
+      await service.dispatch(
+        { text: '@codex Edit conflict smoke request. [veyra-smoke-conflict]', source: 'language-model', cwd: workspace },
+        (event) => {
+          if (event.kind === 'system-message' && event.message.kind === 'edit-conflict') {
+            conflictTexts.push(event.message.text);
+          }
+        },
+      );
+    } finally {
+      await service.flush();
+      rmSync(workspace, { recursive: true, force: true });
+    }
+
+    expect(conflictTexts.some((text) =>
+      text.includes('src/veyra-smoke-conflict.ts') && text.includes('already edited by Claude'),
+    )).toBe(true);
   });
 
   it('does not treat stale shared-context smoke markers as the current validation request', async () => {

@@ -1049,22 +1049,17 @@ describe('VeyraSessionService', () => {
     }
   });
 
-  it('emits low-evidence workflow state when a workflow agent completes without observed inspection evidence', async () => {
+  it('emits low-evidence workflow state only for the write-capable agent that completes a workflow without observed inspection evidence', async () => {
     const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-low-evidence-'));
     const service = new VeyraSessionService(
       workspacePath,
       {
-        claude: {
-          id: 'claude',
-          status: async () => 'ready',
-          cancel: async () => {},
-          async *send() {
-            yield { type: 'text', text: 'I reviewed it.' } as AgentChunk;
-            yield { type: 'done' } as AgentChunk;
-          },
-        },
-        codex: agentNoop('codex'),
-        gemini: agentNoop('gemini'),
+        // Read-only planner — prose only is expected, must NOT warn.
+        claude: agentText('claude', 'Here is the plan.'),
+        // Write-capable in /implement — prose with no tool/edit evidence IS suspicious.
+        codex: agentText('codex', 'I implemented it.'),
+        // Read-only reviewer — prose only is expected, must NOT warn.
+        gemini: agentText('gemini', 'Looks good.'),
       },
       { hangSeconds: 0 },
     );
@@ -1072,7 +1067,50 @@ describe('VeyraSessionService', () => {
     const events: any[] = [];
     await service.dispatch(
       {
-        text: ['@claude', '', 'Workflow: review', '', 'Review the parser.'].join('\n'),
+        text: veyraWorkflowPrompt('implement', 'Apply the parser fix.'),
+        source: 'native-chat',
+        cwd: workspacePath,
+      },
+      (event) => {
+        events.push(event);
+      },
+    );
+
+    const lowEvidence = events.filter((event) =>
+      event.kind === 'system-message' &&
+      event.message.workflowState?.kind === 'low-evidence-output'
+    );
+    // Exactly one warning, attributed to the only write-capable agent (Codex).
+    expect(lowEvidence).toHaveLength(1);
+    expect(lowEvidence[0].message).toMatchObject({
+      kind: 'warning',
+      agentId: 'codex',
+      text: expect.stringContaining('No observed inspection evidence'),
+      workflowState: {
+        kind: 'low-evidence-output',
+        severity: 'warning',
+        agentId: 'codex',
+        text: expect.stringContaining('No observed inspection evidence'),
+      },
+    });
+  });
+
+  it('does not emit low-evidence for read-only workflows where reasoning prose without inspection is expected', async () => {
+    const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-low-evidence-readonly-'));
+    const service = new VeyraSessionService(
+      workspacePath,
+      {
+        claude: agentText('claude', 'I reviewed it.'),
+        codex: agentText('codex', 'I reviewed it.'),
+        gemini: agentText('gemini', 'I reviewed it.'),
+      },
+      { hangSeconds: 0 },
+    );
+
+    const events: any[] = [];
+    await service.dispatch(
+      {
+        text: ['@all', '', 'Workflow: review', '', 'Review the parser.'].join('\n'),
         source: 'native-chat',
         cwd: workspacePath,
         readOnly: true,
@@ -1082,21 +1120,11 @@ describe('VeyraSessionService', () => {
       },
     );
 
-    const lowEvidence = events.find((event) =>
+    const lowEvidence = events.filter((event) =>
       event.kind === 'system-message' &&
       event.message.workflowState?.kind === 'low-evidence-output'
     );
-    expect(lowEvidence?.message).toMatchObject({
-      kind: 'warning',
-      agentId: 'claude',
-      text: expect.stringContaining('No observed inspection evidence'),
-      workflowState: {
-        kind: 'low-evidence-output',
-        severity: 'warning',
-        agentId: 'claude',
-        text: expect.stringContaining('No observed inspection evidence'),
-      },
-    });
+    expect(lowEvidence).toHaveLength(0);
   });
 
   it('emits a structured watchdog-released state when the watchdog frees a stalled agent', async () => {
@@ -2752,6 +2780,18 @@ function agentNoop(id: AgentId): Agent {
     status: async () => 'ready',
     cancel: async () => {},
     async *send() {
+      yield { type: 'done' } as AgentChunk;
+    },
+  };
+}
+
+function agentText(id: AgentId, text: string): Agent {
+  return {
+    id,
+    status: async () => 'ready',
+    cancel: async () => {},
+    async *send() {
+      yield { type: 'text', text } as AgentChunk;
       yield { type: 'done' } as AgentChunk;
     },
   };

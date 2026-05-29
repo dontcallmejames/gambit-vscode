@@ -141,6 +141,34 @@ body {
   border-color: var(--vscode-inputValidation-warningBorder, rgba(255, 184, 74, 0.55));
   color: var(--vscode-inputValidation-warningForeground, #ffce85);
 }
+.mission-control-workflow-warnings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mission-control-workflow-chip {
+  padding: 1px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.04);
+  color: var(--vscode-descriptionForeground, inherit);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.mission-control-workflow-chip-warning {
+  border-color: var(--vscode-inputValidation-warningBorder, rgba(255, 184, 74, 0.55));
+  color: var(--vscode-inputValidation-warningForeground, #ffce85);
+}
+.mission-control-workflow-chip-error {
+  border-color: var(--vscode-inputValidation-errorBorder, var(--error-border));
+  color: var(--vscode-errorForeground, var(--error-color));
+}
+.mission-control-workflow-chip-info {
+  border-color: var(--vscode-focusBorder, var(--border));
+  color: var(--vscode-foreground, inherit);
+}
 
 .trust-center {
   padding: 8px 10px 9px;
@@ -298,6 +326,28 @@ body {
 .trust-conflict-link {
   color: var(--vscode-inputValidation-warningForeground, #ffce85);
   border-color: var(--vscode-inputValidation-warningBorder, rgba(255, 184, 74, 0.45));
+}
+.trust-workflow-warning {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 7px;
+  border: 1px solid var(--border);
+  border-left-width: 2px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.03);
+}
+.trust-workflow-warning-warning {
+  border-left-color: var(--vscode-inputValidation-warningBorder, rgba(255, 184, 74, 0.55));
+  color: var(--vscode-inputValidation-warningForeground, #ffce85);
+}
+.trust-workflow-warning-error {
+  border-left-color: var(--vscode-inputValidation-errorBorder, var(--error-border));
+  color: var(--vscode-errorForeground, var(--error-color));
+}
+.trust-workflow-warning-info {
+  border-left-color: var(--vscode-focusBorder, var(--border));
+  color: var(--vscode-foreground, inherit);
 }
 @media (max-width: 520px) {
   .trust-panel-changes {

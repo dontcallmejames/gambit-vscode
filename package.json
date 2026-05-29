@@ -45,6 +45,8 @@
     "dist/index.html",
     "dist/webview.js",
     "dist/webview.js.map",
+    "dist/codicon.css",
+    "dist/codicon.ttf",
     "docs/user-guide.md",
     "docs/developer-verification.md",
     "docs/goal-completion-audit.md",
@@ -534,6 +536,7 @@
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.118.0",
+    "@vscode/codicons": "0.0.45",
     "esbuild": "^0.24.0",
     "typescript": "^5.5.0",
     "vitest": "^2.1.0"

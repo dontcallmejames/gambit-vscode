@@ -458,12 +458,16 @@ export class VeyraWebviewController {
     const jsUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.options.extensionUri, 'dist', 'webview.js'),
     );
+    const codiconCssUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this.options.extensionUri, 'dist', 'codicon.css'),
+    );
     const nonce = cspNonce();
     let html = fs.readFileSync(htmlPath, 'utf8');
     html = html
       .replace(/{{NONCE}}/g, nonce)
       .replace(/{{CSP_SOURCE}}/g, webview.cspSource)
-      .replace(/{{WEBVIEW_JS_URI}}/g, jsUri.toString());
+      .replace(/{{WEBVIEW_JS_URI}}/g, jsUri.toString())
+      .replace(/{{CODICON_CSS_URI}}/g, codiconCssUri.toString());
     return html;
   }
 }

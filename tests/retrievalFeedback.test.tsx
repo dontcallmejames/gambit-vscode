@@ -17,6 +17,13 @@ import type { WorkspaceContextResult } from '../src/workspaceContext.js';
 
 vi.stubGlobal('React', { createElement: h });
 
+// PanelSection renders <Icon>, which uses hooks; stub them so the panel can be
+// rendered synchronously in tests.
+vi.mock('preact/hooks', () => ({
+  useState: (init: unknown) => [typeof init === 'function' ? (init as () => unknown)() : init, vi.fn()],
+  useEffect: vi.fn(),
+}));
+
 const COMPLETE_RETRIEVAL_GUARDRAILS = [
   'no hidden dispatches',
   'no command execution',

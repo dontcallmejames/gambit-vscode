@@ -1,5 +1,6 @@
 import { h } from 'preact';
 import type { ComponentChildren } from 'preact';
+import { Icon } from './Icon.js';
 
 export type PanelSectionState = 'default' | 'active' | 'empty' | 'warning';
 
@@ -75,6 +76,7 @@ export function PanelSection({
                 aria-controls={bodyId}
                 onClick={() => onToggleCollapse?.()}
               >
+                <Icon name={expanded ? 'chevron-down' : 'chevron-right'} fallback={expanded ? '▾' : '▸'} />
                 {expanded ? `Collapse ${noun}` : `Open ${noun}`}
               </button>
             )}

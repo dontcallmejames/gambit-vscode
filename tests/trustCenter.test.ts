@@ -7,6 +7,13 @@ import type { FromWebview, SystemMessage, UserMessage } from "../src/shared/prot
 
 vi.stubGlobal("React", { createElement: h });
 
+// PanelSection renders <Icon>, which uses hooks; stub them so the panel can be
+// rendered synchronously in tests.
+vi.mock("preact/hooks", () => ({
+  useState: (init: unknown) => [typeof init === "function" ? (init as () => unknown)() : init, vi.fn()],
+  useEffect: vi.fn(),
+}));
+
 function pendingChangeSetNotice(status: "pending" | "accepted" = "pending"): SystemMessage {
   return {
     id: `change-set-${status}`,

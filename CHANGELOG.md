@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Added `veyra.gemini.backend` so the Gemini agent falls back from Antigravity (`agy`, which cannot stream over a non-TTY pipe) to the legacy Gemini CLI instead of silently stalling.
+- Adds `veyra.gemini.backend` so the Gemini agent falls back from Antigravity (`agy`, which cannot stream over a non-TTY pipe) to the legacy Gemini CLI instead of silently stalling.
 
 ## 1.0.21 - 2026-05-27
 

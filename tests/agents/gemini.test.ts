@@ -302,10 +302,32 @@ describe('GeminiAgent', () => {
     const agent = new GeminiAgent();
     for await (const _c of agent.send('one', { readOnly: true } as any)) { /* drain */ }
     const before = mockedSpawn.mock.calls.length;
-    for await (const _c of agent.send('two', { readOnly: true } as any)) { /* drain */ }
+    const secondChunks = [];
+    for await (const c of agent.send('two', { readOnly: true } as any)) secondChunks.push(c);
 
     expect(before).toBe(2);
     expect(mockedSpawn.mock.calls.length).toBe(3);
+    // The fallback notice is paid once; the cached second send goes straight to Gemini.
+    expect(secondChunks).not.toContainEqual(
+      expect.objectContaining({ type: 'text', text: expect.stringContaining('legacy Gemini CLI') }));
+  });
+
+  it('forced antigravity: surfaces the real crash reason when it errors with no output', async () => {
+    process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\agy\\agy.exe';
+    setBackend('antigravity');
+    mockedSpawn.mockReturnValueOnce(fakeProcessError('agy boom'));
+
+    const agent = new GeminiAgent();
+    const chunks = [];
+    for await (const c of agent.send('hi', { readOnly: true } as any)) chunks.push(c);
+
+    expect(mockedSpawn).toHaveBeenCalledTimes(1);
+    expect(chunks).toContainEqual(
+      expect.objectContaining({ type: 'error', message: expect.stringContaining('agy boom') }));
+    // Must NOT fall back to the generic "headless --print" message when there's a real error.
+    expect(chunks).not.toContainEqual(
+      expect.objectContaining({ type: 'error', message: expect.stringContaining('may not support headless') }));
+    expect(chunks.at(-1)).toEqual({ type: 'done' });
   });
 
   it('forced antigravity: emits an error (no fallback) when it yields no output', async () => {

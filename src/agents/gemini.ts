@@ -359,7 +359,14 @@ export class GeminiAgent implements Agent {
       }
       return { producedOutput: true };
     }
-    return { producedOutput: false };
+    return {
+      producedOutput: false,
+      error: processError
+        ? `Antigravity process error: ${processError}`
+        : code !== 0
+          ? `Antigravity exited with exit code ${code}${stderr ? `: ${stderr.trim()}` : ''}`
+          : undefined,
+    };
   }
 
   private async *runGemini(prompt: string, opts: SendOptions): AsyncGenerator<AgentChunk> {

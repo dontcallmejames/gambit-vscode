@@ -16,16 +16,14 @@ type GoogleCliCommand =
   | { runtime: 'antigravity'; command: string; args: string[] }
   | { runtime: 'gemini'; command: string; args: string[] };
 
-function resolveGoogleCommand(prompt: string): GoogleCliCommand {
-  const antigravityCommand = resolveAntigravityCommand();
-  if (!antigravityCommand) return { runtime: 'gemini', ...resolveGeminiCommand() };
-  if (!isAntigravityPromptTooLargeForArgv(prompt)) return antigravityCommand;
-
-  try {
-    return { runtime: 'gemini', ...resolveGeminiCommand() };
-  } catch (err) {
-    throw new Error(antigravityArgvFailureMessage(prompt, err));
-  }
+// Returns the Antigravity command when it is available and the prompt fits in
+// argv for --print; otherwise null (caller decides: fall back or error).
+// Throws only when an Antigravity path override is present but inaccessible.
+function resolveAntigravityForPrompt(prompt: string): GoogleCliCommand | null {
+  const command = resolveAntigravityCommand();
+  if (!command) return null;
+  if (isAntigravityPromptTooLargeForArgv(prompt)) return null;
+  return command;
 }
 
 function resolveAntigravityCommand(): GoogleCliCommand | null {
@@ -259,9 +257,126 @@ export class GeminiAgent implements Agent {
   }
 
   async *send(prompt: string, opts: SendOptions = {}): AsyncIterable<AgentChunk> {
-    let googleCommand: GoogleCliCommand;
+    const backend = getGeminiBackend();
+    const considerAntigravity = backend !== 'gemini' && this.antigravityHeadlessUsable !== false;
+
+    if (considerAntigravity) {
+      let antigravityCommand: GoogleCliCommand | null;
+      try {
+        antigravityCommand = resolveAntigravityForPrompt(prompt);
+      } catch (err) {
+        if (backend === 'antigravity') {
+          yield { type: 'error', message: `Unable to start Antigravity CLI: ${errorMessage(err)}` };
+          yield { type: 'done' };
+          return;
+        }
+        antigravityCommand = null;
+      }
+
+      if (antigravityCommand) {
+        const outcome = yield* this.runAntigravity(antigravityCommand, prompt, opts);
+        if (outcome.producedOutput) {
+          yield { type: 'done' };
+          return;
+        }
+        this.antigravityHeadlessUsable = false;
+        if (backend === 'antigravity') {
+          yield { type: 'error', message: outcome.error ?? ANTIGRAVITY_EMPTY_OUTPUT_MESSAGE };
+          yield { type: 'done' };
+          return;
+        }
+        yield { type: 'text', text: ANTIGRAVITY_FALLBACK_NOTICE };
+      } else if (backend === 'antigravity') {
+        yield { type: 'error', message: ANTIGRAVITY_EMPTY_OUTPUT_MESSAGE };
+        yield { type: 'done' };
+        return;
+      }
+    }
+
+    yield* this.runGemini(prompt, opts);
+  }
+
+  private async *runAntigravity(
+    command: GoogleCliCommand,
+    prompt: string,
+    opts: SendOptions,
+  ): AsyncGenerator<AgentChunk, { producedOutput: boolean; error?: string }> {
+    let child: ChildProcess;
     try {
-      googleCommand = resolveGoogleCommand(prompt);
+      child = spawn(
+        command.command,
+        [...command.args, ...antigravityArgs(prompt, opts.readOnly)],
+        { cwd: opts.cwd, stdio: ['ignore', 'pipe', 'pipe'] },
+      );
+    } catch (err) {
+      return { producedOutput: false, error: `Unable to start Antigravity CLI: ${errorMessage(err)}` };
+    }
+    this.active = child;
+
+    const onAbort = () => child.kill('SIGTERM');
+    if (opts.signal) {
+      if (opts.signal.aborted) child.kill('SIGTERM');
+      else opts.signal.addEventListener('abort', onAbort, { once: true });
+    }
+
+    let producedOutput = false;
+    let firstOutputTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+      if (!producedOutput) child.kill('SIGTERM');
+    }, this.antigravityFirstOutputTimeoutMs);
+    const clearFirstOutputTimer = () => {
+      if (firstOutputTimer) {
+        clearTimeout(firstOutputTimer);
+        firstOutputTimer = null;
+      }
+    };
+
+    const exitPromise = new Promise<{ code: number | null; stderr: string; processError?: string }>((resolve) => {
+      let stderr = '';
+      let settled = false;
+      const finish = (code: number | null, processError?: string) => {
+        if (settled) return;
+        settled = true;
+        resolve({ code, stderr, processError });
+      };
+      child.stderr?.on('data', (d) => (stderr += String(d)));
+      child.on('error', (err) => finish(null, errorMessage(err)));
+      child.on('close', (code) => finish(code));
+    });
+
+    try {
+      for await (const data of child.stdout!) {
+        const text = String(data);
+        if (text) {
+          producedOutput = true;
+          clearFirstOutputTimer();
+          yield { type: 'text', text };
+        }
+      }
+    } catch (err) {
+      if (producedOutput) yield { type: 'error', message: errorMessage(err) };
+    } finally {
+      clearFirstOutputTimer();
+      opts.signal?.removeEventListener('abort', onAbort);
+    }
+
+    const { code, stderr, processError } = await exitPromise;
+    this.active = null;
+
+    if (producedOutput) {
+      if (processError) {
+        yield { type: 'error', message: `Antigravity process error: ${processError}` };
+      } else if (code !== 0) {
+        yield { type: 'error', message: `Antigravity exited with exit code ${code}${stderr ? `: ${stderr.trim()}` : ''}` };
+      }
+      return { producedOutput: true };
+    }
+    return { producedOutput: false };
+  }
+
+  private async *runGemini(prompt: string, opts: SendOptions): AsyncGenerator<AgentChunk> {
+    let command: { command: string; args: string[] };
+    try {
+      command = resolveGeminiCommand();
     } catch (err) {
       const message = errorMessage(err);
       yield {
@@ -274,42 +389,16 @@ export class GeminiAgent implements Agent {
 
     let child: ChildProcess;
     try {
-      const runtimeArgs = googleCommand.runtime === 'antigravity'
-        ? antigravityArgs(prompt, opts.readOnly)
-        : geminiArgs(opts.readOnly);
       child = spawn(
-        googleCommand.command,
-        [...googleCommand.args, ...runtimeArgs],
-        { cwd: opts.cwd, stdio: [googleCommand.runtime === 'antigravity' ? 'ignore' : 'pipe', 'pipe', 'pipe'] }
+        command.command,
+        [...command.args, ...geminiArgs(opts.readOnly)],
+        { cwd: opts.cwd, stdio: ['pipe', 'pipe', 'pipe'] },
       );
-      if (googleCommand.runtime === 'gemini') child.stdin?.end(prompt);
+      child.stdin?.end(prompt);
     } catch (err) {
-      if (googleCommand.runtime === 'antigravity' && isArgvLaunchError(err)) {
-        try {
-          googleCommand = { runtime: 'gemini', ...resolveGeminiCommand() };
-        } catch (fallbackErr) {
-          yield { type: 'error', message: antigravityArgvFailureMessage(prompt, fallbackErr) };
-          yield { type: 'done' };
-          return;
-        }
-        try {
-          child = spawn(
-            googleCommand.command,
-            [...googleCommand.args, ...geminiArgs(opts.readOnly)],
-            { cwd: opts.cwd, stdio: ['pipe', 'pipe', 'pipe'] }
-          );
-          child.stdin?.end(prompt);
-        } catch (fallbackStartErr) {
-          yield { type: 'error', message: `Unable to start Gemini CLI: ${errorMessage(fallbackStartErr)}` };
-          yield { type: 'done' };
-          return;
-        }
-      } else {
-        const label = googleCommand.runtime === 'antigravity' ? 'Antigravity CLI' : 'Gemini CLI';
-        yield { type: 'error', message: `Unable to start ${label}: ${errorMessage(err)}` };
-        yield { type: 'done' };
-        return;
-      }
+      yield { type: 'error', message: `Unable to start Gemini CLI: ${errorMessage(err)}` };
+      yield { type: 'done' };
+      return;
     }
     this.active = child;
 
@@ -331,29 +420,6 @@ export class GeminiAgent implements Agent {
       child.on('error', (err) => finish(null, errorMessage(err)));
       child.on('close', (code) => finish(code));
     });
-
-    if (googleCommand.runtime === 'antigravity') {
-      try {
-        for await (const data of child.stdout!) {
-          const text = String(data);
-          if (text) yield { type: 'text', text };
-        }
-      } catch (err) {
-        yield { type: 'error', message: errorMessage(err) };
-      } finally {
-        opts.signal?.removeEventListener('abort', onAbort);
-      }
-
-      const { code, stderr, processError } = await exitPromise;
-      if (processError) {
-        yield { type: 'error', message: `Antigravity process error: ${processError}` };
-      } else if (code !== 0) {
-        yield { type: 'error', message: `Antigravity exited with exit code ${code}${stderr ? `: ${stderr.trim()}` : ''}` };
-      }
-      yield { type: 'done' };
-      this.active = null;
-      return;
-    }
 
     let buffer = '';
     let sawDone = false;
@@ -477,25 +543,6 @@ function* parseGeminiEvent(
 function errorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
   return String(err);
-}
-
-function isArgvLaunchError(err: unknown): boolean {
-  const code = typeof err === 'object' && err !== null && 'code' in err
-    ? String((err as { code?: unknown }).code)
-    : '';
-  const message = errorMessage(err);
-  return code === 'ENAMETOOLONG'
-    || /\bENAMETOOLONG\b/iu.test(message)
-    || /argument list too long/iu.test(message)
-    || /command[- ]line.*too long/iu.test(message);
-}
-
-function antigravityArgvFailureMessage(prompt: string, fallbackError: unknown): string {
-  return [
-    `Antigravity CLI --print requires the prompt as a command-line argument and could not accept this prompt as a command-line argument (${prompt.length} characters).`,
-    'Configure legacy Gemini CLI fallback with VEYRA_GEMINI_CLI_PATH or veyra.geminiCliPath, or shorten the request.',
-    `Legacy Gemini fallback was unavailable: ${errorMessage(fallbackError)}`,
-  ].join(' ');
 }
 
 function isAntigravityArgvFailureMessage(message: string): boolean {

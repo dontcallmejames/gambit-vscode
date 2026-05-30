@@ -265,12 +265,12 @@ export class GeminiAgent implements Agent {
       try {
         antigravityCommand = resolveAntigravityForPrompt(prompt);
       } catch (err) {
-        if (backend === 'antigravity') {
-          yield { type: 'error', message: `Unable to start Antigravity CLI: ${errorMessage(err)}` };
-          yield { type: 'done' };
-          return;
-        }
-        antigravityCommand = null;
+        // A throw means an explicitly-configured Antigravity override is broken
+        // (malformed or inaccessible). Surface it instead of silently falling
+        // back, in both auto and forced modes, so the user can fix their config.
+        yield { type: 'error', message: `Unable to start Antigravity CLI: ${errorMessage(err)}` };
+        yield { type: 'done' };
+        return;
       }
 
       if (antigravityCommand) {

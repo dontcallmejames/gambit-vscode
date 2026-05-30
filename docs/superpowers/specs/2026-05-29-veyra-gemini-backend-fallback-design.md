@@ -51,7 +51,7 @@ Refactor `GeminiAgent.send()` (currently one large method) into a coordinator ov
 - `runAntigravity(command, prompt, opts)` — async generator, the current Antigravity branch lifted out, plus a first-output timeout that aborts the child (`SIGTERM`) and reports a zero-output outcome.
 - `runGemini(command, prompt, opts)` — async generator, the current legacy-Gemini branch lifted out.
 - `GeminiAgent.send()` — coordinator that reads `veyra.gemini.backend` and the per-session cache, then:
-  - **auto:** resolve Antigravity. If absent, run `runGemini`. Otherwise run `runAntigravity`; if it returns the zero-output outcome, emit a fallback notice, set the per-session flag `antigravityHeadlessUsable = false`, and run `runGemini` with the same prompt and options. If Antigravity produced output, stream it through unchanged.
+  - **auto:** resolve Antigravity. A resolution throw means an explicitly-configured Antigravity override is broken, so surface the error in both auto and forced modes and stop, letting the user fix their config rather than silently falling back. Auto falls back to the legacy Gemini CLI only when Antigravity is cleanly unavailable (resolution returns null) or produces no output. When resolution returns null, run `runGemini`. Otherwise run `runAntigravity`; if it returns the zero-output outcome, emit a fallback notice, set the per-session flag `antigravityHeadlessUsable = false`, and run `runGemini` with the same prompt and options. If Antigravity produced output, stream it through unchanged.
   - **antigravity:** run `runAntigravity` only. On zero-output, emit a clear error (below). No fallback.
   - **gemini:** run `runGemini` only. `agy` is never spawned.
 

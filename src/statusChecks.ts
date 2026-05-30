@@ -5,6 +5,7 @@ import { homedir } from 'node:os';
 import type { AgentId, AgentStatus } from './types.js';
 import { getAntigravityCliPathOverride, getCodexCliPathOverride, getGeminiCliPathOverride } from './cliPathOverrides.js';
 import { cliPathMisconfiguration, normalizeCliPathOverride, windowsNpmShimNames, type CliRuntimeName } from './cliPathValidation.js';
+import { getGeminiBackend } from './geminiBackend.js';
 
 const CACHE_TTL_MS = 30_000;
 const cache = new Map<AgentId, { status: AgentStatus; expiresAt: number }>();
@@ -57,15 +58,19 @@ export async function checkCodex(): Promise<AgentStatus> {
 
 export async function checkGemini(): Promise<AgentStatus> {
   return memoize('gemini', async () => {
-    const antigravity = resolveAntigravityCli();
-    if (antigravity !== null) {
-      if (antigravity) {
-        if (cliPathMisconfiguration('antigravity', antigravity)) return 'misconfigured';
-        const antigravityStatus = inspectPath(antigravity);
-        if (antigravityStatus === 'inaccessible') return 'inaccessible';
-        if (antigravityStatus === 'missing') return 'not-installed';
+    const backend = getGeminiBackend();
+    if (backend !== 'gemini') {
+      const antigravity = resolveAntigravityCli();
+      if (antigravity !== null) {
+        if (antigravity) {
+          if (cliPathMisconfiguration('antigravity', antigravity)) return 'misconfigured';
+          const antigravityStatus = inspectPath(antigravity);
+          if (antigravityStatus === 'inaccessible') return 'inaccessible';
+          if (antigravityStatus === 'missing') return 'not-installed';
+        }
+        return 'ready';
       }
-      return 'ready';
+      if (backend === 'antigravity') return 'not-installed';
     }
 
     const bundle = resolveGeminiBundle();

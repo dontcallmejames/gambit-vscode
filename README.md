@@ -8,11 +8,11 @@ Veyra is not a hosted agent service. It uses the local CLIs you already authenti
 
 ## Screenshots
 
-![Claude, Codex, and Gemini answering one prompt on a shared timeline](resources/screenshots/01-conversation-dark.png)
+![Claude, Codex, and Gemini answering one prompt on a shared timeline](https://raw.githubusercontent.com/dontcallmejames/veyra-vscode/main/resources/screenshots/01-conversation-dark.png)
 
-![Trust Center reviewing pending file changes before accepting them](resources/screenshots/02-trust-center-light.png)
+![Trust Center reviewing pending file changes before accepting them](https://raw.githubusercontent.com/dontcallmejames/veyra-vscode/main/resources/screenshots/02-trust-center-light.png)
 
-![A multi-agent review workflow with its synthesis, in High Contrast](resources/screenshots/03-workflow-high-contrast.png)
+![A multi-agent review workflow with its synthesis, in High Contrast](https://raw.githubusercontent.com/dontcallmejames/veyra-vscode/main/resources/screenshots/03-workflow-high-contrast.png)
 
 ## Quickstart
 

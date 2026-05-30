@@ -1,8 +1,10 @@
 # Changelog
 
-## Unreleased
+## 1.1.0 - 2026-05-30
 
-- Adds `veyra.gemini.backend` so the Gemini agent falls back from Antigravity (`agy`, which cannot stream over a non-TTY pipe) to the legacy Gemini CLI instead of silently stalling.
+- Adds Enterprise Polish v0.1, a VS Code-native visual pass: a token-driven theme that maps every color to VS Code theme variables and stays readable across Light+, Dark+, and High Contrast; a flat row-based message layout in place of chat bubbles; a shared PanelSection component with packaged `@vscode/codicons` icons; a status bar item showing idle and per-agent dispatching state; a denser docked layout where agent stages are single lines, panel headers double as collapse toggles, and Mission Control no longer restates other panels' summaries; first-launch empty-state guidance in the conversation; and Marketplace screenshots.
+- Adds Workflow Professionalism v0.1: per-target read-only enforcement so only Codex is write-capable during `/implement`, structured workflow-state notices, and reviewer-edit trust handling.
+- Adds `veyra.gemini.backend` (`auto` | `antigravity` | `gemini`). In `auto`, the Gemini agent tries Antigravity (`agy`) and falls back to the legacy Gemini CLI when it returns no output (`agy --print` cannot stream over a non-TTY pipe), replacing the previous silent stall with a visible notice; forced modes surface clear errors and a forced switch is honored mid-session.
 
 ## 1.0.21 - 2026-05-27
 

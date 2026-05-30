@@ -2,7 +2,7 @@
   "name": "veyra-vscode",
   "displayName": "Veyra",
   "description": "Local-first Claude, Codex, and Gemini workflows for VS Code Chat, the Language Model API, and a docked trust view.",
-  "version": "1.0.21",
+  "version": "1.1.0",
   "publisher": "dontcallmejames",
   "preview": false,
   "license": "SEE LICENSE IN LICENSE.txt",
@@ -550,6 +550,7 @@
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.118.0",
     "@vscode/codicons": "0.0.45",
+    "@vscode/vsce": "^3.9.1",
     "esbuild": "^0.24.0",
     "typescript": "^5.5.0",
     "vitest": "^2.1.0"

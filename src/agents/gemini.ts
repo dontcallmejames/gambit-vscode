@@ -197,7 +197,7 @@ const ANTIGRAVITY_PRINT_TIMEOUT_ARGS = ['--print-timeout', '1m30s'];
 const ANTIGRAVITY_AUTO_EDIT_ARGS = ['--dangerously-skip-permissions'];
 const ANTIGRAVITY_FIRST_OUTPUT_TIMEOUT_MS = 20_000;
 const ANTIGRAVITY_EMPTY_OUTPUT_MESSAGE =
-  'Antigravity produced no output; it may not support headless --print on this version. Set veyra.gemini.backend to "gemini" or "auto".';
+  'Antigravity produced no output; it may not support headless --print. Set veyra.gemini.backend to "gemini" or "auto".';
 const ANTIGRAVITY_FALLBACK_NOTICE =
   '_Antigravity produced no output; using the legacy Gemini CLI._\n\n';
 const ANTIGRAVITY_WINDOWS_PROMPT_ARG_LIMIT = 24_000;
@@ -330,18 +330,7 @@ export class GeminiAgent implements Agent {
       }
     };
 
-    const exitPromise = new Promise<{ code: number | null; stderr: string; processError?: string }>((resolve) => {
-      let stderr = '';
-      let settled = false;
-      const finish = (code: number | null, processError?: string) => {
-        if (settled) return;
-        settled = true;
-        resolve({ code, stderr, processError });
-      };
-      child.stderr?.on('data', (d) => (stderr += String(d)));
-      child.on('error', (err) => finish(null, errorMessage(err)));
-      child.on('close', (code) => finish(code));
-    });
+    const exitPromise = watchProcessExit(child);
 
     try {
       for await (const data of child.stdout!) {
@@ -378,11 +367,7 @@ export class GeminiAgent implements Agent {
     try {
       command = resolveGeminiCommand();
     } catch (err) {
-      const message = errorMessage(err);
-      yield {
-        type: 'error',
-        message: isAntigravityArgvFailureMessage(message) ? message : `Unable to start Gemini CLI: ${message}`,
-      };
+      yield { type: 'error', message: `Unable to start Gemini CLI: ${errorMessage(err)}` };
       yield { type: 'done' };
       return;
     }
@@ -408,18 +393,7 @@ export class GeminiAgent implements Agent {
       else opts.signal.addEventListener('abort', onAbort, { once: true });
     }
 
-    const exitPromise = new Promise<{ code: number | null; stderr: string; processError?: string }>((resolve) => {
-      let stderr = '';
-      let settled = false;
-      const finish = (code: number | null, processError?: string) => {
-        if (settled) return;
-        settled = true;
-        resolve({ code, stderr, processError });
-      };
-      child.stderr?.on('data', (d) => (stderr += String(d)));
-      child.on('error', (err) => finish(null, errorMessage(err)));
-      child.on('close', (code) => finish(code));
-    });
+    const exitPromise = watchProcessExit(child);
 
     let buffer = '';
     let sawDone = false;
@@ -545,8 +519,19 @@ function errorMessage(err: unknown): string {
   return String(err);
 }
 
-function isAntigravityArgvFailureMessage(message: string): boolean {
-  return message.startsWith('Antigravity CLI --print requires the prompt as a command-line argument');
+function watchProcessExit(child: ChildProcess): Promise<{ code: number | null; stderr: string; processError?: string }> {
+  return new Promise((resolve) => {
+    let stderr = '';
+    let settled = false;
+    const finish = (code: number | null, processError?: string) => {
+      if (settled) return;
+      settled = true;
+      resolve({ code, stderr, processError });
+    };
+    child.stderr?.on('data', (d) => (stderr += String(d)));
+    child.on('error', (err) => finish(null, errorMessage(err)));
+    child.on('close', (code) => finish(code));
+  });
 }
 
 function commandExists(command: string): boolean {

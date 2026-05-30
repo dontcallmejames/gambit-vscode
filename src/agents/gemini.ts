@@ -9,6 +9,7 @@ import { checkGemini } from '../statusChecks.js';
 import { findNode } from '../findNode.js';
 import { getAntigravityCliPathOverride, getGeminiCliPathOverride } from '../cliPathOverrides.js';
 import { cliPathMisconfiguration, normalizeCliPathOverride, windowsNpmShimNames } from '../cliPathValidation.js';
+import { getGeminiBackend } from '../geminiBackend.js';
 import * as vscode from 'vscode';
 
 type GoogleCliCommand =
@@ -194,8 +195,13 @@ function isUnsupportedWindowsCommandShim(filePath: string): boolean {
 
 const GEMINI_BASE_ARGS = ['-o', 'stream-json'];
 const GEMINI_AUTO_EDIT_ARGS = ['--approval-mode', 'auto_edit'];
-const ANTIGRAVITY_PRINT_TIMEOUT_ARGS = ['--print-timeout', '5m0s'];
+const ANTIGRAVITY_PRINT_TIMEOUT_ARGS = ['--print-timeout', '1m30s'];
 const ANTIGRAVITY_AUTO_EDIT_ARGS = ['--dangerously-skip-permissions'];
+const ANTIGRAVITY_FIRST_OUTPUT_TIMEOUT_MS = 20_000;
+const ANTIGRAVITY_EMPTY_OUTPUT_MESSAGE =
+  'Antigravity produced no output; it may not support headless --print on this version. Set veyra.gemini.backend to "gemini" or "auto".';
+const ANTIGRAVITY_FALLBACK_NOTICE =
+  '_Antigravity produced no output; using the legacy Gemini CLI._\n\n';
 const ANTIGRAVITY_WINDOWS_PROMPT_ARG_LIMIT = 24_000;
 const ANTIGRAVITY_UNIX_PROMPT_ARG_LIMIT = 120_000;
 
@@ -231,9 +237,22 @@ function isAntigravityPromptTooLargeForArgv(prompt: string): boolean {
   return prompt.length > limit;
 }
 
+export interface GeminiAgentOptions {
+  /** First-output watchdog for Antigravity --print, in ms. Exposed for tests. */
+  antigravityFirstOutputTimeoutMs?: number;
+}
+
 export class GeminiAgent implements Agent {
   readonly id = 'gemini' as const;
   private active: ChildProcess | null = null;
+  /** null = untested this session, false = known unusable headless (skip it). */
+  private antigravityHeadlessUsable: boolean | null = null;
+  private readonly antigravityFirstOutputTimeoutMs: number;
+
+  constructor(options: GeminiAgentOptions = {}) {
+    this.antigravityFirstOutputTimeoutMs =
+      options.antigravityFirstOutputTimeoutMs ?? ANTIGRAVITY_FIRST_OUTPUT_TIMEOUT_MS;
+  }
 
   async status(): Promise<AgentStatus> {
     return checkGemini();

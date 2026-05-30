@@ -26,4 +26,9 @@ describe('getGeminiBackend', () => {
     getMock.mockReturnValue('banana');
     expect(getGeminiBackend()).toBe('auto');
   });
+
+  it('falls back to auto when getConfiguration throws', () => {
+    getMock.mockImplementation(() => { throw new Error('vscode not available'); });
+    expect(getGeminiBackend()).toBe('auto');
+  });
 });

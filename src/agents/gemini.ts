@@ -258,7 +258,11 @@ export class GeminiAgent implements Agent {
 
   async *send(prompt: string, opts: SendOptions = {}): AsyncIterable<AgentChunk> {
     const backend = getGeminiBackend();
-    const considerAntigravity = backend !== 'gemini' && this.antigravityHeadlessUsable !== false;
+    // Forced 'antigravity' always tries agy (so a user can force or diagnose it
+    // mid-session); the per-session "headless unusable" cache only gates 'auto'.
+    const considerAntigravity =
+      backend === 'antigravity'
+      || (backend === 'auto' && this.antigravityHeadlessUsable !== false);
 
     if (considerAntigravity) {
       let antigravityCommand: GoogleCliCommand | null;
@@ -276,6 +280,12 @@ export class GeminiAgent implements Agent {
       if (antigravityCommand) {
         const outcome = yield* this.runAntigravity(antigravityCommand, prompt, opts);
         if (outcome.producedOutput) {
+          yield { type: 'done' };
+          return;
+        }
+        if (opts.signal?.aborted) {
+          // The request was cancelled mid-Antigravity. Don't fall back to a
+          // second backend or mark Antigravity unusable; just stop.
           yield { type: 'done' };
           return;
         }

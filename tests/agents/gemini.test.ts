@@ -373,4 +373,46 @@ describe('GeminiAgent', () => {
     expect(mockedSpawn).toHaveBeenCalledTimes(2);
     expect(chunks).toContainEqual({ type: 'text', text: 'ok' });
   });
+
+  it('auto: a cancelled Antigravity dispatch does not fall back to legacy Gemini', async () => {
+    process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\agy\\agy.exe';
+    setBackend('auto');
+    mockedSpawn.mockReturnValueOnce(fakeProcess([], 0));
+    const ac = new AbortController();
+    ac.abort();
+
+    const agent = new GeminiAgent();
+    const chunks = [];
+    for await (const c of agent.send('hi', { readOnly: true, signal: ac.signal } as any)) chunks.push(c);
+
+    // Cancelled mid-Antigravity: must not spawn a second (Gemini) backend.
+    expect(mockedSpawn).toHaveBeenCalledTimes(1);
+    expect(chunks).not.toContainEqual(
+      expect.objectContaining({ type: 'text', text: expect.stringContaining('legacy Gemini CLI') }));
+  });
+
+  it('forced antigravity re-tries agy even after an auto fallback cached the failure', async () => {
+    process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\agy\\agy.exe';
+    const agent = new GeminiAgent();
+
+    // First: an auto run where Antigravity is empty caches headless-unusable and
+    // falls back to legacy Gemini (2 spawns).
+    setBackend('auto');
+    mockedSpawn
+      .mockReturnValueOnce(fakeProcess([], 0))
+      .mockReturnValueOnce(fakeProcess(['{"type":"result","status":"success"}\n']));
+    for await (const _c of agent.send('one', { readOnly: true } as any)) { /* drain */ }
+    expect(mockedSpawn).toHaveBeenCalledTimes(2);
+
+    // Now the user forces antigravity in the same session: the cache must NOT
+    // suppress it - agy is spawned again (3rd spawn), not skipped to Gemini.
+    setBackend('antigravity');
+    mockedSpawn.mockReturnValueOnce(fakeProcess(['real antigravity answer\n']));
+    const chunks = [];
+    for await (const c of agent.send('two', { readOnly: true } as any)) chunks.push(c);
+
+    expect(mockedSpawn).toHaveBeenCalledTimes(3);
+    expect(mockedSpawn.mock.calls[2]?.[0]).toBe('D:\\tools\\agy\\agy.exe');
+    expect(chunks).toContainEqual({ type: 'text', text: 'real antigravity answer\n' });
+  });
 });

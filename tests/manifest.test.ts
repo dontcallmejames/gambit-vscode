@@ -1180,4 +1180,20 @@ describe('extension manifest', () => {
       expect(npmIgnore).toContain(pattern);
     }
   });
+
+  it('contributes the Gemini backend preference setting', () => {
+    const properties = manifest.contributes.configuration.properties;
+    const userGuide = userGuideText();
+    const changelog = readFileSync(join(process.cwd(), 'CHANGELOG.md'), 'utf8');
+
+    expect(properties['veyra.gemini.backend']).toMatchObject({
+      type: 'string',
+      enum: ['auto', 'antigravity', 'gemini'],
+      default: 'auto',
+    });
+    expect(properties['veyra.gemini.backend'].description).toContain('Antigravity');
+    expect(properties['veyra.gemini.backend'].description).toContain('legacy Gemini CLI');
+    expect(userGuide).toContain('veyra.gemini.backend');
+    expect(changelog).toContain('veyra.gemini.backend');
+  });
 });

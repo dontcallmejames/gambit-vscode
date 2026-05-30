@@ -415,6 +415,27 @@ describe('checkGemini', () => {
   });
 });
 
+describe('checkGemini backend preference', () => {
+  it('skips Antigravity when backend is forced to gemini', async () => {
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+    vscodeMocks.configGet.mockImplementation((key: string, dflt: unknown) =>
+      key === 'gemini.backend' ? 'gemini' : dflt);
+    // agy.exe is fully present (the default backend would report "ready"), but the
+    // legacy Gemini bundle is absent. Forced gemini must skip Antigravity entirely.
+    mockedExecSync.mockImplementation((command: string) => {
+      if (/agy\.exe/i.test(command)) return 'C:\\agy\\bin\\agy.exe\n';
+      throw new Error('not found');
+    });
+    mockedExistsSync.mockImplementation((p: unknown) => /agy/i.test(String(p)));
+
+    expect(await checkGemini()).toBe('not-installed');
+    // Antigravity resolution must not have been attempted at all.
+    const lookedUpAgy = mockedExecSync.mock.calls.some(
+      ([cmd]) => typeof cmd === 'string' && /agy/i.test(cmd));
+    expect(lookedUpAgy).toBe(false);
+  });
+});
+
 describe('cache', () => {
   it('returns the cached value within 30 seconds', async () => {
     mockedExecSync.mockReturnValue('/usr/local/bin/claude\n');

@@ -15,9 +15,9 @@ afterEach(() => {
   vi.resetModules();
 });
 
-function fakeProcess() {
+function fakeProcess(stdoutChunks: string[] = []) {
   const proc: any = new EventEmitter();
-  proc.stdout = Readable.from([]);
+  proc.stdout = Readable.from(stdoutChunks);
   proc.stderr = Readable.from([]);
   proc.kill = vi.fn();
   setImmediate(() => proc.emit('close', 0));
@@ -563,7 +563,7 @@ describe('agent CLI resolution failures', () => {
   it('GeminiAgent uses VEYRA_ANTIGRAVITY_CLI_PATH before legacy Gemini resolution', async () => {
     Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
     process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\agy\\agy.exe';
-    const spawn = vi.fn(() => fakeProcess());
+    const spawn = vi.fn(() => fakeProcess(['done\n']));
     const execSync = vi.fn((command: string) => {
       if (command === 'where.exe gemini.exe') throw new Error('legacy gemini should not be probed first');
       if (command === 'npm root -g') throw new Error('npm root should not be used');
@@ -674,7 +674,7 @@ describe('agent CLI resolution failures', () => {
     expect(spawnCalls.at(-1)?.[1] ?? []).not.toContain(prompt);
   });
 
-  it('GeminiAgent reports Antigravity argv guidance when spawn hits ENAMETOOLONG and no fallback exists', async () => {
+  it('GeminiAgent falls back to legacy Gemini (and errors when it is absent) after an Antigravity ENAMETOOLONG spawn', async () => {
     Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
     process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\agy\\agy.exe';
     const spawn = vi.fn(() => {
@@ -711,17 +711,13 @@ describe('agent CLI resolution failures', () => {
       chunks.push(chunk);
     }
 
-    expect(chunks).toEqual([
-      {
-        type: 'error',
-        message: expect.stringContaining('could not accept this prompt as a command-line argument'),
-      },
-      { type: 'done' },
-    ]);
-    expect(String((chunks[0] as any).message)).toContain('Configure legacy Gemini CLI fallback');
+    expect(chunks[0]).toEqual({ type: 'text', text: expect.stringContaining('legacy Gemini CLI') });
+    expect(chunks).toContainEqual(
+      expect.objectContaining({ type: 'error', message: expect.stringContaining('Unable to start Gemini CLI') }));
+    expect(chunks.at(-1)).toEqual({ type: 'done' });
   });
 
-  it('GeminiAgent reports a helpful error when a large Antigravity prompt has no legacy fallback', async () => {
+  it('GeminiAgent errors with Gemini guidance when a too-large Antigravity prompt has no legacy fallback', async () => {
     Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
     process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\agy\\agy.exe';
     const spawn = vi.fn(() => fakeProcess());
@@ -755,13 +751,9 @@ describe('agent CLI resolution failures', () => {
     }
 
     expect(spawn).not.toHaveBeenCalled();
-    expect(chunks).toEqual([
-      {
-        type: 'error',
-        message: expect.stringContaining('Antigravity CLI --print requires the prompt as a command-line argument'),
-      },
-      { type: 'done' },
-    ]);
+    expect(chunks).toContainEqual(
+      expect.objectContaining({ type: 'error', message: expect.stringContaining('Unable to start Gemini CLI') }));
+    expect(chunks.at(-1)).toEqual({ type: 'done' });
   });
 
   it('GeminiAgent rejects malformed Antigravity CLI path overrides before spawning', async () => {

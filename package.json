@@ -360,6 +360,16 @@
           "patternErrorMessage": "Use a path ending in agy.exe or agy.",
           "description": "Optional absolute path to the Antigravity CLI native executable such as agy.exe. Environment variable VEYRA_ANTIGRAVITY_CLI_PATH takes precedence."
         },
+        "veyra.gemini.backend": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "antigravity",
+            "gemini"
+          ],
+          "default": "auto",
+          "description": "Which CLI backs Veyra's Gemini agent. 'auto' tries Antigravity (agy) first and falls back to the legacy Gemini CLI when Antigravity returns no output (agy --print does not stream over a non-TTY pipe). 'antigravity' forces Antigravity only. 'gemini' forces the legacy Gemini CLI only."
+        },
         "veyra.geminiCliPath": {
           "type": "string",
           "default": "",

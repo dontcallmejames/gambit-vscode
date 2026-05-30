@@ -3,11 +3,15 @@ import { EventEmitter } from 'node:events';
 import { Readable, Writable } from 'node:stream';
 import { GeminiAgent } from '../../src/agents/gemini.js';
 
+const getConfigGet = vi.fn((_key: string, dflt: unknown) => dflt);
 vi.mock('vscode', () => ({
-  workspace: {
-    getConfiguration: vi.fn(() => ({ get: (_k: string, dflt: unknown) => dflt })),
-  },
+  workspace: { getConfiguration: vi.fn(() => ({ get: getConfigGet })) },
 }));
+
+function setBackend(value: 'auto' | 'antigravity' | 'gemini') {
+  getConfigGet.mockImplementation((key: string, dflt: unknown) =>
+    key === 'gemini.backend' ? value : dflt);
+}
 
 vi.mock('node:child_process', () => ({
   spawn: vi.fn(),
@@ -24,6 +28,8 @@ const mockedSpawn = spawn as unknown as ReturnType<typeof vi.fn>;
 
 afterEach(() => {
   delete process.env.VEYRA_ANTIGRAVITY_CLI_PATH;
+  getConfigGet.mockImplementation((_k: string, dflt: unknown) => dflt);
+  mockedSpawn.mockReset();
 });
 
 function fakeProcess(stdoutChunks: string[], exitCode = 0) {
@@ -38,7 +44,16 @@ function fakeProcess(stdoutChunks: string[], exitCode = 0) {
     },
   });
   proc.kill = vi.fn();
-  setImmediate(() => proc.emit('close', exitCode));
+  // Emit close once stdout is drained so the close event is never delivered
+  // before the runner attaches its listener (e.g. after the Antigravity
+  // first-output timeout delays consumption of a queued fallback process).
+  let closed = false;
+  const emitClose = () => {
+    if (closed) return;
+    closed = true;
+    proc.emit('close', exitCode);
+  };
+  proc.stdout.once('end', () => setImmediate(emitClose));
   return proc;
 }
 
@@ -56,6 +71,17 @@ function fakeProcessError(message: string) {
     proc.emit('error', new Error(message));
     proc.emit('close', null);
   });
+  return proc;
+}
+
+function fakeHangingProcess() {
+  const { PassThrough } = require('node:stream');
+  const proc: any = new EventEmitter();
+  proc.stdout = new PassThrough();   // stays open; no data, no end
+  proc.stderr = new PassThrough();
+  proc.stdin = new Writable({ write(_c, _e, cb) { cb(); } });
+  // SIGTERM closes the process, ending stdout so the runner unblocks.
+  proc.kill = vi.fn(() => { proc.stdout.end(); proc.emit('close', null); });
   return proc;
 }
 
@@ -232,5 +258,161 @@ describe('GeminiAgent', () => {
 
   it('exposes id "gemini"', () => {
     expect(new GeminiAgent().id).toBe('gemini');
+  });
+
+  it('auto: falls back to legacy Gemini with a notice when Antigravity yields no output', async () => {
+    process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\agy\\agy.exe';
+    setBackend('auto');
+    mockedSpawn
+      .mockReturnValueOnce(fakeProcess([], 0))
+      .mockReturnValueOnce(fakeProcess(['{"type":"message","role":"assistant","content":"hi","delta":true}\n', '{"type":"result","status":"success"}\n']));
+
+    const agent = new GeminiAgent();
+    const chunks = [];
+    for await (const c of agent.send('hi', { readOnly: true } as any)) chunks.push(c);
+
+    expect(mockedSpawn).toHaveBeenCalledTimes(2);
+    expect(chunks).toContainEqual({ type: 'text', text: expect.stringContaining('legacy Gemini CLI') });
+    expect(chunks).toContainEqual({ type: 'text', text: 'hi' });
+    expect(chunks.at(-1)).toEqual({ type: 'done' });
+    expect(chunks).not.toContainEqual(expect.objectContaining({ type: 'error' }));
+  });
+
+  it('auto: streams Antigravity output and does not fall back when it responds', async () => {
+    process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\agy\\agy.exe';
+    setBackend('auto');
+    mockedSpawn.mockReturnValueOnce(fakeProcess(['plain answer\n']));
+
+    const agent = new GeminiAgent();
+    const chunks = [];
+    for await (const c of agent.send('hi', { readOnly: true } as any)) chunks.push(c);
+
+    expect(mockedSpawn).toHaveBeenCalledTimes(1);
+    expect(chunks).toEqual([{ type: 'text', text: 'plain answer\n' }, { type: 'done' }]);
+  });
+
+  it('auto: caches the headless failure and skips Antigravity on the next send', async () => {
+    process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\agy\\agy.exe';
+    setBackend('auto');
+    mockedSpawn
+      .mockReturnValueOnce(fakeProcess([], 0))
+      .mockReturnValueOnce(fakeProcess(['{"type":"result","status":"success"}\n']))
+      .mockReturnValueOnce(fakeProcess(['{"type":"result","status":"success"}\n']));
+
+    const agent = new GeminiAgent();
+    for await (const _c of agent.send('one', { readOnly: true } as any)) { /* drain */ }
+    const before = mockedSpawn.mock.calls.length;
+    const secondChunks = [];
+    for await (const c of agent.send('two', { readOnly: true } as any)) secondChunks.push(c);
+
+    expect(before).toBe(2);
+    expect(mockedSpawn.mock.calls.length).toBe(3);
+    // The fallback notice is paid once; the cached second send goes straight to Gemini.
+    expect(secondChunks).not.toContainEqual(
+      expect.objectContaining({ type: 'text', text: expect.stringContaining('legacy Gemini CLI') }));
+  });
+
+  it('forced antigravity: surfaces the real crash reason when it errors with no output', async () => {
+    process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\agy\\agy.exe';
+    setBackend('antigravity');
+    mockedSpawn.mockReturnValueOnce(fakeProcessError('agy boom'));
+
+    const agent = new GeminiAgent();
+    const chunks = [];
+    for await (const c of agent.send('hi', { readOnly: true } as any)) chunks.push(c);
+
+    expect(mockedSpawn).toHaveBeenCalledTimes(1);
+    expect(chunks).toContainEqual(
+      expect.objectContaining({ type: 'error', message: expect.stringContaining('agy boom') }));
+    // Must NOT fall back to the generic "headless --print" message when there's a real error.
+    expect(chunks).not.toContainEqual(
+      expect.objectContaining({ type: 'error', message: expect.stringContaining('may not support headless') }));
+    expect(chunks.at(-1)).toEqual({ type: 'done' });
+  });
+
+  it('forced antigravity: emits an error (no fallback) when it yields no output', async () => {
+    process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\agy\\agy.exe';
+    setBackend('antigravity');
+    mockedSpawn.mockReturnValueOnce(fakeProcess([], 0));
+
+    const agent = new GeminiAgent();
+    const chunks = [];
+    for await (const c of agent.send('hi', { readOnly: true } as any)) chunks.push(c);
+
+    expect(mockedSpawn).toHaveBeenCalledTimes(1);
+    expect(chunks).toContainEqual({ type: 'error', message: expect.stringContaining('veyra.gemini.backend') });
+    expect(chunks.at(-1)).toEqual({ type: 'done' });
+  });
+
+  it('forced gemini: never spawns Antigravity even when agy is configured', async () => {
+    process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\agy\\agy.exe';
+    setBackend('gemini');
+    mockedSpawn.mockReturnValueOnce(fakeProcess(['{"type":"result","status":"success"}\n']));
+
+    const agent = new GeminiAgent();
+    for await (const _c of agent.send('hi', { readOnly: true } as any)) { /* drain */ }
+
+    expect(mockedSpawn).toHaveBeenCalledTimes(1);
+    const firstArg = mockedSpawn.mock.calls[0]?.[0] as string;
+    expect(firstArg).not.toBe('D:\\tools\\agy\\agy.exe');
+  });
+
+  it('auto: first-output timeout kills a hung Antigravity and falls back', async () => {
+    process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\agy\\agy.exe';
+    setBackend('auto');
+    const hung = fakeHangingProcess();
+    mockedSpawn
+      .mockReturnValueOnce(hung)
+      .mockReturnValueOnce(fakeProcess(['{"type":"message","role":"assistant","content":"ok","delta":true}\n', '{"type":"result","status":"success"}\n']));
+
+    const agent = new GeminiAgent({ antigravityFirstOutputTimeoutMs: 20 });
+    const chunks = [];
+    for await (const c of agent.send('hi', { readOnly: true } as any)) chunks.push(c);
+
+    expect(hung.kill).toHaveBeenCalled();
+    expect(mockedSpawn).toHaveBeenCalledTimes(2);
+    expect(chunks).toContainEqual({ type: 'text', text: 'ok' });
+  });
+
+  it('auto: a cancelled Antigravity dispatch does not fall back to legacy Gemini', async () => {
+    process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\agy\\agy.exe';
+    setBackend('auto');
+    mockedSpawn.mockReturnValueOnce(fakeProcess([], 0));
+    const ac = new AbortController();
+    ac.abort();
+
+    const agent = new GeminiAgent();
+    const chunks = [];
+    for await (const c of agent.send('hi', { readOnly: true, signal: ac.signal } as any)) chunks.push(c);
+
+    // Cancelled mid-Antigravity: must not spawn a second (Gemini) backend.
+    expect(mockedSpawn).toHaveBeenCalledTimes(1);
+    expect(chunks).not.toContainEqual(
+      expect.objectContaining({ type: 'text', text: expect.stringContaining('legacy Gemini CLI') }));
+  });
+
+  it('forced antigravity re-tries agy even after an auto fallback cached the failure', async () => {
+    process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\agy\\agy.exe';
+    const agent = new GeminiAgent();
+
+    // First: an auto run where Antigravity is empty caches headless-unusable and
+    // falls back to legacy Gemini (2 spawns).
+    setBackend('auto');
+    mockedSpawn
+      .mockReturnValueOnce(fakeProcess([], 0))
+      .mockReturnValueOnce(fakeProcess(['{"type":"result","status":"success"}\n']));
+    for await (const _c of agent.send('one', { readOnly: true } as any)) { /* drain */ }
+    expect(mockedSpawn).toHaveBeenCalledTimes(2);
+
+    // Now the user forces antigravity in the same session: the cache must NOT
+    // suppress it - agy is spawned again (3rd spawn), not skipped to Gemini.
+    setBackend('antigravity');
+    mockedSpawn.mockReturnValueOnce(fakeProcess(['real antigravity answer\n']));
+    const chunks = [];
+    for await (const c of agent.send('two', { readOnly: true } as any)) chunks.push(c);
+
+    expect(mockedSpawn).toHaveBeenCalledTimes(3);
+    expect(mockedSpawn.mock.calls[2]?.[0]).toBe('D:\\tools\\agy\\agy.exe');
+    expect(chunks).toContainEqual({ type: 'text', text: 'real antigravity answer\n' });
   });
 });

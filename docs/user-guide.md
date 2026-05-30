@@ -218,6 +218,7 @@ Rollback refuses when automatic checkpoint files changed after the agent dispatc
 - `veyra.checkpoints.maxCount`: max checkpoint count before pruning older snapshots.
 - `veyra.codexCliPath`: optional absolute path to the Codex CLI JS bundle, native executable, or Windows npm shim. Paths ending in `codex.cmd`, `codex.bat`, or `codex.ps1` are resolved to the underlying JS bundle before launch.
 - `veyra.antigravityCliPath`: optional absolute path to the Antigravity CLI native executable, usually `agy.exe` on Windows or `agy` on macOS/Linux.
+- `veyra.gemini.backend` (`auto` | `antigravity` | `gemini`, default `auto`): Which CLI backs the Gemini agent. `auto` tries Antigravity (`agy`) and falls back to the legacy Gemini CLI when Antigravity returns no output; `antigravity` and `gemini` force one backend.
 - `veyra.geminiCliPath`: optional legacy fallback path to the Gemini CLI JS bundle, native executable, or Windows npm shim. Paths ending in `gemini.cmd`, `gemini.bat`, or `gemini.ps1` are resolved to the underlying JS bundle before launch.
 - `veyra.localModels.mode`: `disabled` or `informational` for diagnostics-only local/self-hosted provider target reporting.
 - `veyra.localModels.provider`: optional local/self-hosted provider label for diagnostic reports.

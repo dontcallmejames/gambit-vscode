@@ -57,14 +57,14 @@ Refactor `GeminiAgent.send()` (currently one large method) into a coordinator ov
 
 **Per-session cache.** Once `antigravityHeadlessUsable` is `false`, later `send()` calls in the same `GeminiAgent` instance (one per session) skip Antigravity entirely, so the 20s wait is paid at most once per session. A window reload resets it.
 
-`resolveGoogleCommand` gains the backend preference and the cache flag as inputs so it can short-circuit to the legacy CLI when forced or when Antigravity is already known-unusable.
+The coordinator reads the backend preference and the per-session cache flag, short-circuiting to the legacy CLI when forced to `gemini` or when Antigravity is already known-unusable.
 
 ## Error and notice UX
 
-These replace today's silent "complete but blank":
+These replace today's silent "complete but blank". `GeminiAgent` yields `AgentChunk`s and cannot emit a `SystemMessage` directly, so the notices ship as chunks:
 
-- **auto fallback** → a system message at `info`/`warning` severity: *"Antigravity produced no output within 20s — falling back to the legacy Gemini CLI."* Work continues on the legacy CLI; this is not an error.
-- **forced antigravity, empty** → a system `error`: *"Antigravity produced no output; it may not support headless `--print` on this version. Set `veyra.gemini.backend` to `gemini` or `auto`."*
+- **auto fallback** → a `text` chunk prepended to the legacy-Gemini response: *"Antigravity produced no output; using the legacy Gemini CLI."* Work continues on the legacy CLI; this is not an error.
+- **forced antigravity, empty** → an `error` chunk: *"Antigravity produced no output; it may not support headless `--print`. Set `veyra.gemini.backend` to `gemini` or `auto`."*
 
 ## Status check
 

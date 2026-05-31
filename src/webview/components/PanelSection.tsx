@@ -44,7 +44,6 @@ export function PanelSection({
   children,
 }: PanelSectionProps) {
   const collapsible = collapsed !== undefined;
-  const showBody = !collapsible || !collapsed;
   const expanded = !collapsed;
 
   const sectionClasses = [
@@ -76,7 +75,18 @@ export function PanelSection({
         </div>
         {summary != null && <div class="panel-section-summary">{summary}</div>}
       </div>
-      {showBody && (
+      {collapsible ? (
+        <div class="panel-section-collapse" data-expanded={expanded ? 'true' : 'false'}>
+          <div class="panel-section-collapse-inner">
+            <div
+              id={bodyId}
+              class={bodyClass ? `panel-section-body ${bodyClass}` : 'panel-section-body'}
+            >
+              {children}
+            </div>
+          </div>
+        </div>
+      ) : (
         <div id={bodyId} class={bodyClass ? `panel-section-body ${bodyClass}` : 'panel-section-body'}>
           {children}
         </div>

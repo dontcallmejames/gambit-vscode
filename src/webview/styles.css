@@ -26,6 +26,31 @@ body {
   max-height: 24vh;
   overflow: auto;
 }
+/* Collapsible body slide: animate the grid row 1fr <-> 0fr plus opacity so the
+   panel opens AND closes smoothly. visibility flips to hidden at the collapsed
+   end-state (after the slide) so collapsed content leaves the tab order and the
+   a11y tree. Honors reduced-motion via the global tokens.css block. */
+.panel-section-collapse {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows var(--veyra-motion-base) var(--veyra-motion-ease);
+}
+.panel-section-collapse[data-expanded="false"] {
+  grid-template-rows: 0fr;
+}
+.panel-section-collapse-inner {
+  min-height: 0;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity var(--veyra-motion-base) var(--veyra-motion-ease);
+}
+.panel-section-collapse[data-expanded="false"] .panel-section-collapse-inner {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--veyra-motion-base) var(--veyra-motion-ease),
+    visibility 0s linear var(--veyra-motion-base);
+}
 .panel-section-active {
   box-shadow: inset 2px 0 0 var(--veyra-border-focus);
 }

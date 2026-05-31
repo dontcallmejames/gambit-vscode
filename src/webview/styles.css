@@ -1285,6 +1285,14 @@ body.vscode-high-contrast-light .state-panel-hints code {
 .composer-spacer {
   flex: 1;
 }
+.composer-floor {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--veyra-space-2);
+}
+.composer-floor-state {
+  font-size: var(--veyra-text-micro);
+}
 .composer-row {
   display: flex;
   gap: 6px;

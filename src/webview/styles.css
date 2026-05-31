@@ -936,6 +936,18 @@ body {
   padding: 0 0.25em;
   border-radius: 3px;
   background: var(--veyra-bg-code);
+  color: var(--veyra-fg-default);
+}
+/* High Contrast: inline code uses a border instead of a fill so its text is
+   always foreground-on-canvas. A code-block fill can resolve close to the HC
+   foreground and hide the text (most visibly in Light High Contrast). */
+body.vscode-high-contrast .markdown-prose :not(pre) > code,
+body.vscode-high-contrast-light .markdown-prose :not(pre) > code,
+body.vscode-high-contrast .message-list-empty-hints code,
+body.vscode-high-contrast-light .message-list-empty-hints code {
+  background: transparent;
+  border: 1px solid var(--veyra-border-default);
+  color: var(--veyra-fg-default);
 }
 .markdown-prose pre {
   overflow-x: auto;

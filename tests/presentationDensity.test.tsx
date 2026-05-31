@@ -30,6 +30,19 @@ import type { AgentMessage, FromExtension, RetrievalFeedbackSummary, SystemMessa
 
 vi.stubGlobal('React', { createElement: h });
 
+function findCollapseWrapper(vnode: any): any | undefined {
+  if (!vnode || typeof vnode !== 'object') return undefined;
+  if (typeof vnode.type === 'function') return findCollapseWrapper(vnode.type(vnode.props));
+  const cls = String(vnode.props?.class ?? '');
+  if (cls.split(/\s+/u).includes('panel-section-collapse')) return vnode;
+  const children = vnode.props?.children;
+  if (Array.isArray(children)) {
+    for (const c of children) { const f = findCollapseWrapper(c); if (f) return f; }
+    return undefined;
+  }
+  return findCollapseWrapper(children);
+}
+
 describe('presentation density state', () => {
   it('defaults dense panels collapsed and auto-expands Trust Center when new urgent signals appear', () => {
     expect(effectivePresentationPanelExpanded(DEFAULT_PRESENTATION_DENSITY_STATE, 'trust', { trustUrgent: false })).toBe(false);
@@ -87,8 +100,7 @@ describe('collapsible density panels', () => {
 
     expect(text).toContain('Trust Center');
     expect(text).toContain('2 pending files');
-    expect(text).not.toContain('Pending Changes');
-    expect(text).not.toContain('Run verification');
+    expect(findCollapseWrapper(vnode)?.props['data-expanded']).toBe('false');
 
     clickButtonContaining(vnode, 'Trust Center');
 
@@ -112,7 +124,7 @@ describe('collapsible density panels', () => {
     expect(flattenText(collapsed)).toContain('Workflows');
     expect(flattenText(collapsed)).toContain('Replay /review');
     expect(flattenText(collapsed)).toContain('History 1');
-    expect(flattenText(collapsed)).not.toContain('Latest replay');
+    expect(findCollapseWrapper(collapsed)?.props['data-expanded']).toBe('false');
 
     const expanded = WorkflowPanel({
       replay: buildWorkflowReplaySnapshot(state),

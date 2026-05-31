@@ -26,6 +26,31 @@ body {
   max-height: 24vh;
   overflow: auto;
 }
+/* Collapsible body slide: animate the grid row 1fr <-> 0fr plus opacity so the
+   panel opens AND closes smoothly. visibility flips to hidden at the collapsed
+   end-state (after the slide) so collapsed content leaves the tab order and the
+   a11y tree. Honors reduced-motion via the global tokens.css block. */
+.panel-section-collapse {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows var(--veyra-motion-base) var(--veyra-motion-ease);
+}
+.panel-section-collapse[data-expanded="false"] {
+  grid-template-rows: 0fr;
+}
+.panel-section-collapse-inner {
+  min-height: 0;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity var(--veyra-motion-base) var(--veyra-motion-ease);
+}
+.panel-section-collapse[data-expanded="false"] .panel-section-collapse-inner {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--veyra-motion-base) var(--veyra-motion-ease),
+    visibility 0s linear var(--veyra-motion-base);
+}
 .panel-section-active {
   box-shadow: inset 2px 0 0 var(--veyra-border-focus);
 }
@@ -159,6 +184,7 @@ body {
   height: 7px;
   border-radius: 50%;
   background: var(--veyra-fg-muted);
+  transition: background-color var(--veyra-motion-base) var(--veyra-motion-ease);
 }
 .agent-marker-claude .agent-marker-dot {
   background: var(--veyra-agent-claude);
@@ -193,6 +219,9 @@ body {
   align-items: center;
   gap: var(--veyra-space-1);
   opacity: 0.72;
+  transition:
+    color var(--veyra-motion-base) var(--veyra-motion-ease),
+    opacity var(--veyra-motion-base) var(--veyra-motion-ease);
 }
 .mission-stage-active {
   border-color: var(--veyra-border-focus);
@@ -798,6 +827,18 @@ body {
   gap: 6px;
 }
 
+/* New rows fade + rise in. Only freshly-inserted nodes animate (Preact reuses
+   keyed rows), so streaming text updates don't re-trigger it and a whole loaded
+   history doesn't cascade. Honors reduced-motion via the global block in
+   tokens.css (duration -> ~0, rows just appear). */
+.message-list > * {
+  animation: message-enter var(--veyra-motion-base) var(--veyra-motion-ease) both;
+}
+@keyframes message-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
 /* Shared state surface (empty, no-agents, …): centered orientation for the
    docked conversation, on the v0.2 type + space scale. */
 .state-panel {
@@ -900,15 +941,6 @@ body {
 .msg-error {
   color: var(--veyra-status-error);
   margin-top: var(--veyra-space-1);
-}
-.msg.streaming::after {
-  content: '\2588';
-  display: inline-block;
-  margin-left: 2px;
-  animation: blink 1s steps(2) infinite;
-}
-.msg.thinking::after {
-  display: none;
 }
 .markdown-prose {
   white-space: normal;
@@ -1054,20 +1086,47 @@ body.vscode-high-contrast-light .state-panel-hints code {
   box-shadow: inset 2px 0 0 var(--veyra-border-focus);
 }
 .thinking-line {
-  font-style: italic;
-  opacity: 0.7;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 4px;
+  min-height: 1.2em;
 }
-.braille-spinner {
-  font-family: var(--vscode-editor-font-family, monospace);
-  font-style: normal;
-  display: inline-block;
-  width: 1ch;
+
+/* One thin progress shimmer: a faint track with a single accent segment that
+   sweeps across while a row is streaming. Decorative (aria-hidden); the
+   working state is announced via role="status" on the thinking row. Colors are
+   token-only so the raw-color gate stays clean; under prefers-reduced-motion
+   the global tokens.css block freezes the sweep. */
+.streaming-shimmer {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 160px;
+  height: 2px;
+  margin-top: var(--veyra-space-1);
+  border-radius: 1px;
+  background: var(--veyra-border-default);
+  overflow: hidden;
 }
-@keyframes blink {
-  to { opacity: 0; }
+.streaming-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 40%;
+  border-radius: 1px;
+  background: var(--veyra-status-info);
+  animation: shimmer-slide 1.6s var(--veyra-motion-ease) infinite;
+}
+@keyframes shimmer-slide {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(320%); }
+}
+
+/* The agent's identity marker pulses calmly while its row streams (reuses the
+   Mission Control pulse keyframes). */
+.msg.streaming .agent-marker-dot {
+  animation: pulse 1.6s infinite;
 }
 
 .system-notice {

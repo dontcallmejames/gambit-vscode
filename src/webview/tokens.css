@@ -109,6 +109,10 @@ body.vscode-high-contrast {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+    /* Also zero any delay: a delayed visibility/state flip (e.g. the panel
+       collapse hiding the body after its slide) must not linger when motion is
+       reduced, or collapsed content stays in the tab order for the delay. */
+    transition-delay: 0s !important;
     scroll-behavior: auto !important;
   }
 }

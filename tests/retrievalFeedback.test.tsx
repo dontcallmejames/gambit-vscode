@@ -17,6 +17,19 @@ import type { WorkspaceContextResult } from '../src/workspaceContext.js';
 
 vi.stubGlobal('React', { createElement: h });
 
+function findCollapseWrapper(vnode: any): any | undefined {
+  if (!vnode || typeof vnode !== 'object') return undefined;
+  if (typeof vnode.type === 'function') return findCollapseWrapper(vnode.type(vnode.props));
+  const cls = String(vnode.props?.class ?? '');
+  if (cls.split(/\s+/u).includes('panel-section-collapse')) return vnode;
+  const children = vnode.props?.children;
+  if (Array.isArray(children)) {
+    for (const c of children) { const f = findCollapseWrapper(c); if (f) return f; }
+    return undefined;
+  }
+  return findCollapseWrapper(children);
+}
+
 // PanelSection renders <Icon>, which uses hooks; stub them so the panel can be
 // rendered synchronously in tests.
 vi.mock('preact/hooks', () => ({
@@ -179,7 +192,7 @@ describe('RetrievalFeedbackPanel', () => {
     expect(collapsedText).toContain('@codebase');
     expect(collapsedText).toContain('1 selected');
     expect(collapsedText).toContain('2 omitted');
-    expect(collapsedText).not.toContain('Selected files');
+    expect(findCollapseWrapper(collapsed)?.props['data-expanded']).toBe('false');
 
     clickButtonContaining(collapsed, 'Retrieval Feedback');
 

@@ -125,7 +125,6 @@ describe('MessageList empty state', () => {
       status: { claude: 'ready', codex: 'ready', gemini: 'ready' },
     });
 
-    const collected = collect(vnode, { text: [], classes: [] });
     expect(findNode(vnode, StatePanel)).toBeFalsy();
   });
 

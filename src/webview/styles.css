@@ -1365,11 +1365,6 @@ body.vscode-high-contrast-light .state-panel-hints code {
   white-space: nowrap;
 }
 
-.pulse-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--ok-color);
-  animation: pulse 1.6s infinite;
-}
 @keyframes pulse {
   0% { box-shadow: 0 0 0 0 var(--veyra-status-ok-glow); }
   100% { box-shadow: 0 0 0 8px transparent; }

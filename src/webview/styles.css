@@ -798,6 +798,18 @@ body {
   gap: 6px;
 }
 
+/* New rows fade + rise in. Only freshly-inserted nodes animate (Preact reuses
+   keyed rows), so streaming text updates don't re-trigger it and a whole loaded
+   history doesn't cascade. Honors reduced-motion via the global block in
+   tokens.css (duration -> ~0, rows just appear). */
+.message-list > * {
+  animation: message-enter var(--veyra-motion-base) var(--veyra-motion-ease) both;
+}
+@keyframes message-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
 /* Shared state surface (empty, no-agents, …): centered orientation for the
    docked conversation, on the v0.2 type + space scale. */
 .state-panel {

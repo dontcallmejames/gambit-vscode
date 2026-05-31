@@ -7,6 +7,13 @@ import type { FromExtension, SystemMessage } from '../src/shared/protocol.js';
 
 vi.stubGlobal('React', { createElement: h });
 
+vi.mock('preact/hooks', () => ({
+  useEffect: vi.fn(),
+  useState: vi.fn(() => [false, vi.fn()]),
+  useMemo: vi.fn((fn: () => unknown) => fn()),
+  useRef: vi.fn(() => ({ current: null })),
+}));
+
 describe('Mission Control timeline state', () => {
   it('renders a graceful idle timeline before any dispatch events', () => {
     const snapshot = buildMissionControlSnapshot(initialState());

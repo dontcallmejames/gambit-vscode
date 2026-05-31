@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { AgentMessage, FromWebview, InProgressMessage, Settings, ToolEvent } from '../../shared/protocol.js';
 import { ToolCallCard } from './ToolCallCard.js';
 import { WorkflowArtifactCards } from './WorkflowArtifactCards.js';
+import { AgentMarker } from './AgentMarker.js';
 
 interface Props {
   message: AgentMessage | InProgressMessage;
@@ -25,13 +26,6 @@ const THINKING_VERBS: Record<string, string[]> = {
 
 function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
-}
-
-function agentLabel(agentId: string): string {
-  if (agentId === 'claude') return 'Claude';
-  if (agentId === 'codex') return 'Codex';
-  if (agentId === 'gemini') return 'Gemini';
-  return agentId;
 }
 
 function BrailleSpinner({ agentId }: { agentId: string }) {
@@ -166,7 +160,7 @@ export function AgentBubble({ message, streaming, settings, send }: Props) {
 
   return (
     <div class={classes.join(' ')}>
-      <div class="msg-role">{agentLabel(message.agentId)}</div>
+      <div class="msg-role"><AgentMarker agentId={message.agentId} /></div>
       {isThinking ? (
         <div class="thinking-line">{verb} <BrailleSpinner agentId={message.agentId} /></div>
       ) : (

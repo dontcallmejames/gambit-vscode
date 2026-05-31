@@ -39,7 +39,7 @@
   --veyra-status-error: var(--vscode-errorForeground, #ff7070);
   --veyra-status-error-border: var(--vscode-inputValidation-errorBorder, #ff7070);
   --veyra-status-error-bg: var(--vscode-inputValidation-errorBackground, rgba(255, 80, 80, 0.1)); /* tinted error surface */
-  --veyra-status-warning: var(--vscode-inputValidation-warningForeground, #ffce85);
+  --veyra-status-warning: var(--vscode-editorWarning-foreground, var(--vscode-inputValidation-warningForeground, #b3670c));
   --veyra-status-warning-border: var(--vscode-inputValidation-warningBorder, #ffce85);
   --veyra-status-warning-bg: var(--vscode-inputValidation-warningBackground, rgba(255, 184, 74, 0.08)); /* tinted warning surface */
   --veyra-status-info: var(--vscode-progressBar-background, #4daafc);

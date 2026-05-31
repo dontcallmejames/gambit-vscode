@@ -4,6 +4,7 @@ import type { VeyraWorkflowCommand } from '../workflowPrompts.js';
 import type { WebviewState } from './state.js';
 import { parseWorkflowArtifactBlocks } from './workflowArtifacts.js';
 import type { WorkflowReplaySummary } from './workflowReplay.js';
+import { agentLabel } from './agentLabel.js';
 
 export type WorkflowHistoryCompletionStatus = 'complete' | 'cancelled' | 'errored';
 export type WorkflowHistoryVerificationState = 'passed' | 'failed' | 'unknown';
@@ -208,12 +209,6 @@ function completionStatus(messages: AgentMessage[]): WorkflowHistoryCompletionSt
 
 function stripReplayBlock(text: string): string {
   return text.replace(REPLAY_BLOCK_RE, '').trim();
-}
-
-function agentLabel(agentId: AgentId): string {
-  if (agentId === 'claude') return 'Claude';
-  if (agentId === 'codex') return 'Codex';
-  return 'Gemini';
 }
 
 function plural(count: number, singular: string): string {

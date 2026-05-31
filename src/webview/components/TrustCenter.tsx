@@ -2,6 +2,7 @@ import { h } from 'preact';
 import { PanelSection } from './PanelSection.js';
 import type { FromWebview, VeyraCommandActionId } from '../../shared/protocol.js';
 import type { TrustCenterSnapshot } from '../trustCenter.js';
+import { AgentMarker } from './AgentMarker.js';
 
 type TrustCenterProps = {
   snapshot: TrustCenterSnapshot;
@@ -180,7 +181,11 @@ export function TrustCenter({ snapshot, send, expanded = true, onToggle }: Trust
                   title={warning.text}
                 >
                   <span>{warning.label}</span>
-                  {warning.agentId && <span>{` - ${agentLabel(warning.agentId)}`}</span>}
+                  {warning.agentId && (
+                    <span class="trust-workflow-warning-agent">
+                      <AgentMarker agentId={warning.agentId} />
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
@@ -190,12 +195,6 @@ export function TrustCenter({ snapshot, send, expanded = true, onToggle }: Trust
         </section>
     </PanelSection>
   );
-}
-
-function agentLabel(agentId: string): string {
-  if (agentId === 'claude') return 'Claude';
-  if (agentId === 'codex') return 'Codex';
-  return 'Gemini';
 }
 
 function CommandButton({

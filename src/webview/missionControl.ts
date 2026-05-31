@@ -1,13 +1,13 @@
 import type { AgentId } from '../types.js';
 import type { AgentMessage, SessionMessage, SystemMessage, ToolEvent, WorkflowStateKind } from '../shared/protocol.js';
 import type { WebviewState } from './state.js';
+import { agentLabel } from './agentLabel.js';
 
 export type MissionControlStageState = 'waiting' | 'queued' | 'active' | 'complete' | 'failed' | 'cancelled';
 export type MissionControlMode = 'idle' | 'workflow' | 'direct';
 
 export type MissionControlStage = {
   agentId: AgentId;
-  label: string;
   state: MissionControlStageState;
 };
 
@@ -60,7 +60,6 @@ export function buildMissionControlSnapshot(state: WebviewState): MissionControl
     floorHolder: state.floorHolder,
     stages: AGENTS.map((agentId) => ({
       agentId,
-      label: agentLabel(agentId),
       state: stageState(agentId, mode, state.floorHolder, agentMessages, inProgressMessages, participated),
     })),
     recentTool: recentTool(agentMessages, inProgressMessages),
@@ -188,8 +187,3 @@ function workflowStateLabel(kind: WorkflowStateKind): string {
   return 'No observed inspection evidence';
 }
 
-function agentLabel(agentId: AgentId): string {
-  if (agentId === 'claude') return 'Claude';
-  if (agentId === 'codex') return 'Codex';
-  return 'Gemini';
-}

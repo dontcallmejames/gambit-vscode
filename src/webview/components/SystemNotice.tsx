@@ -1,5 +1,6 @@
 import { h } from 'preact';
 import type { FromWebview, SystemMessage } from '../../shared/protocol.js';
+import { agentLabel } from '../agentLabel.js';
 
 export function SystemNotice({
   message,
@@ -9,12 +10,7 @@ export function SystemNotice({
   send?: (message: FromWebview) => void;
 }) {
   if (message.kind === 'facilitator-decision' && message.agentId && message.reason) {
-    const agentLabels: Record<string, string> = {
-      claude: 'Claude',
-      codex: 'Codex',
-      gemini: 'Gemini',
-    };
-    const label = agentLabels[message.agentId] ?? message.agentId;
+    const label = agentLabel(message.agentId);
     return (
       <div class="system-notice facilitator">
         <span>&rarr;</span>
@@ -126,11 +122,7 @@ export function SystemNotice({
     );
   }
   if ((message.kind === 'file-edited' || message.kind === 'edit-conflict') && message.filePath) {
-    const label = message.agentId === 'claude'
-      ? 'Claude'
-      : message.agentId === 'codex'
-        ? 'Codex'
-        : 'Gemini';
+    const label = message.agentId ? agentLabel(message.agentId) : 'Agent';
     const verb = message.changeKind === 'created'
       ? 'created'
       : message.changeKind === 'deleted'

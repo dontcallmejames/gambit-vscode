@@ -144,6 +144,38 @@ body {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--veyra-space-2);
 }
+
+/* Shared agent identity marker (v0.2 Phase B): color dot + name, used in
+   Mission Control, message rows, and Trust Center. */
+.agent-marker {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--veyra-space-1);
+}
+.agent-marker-dot {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--veyra-fg-muted);
+}
+.agent-marker-claude .agent-marker-dot {
+  background: var(--veyra-agent-claude);
+}
+.agent-marker-codex .agent-marker-dot {
+  background: var(--veyra-agent-codex);
+}
+.agent-marker-gemini .agent-marker-dot {
+  background: var(--veyra-agent-gemini);
+}
+.agent-marker-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .mission-stage {
   min-width: 0;
   display: flex;
@@ -154,41 +186,32 @@ body {
   border-radius: 6px;
   background: var(--veyra-bg-card);
 }
-.mission-stage-dot {
-  flex: 0 0 auto;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--veyra-fg-muted);
-}
-.mission-stage-label {
-  min-width: 0;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 .mission-stage-state {
   flex: 0 0 auto;
   margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--veyra-space-1);
   opacity: 0.72;
 }
 .mission-stage-active {
   border-color: var(--veyra-border-focus);
 }
-.mission-stage-active .mission-stage-dot {
-  background: var(--ok-color);
+.mission-stage-active .agent-marker-dot {
   animation: pulse 1.6s infinite;
 }
-.mission-stage-complete .mission-stage-dot {
-  background: var(--ok-color);
+.mission-stage-complete .mission-stage-state {
+  color: var(--ok-color);
+  opacity: 1;
 }
-.mission-stage-failed .mission-stage-dot,
-.mission-stage-cancelled .mission-stage-dot {
-  background: var(--error-color);
+.mission-stage-failed .mission-stage-state,
+.mission-stage-cancelled .mission-stage-state {
+  color: var(--error-color);
+  opacity: 1;
 }
-.mission-stage-queued .mission-stage-dot {
-  background: var(--veyra-status-info);
+.mission-stage-active .mission-stage-state {
+  color: var(--veyra-status-info);
+  opacity: 1;
 }
 .mission-stage-claude {
   box-shadow: inset 2px 0 0 var(--veyra-agent-claude);
@@ -346,6 +369,9 @@ body {
 .trust-workflow-warning-info {
   border-left-color: var(--vscode-focusBorder, var(--border));
   color: var(--vscode-foreground, inherit);
+}
+.trust-workflow-warning-agent {
+  margin-left: var(--veyra-space-1);
 }
 @media (max-width: 520px) {
   .trust-panel-changes {
@@ -836,23 +862,17 @@ body {
 .msg-body {
   min-width: 0;
 }
+/* Agent identity in message rows is carried by the AgentMarker dot (and the row's
+   left stripe below); the name text stays the default muted role color, matching
+   Mission Control. */
 .msg-claude {
   box-shadow: inset 2px 0 0 var(--veyra-agent-claude);
-}
-.msg-claude .msg-role {
-  color: var(--veyra-agent-claude);
 }
 .msg-codex {
   box-shadow: inset 2px 0 0 var(--veyra-agent-codex);
 }
-.msg-codex .msg-role {
-  color: var(--veyra-agent-codex);
-}
 .msg-gemini {
   box-shadow: inset 2px 0 0 var(--veyra-agent-gemini);
-}
-.msg-gemini .msg-role {
-  color: var(--veyra-agent-gemini);
 }
 .msg-cancelled {
   font-style: italic;
@@ -916,6 +936,18 @@ body {
   padding: 0 0.25em;
   border-radius: 3px;
   background: var(--veyra-bg-code);
+  color: var(--veyra-fg-default);
+}
+/* High Contrast: inline code uses a border instead of a fill so its text is
+   always foreground-on-canvas. A code-block fill can resolve close to the HC
+   foreground and hide the text (most visibly in Light High Contrast). */
+body.vscode-high-contrast .markdown-prose :not(pre) > code,
+body.vscode-high-contrast-light .markdown-prose :not(pre) > code,
+body.vscode-high-contrast .message-list-empty-hints code,
+body.vscode-high-contrast-light .message-list-empty-hints code {
+  background: transparent;
+  border: 1px solid var(--veyra-border-default);
+  color: var(--veyra-fg-default);
 }
 .markdown-prose pre {
   overflow-x: auto;

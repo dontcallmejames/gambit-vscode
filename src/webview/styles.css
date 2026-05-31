@@ -1277,6 +1277,11 @@ body.vscode-high-contrast-light .state-panel-hints code {
   min-height: 36px;
   max-height: 200px;
 }
+.composer textarea:focus {
+  outline: 1px solid var(--veyra-border-focus);
+  outline-offset: -1px;
+  border-color: var(--veyra-border-focus);
+}
 .composer-spacer {
   flex: 1;
 }

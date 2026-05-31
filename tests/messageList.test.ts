@@ -12,6 +12,7 @@ vi.mock('preact/hooks', () => ({
 }));
 
 import { MessageList } from '../src/webview/components/MessageList.js';
+import { StatePanel } from '../src/webview/components/StatePanel.js';
 import { useEffect } from 'preact/hooks';
 
 const mockedUseEffect = useEffect as unknown as ReturnType<typeof vi.fn>;
@@ -33,6 +34,20 @@ function collect(node: unknown, acc: Collected): Collected {
   if (typeof cls === 'string') acc.classes.push(cls);
   if (vnode.props && 'children' in vnode.props) collect(vnode.props.children, acc);
   return acc;
+}
+
+function findNode(vnode: any, type: unknown): any | undefined {
+  if (vnode === null || vnode === undefined || typeof vnode !== 'object') return undefined;
+  if (vnode.type === type) return vnode;
+  const children = vnode.props?.children;
+  if (Array.isArray(children)) {
+    for (const child of children) {
+      const found = findNode(child, type);
+      if (found) return found;
+    }
+    return undefined;
+  }
+  return findNode(children, type);
 }
 
 describe('MessageList auto-scroll', () => {
@@ -88,8 +103,9 @@ describe('MessageList empty state', () => {
     const collected = collect(vnode, { text: [], classes: [] });
     const text = collected.text.join(' ');
 
-    expect(collected.classes).toContain('message-list-empty');
-    expect(text).toContain('Send your first prompt');
+    const panel = findNode(vnode, StatePanel);
+    expect(panel).toBeTruthy();
+    expect(panel.props.title).toBe('Send your first prompt');
     expect(text).toContain('@all');
     expect(text).toContain('/review');
     expect(text).toContain('@path/to/file');
@@ -107,6 +123,6 @@ describe('MessageList empty state', () => {
     });
 
     const collected = collect(vnode, { text: [], classes: [] });
-    expect(collected.classes).not.toContain('message-list-empty');
+    expect(findNode(vnode, StatePanel)).toBeFalsy();
   });
 });

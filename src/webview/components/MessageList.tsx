@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'preact/hooks';
 import { UserBubble } from './UserBubble.js';
 import { AgentBubble } from './AgentBubble.js';
 import { SystemNotice } from './SystemNotice.js';
-import { Icon } from './Icon.js';
+import { StatePanel } from './StatePanel.js';
 import type { FromWebview, Session, InProgressMessage, Settings, SessionMessage } from '../../shared/protocol.js';
 
 interface Props {
@@ -62,16 +62,18 @@ export function MessageList({ session, inProgress, settings, send }: Props) {
   return (
     <div class="message-list" ref={listRef} onScroll={onScroll}>
       {items.length === 0 ? (
-        <div class="message-list-empty">
-          <Icon name="comment-discussion" fallback="❝" />
-          <p class="message-list-empty-title">Send your first prompt</p>
-          <p class="message-list-empty-subtitle">Veyra routes it to Claude, Codex, and Gemini.</p>
-          <ul class="message-list-empty-hints">
+        <StatePanel
+          icon="comment-discussion"
+          iconFallback="❝"
+          title="Send your first prompt"
+          subtitle="Veyra routes it to Claude, Codex, and Gemini."
+        >
+          <ul class="state-panel-hints">
             <li><code>@claude</code> <code>@codex</code> <code>@gemini</code> go to one agent — <code>@all</code> fans out to all three</li>
             <li><code>/review</code> <code>/debate</code> <code>/consensus</code> <code>/implement</code> run a multi-agent workflow</li>
             <li><code>@path/to/file</code> adds a file as context</li>
           </ul>
-        </div>
+        </StatePanel>
       ) : (
         items.map((item) => {
           if (item.kind === 'in-progress') {

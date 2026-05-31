@@ -184,6 +184,7 @@ body {
   height: 7px;
   border-radius: 50%;
   background: var(--veyra-fg-muted);
+  transition: background-color var(--veyra-motion-base) var(--veyra-motion-ease);
 }
 .agent-marker-claude .agent-marker-dot {
   background: var(--veyra-agent-claude);
@@ -218,6 +219,9 @@ body {
   align-items: center;
   gap: var(--veyra-space-1);
   opacity: 0.72;
+  transition:
+    color var(--veyra-motion-base) var(--veyra-motion-ease),
+    opacity var(--veyra-motion-base) var(--veyra-motion-ease);
 }
 .mission-stage-active {
   border-color: var(--veyra-border-focus);

@@ -8,7 +8,6 @@ export type MissionControlMode = 'idle' | 'workflow' | 'direct';
 
 export type MissionControlStage = {
   agentId: AgentId;
-  label: string;
   state: MissionControlStageState;
 };
 
@@ -61,7 +60,6 @@ export function buildMissionControlSnapshot(state: WebviewState): MissionControl
     floorHolder: state.floorHolder,
     stages: AGENTS.map((agentId) => ({
       agentId,
-      label: agentLabel(agentId),
       state: stageState(agentId, mode, state.floorHolder, agentMessages, inProgressMessages, participated),
     })),
     recentTool: recentTool(agentMessages, inProgressMessages),

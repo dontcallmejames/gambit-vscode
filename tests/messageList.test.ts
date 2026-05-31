@@ -76,6 +76,7 @@ describe('MessageList auto-scroll', () => {
       inProgress,
       settings: { toolCallRenderStyle: 'compact' },
       send: vi.fn(),
+      status: { claude: 'ready', codex: 'ready', gemini: 'ready' },
     });
 
     const deps = mockedUseEffect.mock.calls[0]?.[1] ?? [];
@@ -98,6 +99,7 @@ describe('MessageList empty state', () => {
       inProgress: new Map<string, InProgressMessage>(),
       settings: { toolCallRenderStyle: 'compact' },
       send: vi.fn(),
+      status: { claude: 'ready', codex: 'ready', gemini: 'ready' },
     });
 
     const collected = collect(vnode, { text: [], classes: [] });
@@ -120,9 +122,37 @@ describe('MessageList empty state', () => {
       inProgress: new Map<string, InProgressMessage>(),
       settings: { toolCallRenderStyle: 'compact' },
       send: vi.fn(),
+      status: { claude: 'ready', codex: 'ready', gemini: 'ready' },
     });
 
     const collected = collect(vnode, { text: [], classes: [] });
     expect(findNode(vnode, StatePanel)).toBeFalsy();
+  });
+
+  it('shows the no-agents-ready state when all agents are unavailable and there are no messages', () => {
+    const vnode = MessageList({
+      session: { version: 1, messages: [] },
+      inProgress: new Map<string, InProgressMessage>(),
+      settings: { toolCallRenderStyle: 'compact' },
+      send: vi.fn(),
+      status: { claude: 'unauthenticated', codex: 'not-installed', gemini: 'inaccessible' },
+    });
+
+    const panel = findNode(vnode, StatePanel);
+    expect(panel).toBeTruthy();
+    expect(panel.props.title).toBe('No agents are available');
+  });
+
+  it('shows the onboarding empty state when at least one agent is ready', () => {
+    const vnode = MessageList({
+      session: { version: 1, messages: [] },
+      inProgress: new Map<string, InProgressMessage>(),
+      settings: { toolCallRenderStyle: 'compact' },
+      send: vi.fn(),
+      status: { claude: 'unauthenticated', codex: 'ready', gemini: 'not-installed' },
+    });
+
+    const panel = findNode(vnode, StatePanel);
+    expect(panel.props.title).toBe('Send your first prompt');
   });
 });

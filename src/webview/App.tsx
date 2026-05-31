@@ -124,7 +124,7 @@ export function App() {
         onMissingFileInput={(input) => setRetrievalMissingFiles((current) => ({ ...current, input }))}
         onMarkMissingFile={markMissingFile}
       />
-      <MessageList session={state.session} inProgress={state.inProgress} settings={state.settings} send={send} />
+      <MessageList session={state.session} inProgress={state.inProgress} settings={state.settings} send={send} status={state.status} />
       <Composer
         send={send}
         floorHolder={state.floorHolder}

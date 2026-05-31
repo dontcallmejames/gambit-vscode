@@ -92,4 +92,20 @@ describe('webview styles: non-color design tokens (v0.2 Phase A)', () => {
   it('includes a prefers-reduced-motion block', () => {
     expect(tokens.includes('prefers-reduced-motion')).toBe(true);
   });
+
+  it('defines a shared .veyra-microlabel rule with letter-spacing', () => {
+    const block = styles.match(/\.veyra-microlabel[^{]*\{[^}]*\}/);
+    expect(block, 'no .veyra-microlabel rule found').not.toBeNull();
+    expect(block![0]).toMatch(/letter-spacing:\s*0\.06em/);
+  });
+
+  it('no kicker rule keeps the old letter-spacing: 0', () => {
+    for (const kicker of [
+      'panel-section-kicker', 'mission-control-kicker',
+      'workflow-replay-kicker', 'workflow-history-kicker',
+    ]) {
+      const re = new RegExp(`\\.${kicker}[^{]*\\{[^}]*letter-spacing:\\s*0;`);
+      expect(re.test(styles), `${kicker} still has letter-spacing: 0`).toBe(false);
+    }
+  });
 });

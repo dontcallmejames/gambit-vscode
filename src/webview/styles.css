@@ -45,10 +45,15 @@ body {
   align-items: center;
   gap: 6px;
 }
-.panel-section-kicker {
-  opacity: 0.65;
+.veyra-microlabel,
+.panel-section-kicker,
+.mission-control-kicker,
+.workflow-replay-kicker,
+.workflow-history-kicker {
   text-transform: uppercase;
-  letter-spacing: 0;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  color: var(--veyra-fg-muted);
 }
 .panel-section-label {
   min-width: 0;
@@ -91,7 +96,7 @@ body {
   cursor: pointer;
 }
 .panel-section-toggle:hover .panel-section-kicker {
-  opacity: 1;
+  color: var(--veyra-fg-default);
 }
 .panel-section-toggle:focus-visible {
   outline: 1px solid var(--veyra-border-focus);
@@ -120,10 +125,7 @@ body {
   align-items: baseline;
 }
 .mission-control-kicker {
-  opacity: 0.65;
-  text-transform: uppercase;
-  letter-spacing: 0;
-  margin-right: 6px;
+  margin-right: var(--veyra-space-2);
 }
 .mission-control-label {
   font-weight: 700;
@@ -371,10 +373,7 @@ body {
   gap: 8px;
 }
 .workflow-replay-kicker {
-  opacity: 0.65;
-  text-transform: uppercase;
-  letter-spacing: 0;
-  margin-right: 6px;
+  margin-right: var(--veyra-space-2);
 }
 .workflow-replay-label {
   font-weight: 700;
@@ -441,10 +440,7 @@ body {
   gap: 8px;
 }
 .workflow-history-kicker {
-  opacity: 0.65;
-  text-transform: uppercase;
-  letter-spacing: 0;
-  margin-right: 6px;
+  margin-right: var(--veyra-space-2);
 }
 .workflow-history-label,
 .workflow-history-command {

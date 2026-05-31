@@ -2,6 +2,7 @@ import { h } from 'preact';
 import { PanelSection } from './PanelSection.js';
 import type { FromWebview, VeyraCommandActionId } from '../../shared/protocol.js';
 import type { TrustCenterSnapshot } from '../trustCenter.js';
+import { agentLabel } from '../agentLabel.js';
 
 type TrustCenterProps = {
   snapshot: TrustCenterSnapshot;
@@ -190,12 +191,6 @@ export function TrustCenter({ snapshot, send, expanded = true, onToggle }: Trust
         </section>
     </PanelSection>
   );
-}
-
-function agentLabel(agentId: string): string {
-  if (agentId === 'claude') return 'Claude';
-  if (agentId === 'codex') return 'Codex';
-  return 'Gemini';
 }
 
 function CommandButton({

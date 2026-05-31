@@ -1,5 +1,6 @@
 import { h } from 'preact';
 import type { MissionControlSnapshot, MissionControlStage } from '../missionControl.js';
+import { agentLabel } from '../agentLabel.js';
 
 type MissionControlTimelineProps = {
   snapshot: MissionControlSnapshot;
@@ -46,10 +47,4 @@ function Stage({ stage }: { stage: MissionControlStage }) {
       <span class="mission-stage-state">{stage.state}</span>
     </div>
   );
-}
-
-function agentLabel(agentId: MissionControlStage['agentId']): string {
-  if (agentId === 'claude') return 'Claude';
-  if (agentId === 'codex') return 'Codex';
-  return 'Gemini';
 }

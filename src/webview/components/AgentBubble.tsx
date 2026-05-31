@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { AgentMessage, FromWebview, InProgressMessage, Settings, ToolEvent } from '../../shared/protocol.js';
 import { ToolCallCard } from './ToolCallCard.js';
 import { WorkflowArtifactCards } from './WorkflowArtifactCards.js';
+import { agentLabel } from '../agentLabel.js';
 
 interface Props {
   message: AgentMessage | InProgressMessage;
@@ -25,13 +26,6 @@ const THINKING_VERBS: Record<string, string[]> = {
 
 function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
-}
-
-function agentLabel(agentId: string): string {
-  if (agentId === 'claude') return 'Claude';
-  if (agentId === 'codex') return 'Codex';
-  if (agentId === 'gemini') return 'Gemini';
-  return agentId;
 }
 
 function BrailleSpinner({ agentId }: { agentId: string }) {

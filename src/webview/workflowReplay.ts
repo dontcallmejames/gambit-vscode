@@ -2,6 +2,7 @@ import type { AgentId } from '../types.js';
 import type { AgentMessage, SessionMessage, UserMessage } from '../shared/protocol.js';
 import type { WebviewState } from './state.js';
 import type { VeyraWorkflowCommand } from '../workflowPrompts.js';
+import { agentLabel } from './agentLabel.js';
 
 export type WorkflowReplaySummary = {
   command: VeyraWorkflowCommand;
@@ -114,8 +115,3 @@ function formatAgents(agentIds: AgentId[]): string {
   return agentIds.map(agentLabel).join(', ');
 }
 
-function agentLabel(agentId: AgentMessage['agentId']): string {
-  if (agentId === 'claude') return 'Claude';
-  if (agentId === 'codex') return 'Codex';
-  return 'Gemini';
-}

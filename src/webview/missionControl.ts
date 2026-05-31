@@ -1,6 +1,7 @@
 import type { AgentId } from '../types.js';
 import type { AgentMessage, SessionMessage, SystemMessage, ToolEvent, WorkflowStateKind } from '../shared/protocol.js';
 import type { WebviewState } from './state.js';
+import { agentLabel } from './agentLabel.js';
 
 export type MissionControlStageState = 'waiting' | 'queued' | 'active' | 'complete' | 'failed' | 'cancelled';
 export type MissionControlMode = 'idle' | 'workflow' | 'direct';
@@ -188,8 +189,3 @@ function workflowStateLabel(kind: WorkflowStateKind): string {
   return 'No observed inspection evidence';
 }
 
-function agentLabel(agentId: AgentId): string {
-  if (agentId === 'claude') return 'Claude';
-  if (agentId === 'codex') return 'Codex';
-  return 'Gemini';
-}

@@ -3,6 +3,9 @@ import type {
 } from '../shared/protocol.js';
 import { DEFAULT_SETTINGS } from '../shared/protocol.js';
 import type { AgentId, AgentStatus } from '../types.js';
+import { agentLabel } from './agentLabel.js';
+
+export { agentLabel };
 
 export type WebviewState = {
   session: Session;
@@ -141,12 +144,6 @@ export function reduce(state: WebviewState, event: FromExtension): WebviewState 
         },
       };
   }
-}
-
-function agentLabel(agentId: AgentId): string {
-  if (agentId === 'claude') return 'Claude';
-  if (agentId === 'codex') return 'Codex';
-  return 'Gemini';
 }
 
 function fileChangeVerb(changeKind: 'created' | 'edited' | 'deleted'): string {

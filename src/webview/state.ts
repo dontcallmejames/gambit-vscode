@@ -5,8 +5,6 @@ import { DEFAULT_SETTINGS } from '../shared/protocol.js';
 import type { AgentId, AgentStatus } from '../types.js';
 import { agentLabel } from './agentLabel.js';
 
-export { agentLabel };
-
 export type WebviewState = {
   session: Session;
   inProgress: Map<string, InProgressMessage>;

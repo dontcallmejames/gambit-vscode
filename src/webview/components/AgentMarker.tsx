@@ -15,10 +15,20 @@ interface AgentMarkerProps {
  * the name text; the dot color is reinforcement (acceptable to be color-only).
  */
 export function AgentMarker({ agentId, showLabel = true }: AgentMarkerProps) {
+  const label = agentLabel(agentId);
+  // When the name is hidden, the dot is the only content and is aria-hidden, so
+  // give the wrapper an accessible name; otherwise the visible label carries it.
+  if (!showLabel) {
+    return (
+      <span class={`agent-marker agent-marker-${agentId}`} role="img" aria-label={label}>
+        <span class="agent-marker-dot" aria-hidden="true" />
+      </span>
+    );
+  }
   return (
     <span class={`agent-marker agent-marker-${agentId}`}>
       <span class="agent-marker-dot" aria-hidden="true" />
-      {showLabel && <span class="agent-marker-label">{agentLabel(agentId)}</span>}
+      <span class="agent-marker-label">{label}</span>
     </span>
   );
 }

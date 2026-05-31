@@ -35,4 +35,10 @@ describe('AgentMarker', () => {
     expect(acc.classes).toContain('agent-marker-codex');
     expect(acc.text.join(' ')).not.toContain('Codex');
   });
+
+  it('exposes an accessible label when the name is hidden (dot-only)', () => {
+    const vnode = AgentMarker({ agentId: 'gemini', showLabel: false }) as any;
+    expect(vnode.props.role).toBe('img');
+    expect(vnode.props['aria-label']).toBe('Gemini');
+  });
 });

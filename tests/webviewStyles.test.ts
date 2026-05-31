@@ -74,3 +74,38 @@ describe('webview styles: color token discipline', () => {
     expect(missing, `Undefined Veyra tokens referenced in styles.css: ${missing.join(', ')}`).toEqual([]);
   });
 });
+
+describe('webview styles: non-color design tokens (v0.2 Phase A)', () => {
+  const tokens = fs.readFileSync(path.join(repoRoot, 'src', 'webview', 'tokens.css'), 'utf8');
+
+  const REQUIRED_TOKENS = [
+    '--veyra-space-1', '--veyra-space-2', '--veyra-space-3', '--veyra-space-4', '--veyra-space-5',
+    '--veyra-text-micro', '--veyra-text-body', '--veyra-text-label',
+    '--veyra-motion-fast', '--veyra-motion-base', '--veyra-motion-ease',
+  ];
+
+  it.each(REQUIRED_TOKENS)('defines %s in tokens.css', (token) => {
+    const re = new RegExp(`${token.replace(/-/g, '\\-')}\\s*:`);
+    expect(re.test(tokens)).toBe(true);
+  });
+
+  it('includes a prefers-reduced-motion block', () => {
+    expect(tokens.includes('prefers-reduced-motion')).toBe(true);
+  });
+
+  it('defines a shared .veyra-microlabel rule with letter-spacing', () => {
+    const block = styles.match(/\.veyra-microlabel[^{]*\{[^}]*\}/);
+    expect(block, 'no .veyra-microlabel rule found').not.toBeNull();
+    expect(block![0]).toMatch(/letter-spacing:\s*0\.06em/);
+  });
+
+  it('no kicker rule keeps the old letter-spacing: 0', () => {
+    for (const kicker of [
+      'panel-section-kicker', 'mission-control-kicker',
+      'workflow-replay-kicker', 'workflow-history-kicker',
+    ]) {
+      const re = new RegExp(`\\.${kicker}[^{]*\\{[^}]*letter-spacing:\\s*0;`);
+      expect(re.test(styles), `${kicker} still has letter-spacing: 0`).toBe(false);
+    }
+  });
+});

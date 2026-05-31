@@ -160,7 +160,7 @@ export function Composer({ send, floorHolder, status, veyraMdPresent, draft = nu
       )}
       <div class="composer-row">
         <HealthStrip status={status} send={send} veyraMdPresent={veyraMdPresent} />
-        <div style="flex:1" />
+        <div class="composer-spacer" />
         {isFloorHeld && (
           <button class="cancel" onClick={() => send({ kind: 'cancel' })}>Cancel</button>
         )}

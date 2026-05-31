@@ -14,12 +14,12 @@ body {
    through <PanelSection>, which owns the section, header, and body wrapper;
    panel-local CSS owns only body layout. */
 .panel-section {
-  padding: 7px 10px;
+  padding: var(--veyra-space-2) var(--veyra-space-3);
   border-bottom: 1px solid var(--veyra-border-default);
   background: var(--veyra-bg-panel);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--veyra-space-2);
   font-size: 11px;
 }
 .panel-section-open {
@@ -37,18 +37,25 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--veyra-space-3);
 }
 .panel-section-heading {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--veyra-space-2);
 }
-.panel-section-kicker {
-  opacity: 0.65;
+/* Shared microlabel treatment. .veyra-microlabel is a forward-declared utility
+   (adopted by components in later v0.2 phases); the kicker selectors use it now. */
+.veyra-microlabel,
+.panel-section-kicker,
+.mission-control-kicker,
+.workflow-replay-kicker,
+.workflow-history-kicker {
   text-transform: uppercase;
-  letter-spacing: 0;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  color: var(--veyra-fg-muted);
 }
 .panel-section-label {
   min-width: 0;
@@ -91,7 +98,7 @@ body {
   cursor: pointer;
 }
 .panel-section-toggle:hover .panel-section-kicker {
-  opacity: 1;
+  color: var(--veyra-fg-default);
 }
 .panel-section-toggle:focus-visible {
   outline: 1px solid var(--veyra-border-focus);
@@ -105,25 +112,22 @@ body {
 }
 
 .mission-control {
-  padding: 8px 10px;
+  padding: var(--veyra-space-3) var(--veyra-space-3);
   border-bottom: 1px solid var(--border);
   background: var(--veyra-bg-panel);
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: var(--veyra-space-2);
   font-size: 11px;
 }
 .mission-control-head {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--veyra-space-3);
   align-items: baseline;
 }
 .mission-control-kicker {
-  opacity: 0.65;
-  text-transform: uppercase;
-  letter-spacing: 0;
-  margin-right: 6px;
+  margin-right: var(--veyra-space-2);
 }
 .mission-control-label {
   font-weight: 700;
@@ -132,20 +136,20 @@ body {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 6px;
+  gap: var(--veyra-space-2);
   opacity: 0.72;
 }
 .mission-control-stages {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+  gap: var(--veyra-space-2);
 }
 .mission-stage {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 7px;
+  gap: var(--veyra-space-2);
+  padding: var(--veyra-space-1) var(--veyra-space-2);
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--veyra-bg-card);
@@ -371,10 +375,7 @@ body {
   gap: 8px;
 }
 .workflow-replay-kicker {
-  opacity: 0.65;
-  text-transform: uppercase;
-  letter-spacing: 0;
-  margin-right: 6px;
+  margin-right: var(--veyra-space-2);
 }
 .workflow-replay-label {
   font-weight: 700;
@@ -441,10 +442,7 @@ body {
   gap: 8px;
 }
 .workflow-history-kicker {
-  opacity: 0.65;
-  text-transform: uppercase;
-  letter-spacing: 0;
-  margin-right: 6px;
+  margin-right: var(--veyra-space-2);
 }
 .workflow-history-label,
 .workflow-history-command {
@@ -856,6 +854,15 @@ body {
 .msg-gemini .msg-role {
   color: var(--veyra-agent-gemini);
 }
+.msg-cancelled {
+  font-style: italic;
+  color: var(--veyra-fg-muted);
+  margin-top: var(--veyra-space-1);
+}
+.msg-error {
+  color: var(--veyra-status-error);
+  margin-top: var(--veyra-space-1);
+}
 .msg.streaming::after {
   content: '\2588';
   display: inline-block;
@@ -1219,6 +1226,9 @@ body {
   font: inherit;
   min-height: 36px;
   max-height: 200px;
+}
+.composer-spacer {
+  flex: 1;
 }
 .composer-row {
   display: flex;

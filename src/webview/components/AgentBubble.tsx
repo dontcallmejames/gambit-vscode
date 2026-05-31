@@ -174,8 +174,8 @@ export function AgentBubble({ message, streaming, settings, send }: Props) {
       )}
       {message.toolEvents.length > 0 && <ToolEvents events={message.toolEvents} renderStyle={settings.toolCallRenderStyle} />}
       <EditedFilesRow editedFiles={editedFiles} send={send} />
-      {status === 'cancelled' && <div style="font-style:italic;opacity:0.6;margin-top:4px">[Cancelled]</div>}
-      {status === 'errored' && error && <div style="color:var(--error-color);margin-top:4px">{error}</div>}
+      {status === 'cancelled' && <div class="msg-cancelled">[Cancelled]</div>}
+      {status === 'errored' && error && <div class="msg-error">{error}</div>}
     </div>
   );
 }

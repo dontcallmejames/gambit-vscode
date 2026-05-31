@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { AgentMessage, FromWebview, InProgressMessage, Settings, ToolEvent } from '../../shared/protocol.js';
 import { ToolCallCard } from './ToolCallCard.js';
 import { WorkflowArtifactCards } from './WorkflowArtifactCards.js';
-import { agentLabel } from '../agentLabel.js';
+import { AgentMarker } from './AgentMarker.js';
 
 interface Props {
   message: AgentMessage | InProgressMessage;
@@ -160,7 +160,7 @@ export function AgentBubble({ message, streaming, settings, send }: Props) {
 
   return (
     <div class={classes.join(' ')}>
-      <div class="msg-role">{agentLabel(message.agentId)}</div>
+      <div class="msg-role"><AgentMarker agentId={message.agentId} /></div>
       {isThinking ? (
         <div class="thinking-line">{verb} <BrailleSpinner agentId={message.agentId} /></div>
       ) : (

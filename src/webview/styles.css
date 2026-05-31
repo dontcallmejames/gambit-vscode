@@ -370,6 +370,9 @@ body {
   border-left-color: var(--vscode-focusBorder, var(--border));
   color: var(--vscode-foreground, inherit);
 }
+.trust-workflow-warning-agent {
+  margin-left: var(--veyra-space-1);
+}
 @media (max-width: 520px) {
   .trust-panel-changes {
     grid-column: span 1;

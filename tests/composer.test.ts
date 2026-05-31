@@ -12,6 +12,7 @@ vi.mock('preact/hooks', () => ({
 
 import { Composer } from '../src/webview/components/Composer.js';
 import { MentionAutocomplete } from '../src/webview/components/MentionAutocomplete.js';
+import { AgentMarker } from '../src/webview/components/AgentMarker.js';
 import { useState } from 'preact/hooks';
 
 const mockedUseState = useState as unknown as ReturnType<typeof vi.fn>;
@@ -177,6 +178,39 @@ describe('Composer', () => {
       kind: 'send',
       text: '@veyra /review replay this workflow',
     });
+  });
+});
+
+describe('Composer floor-held affordance', () => {
+  beforeEach(() => {
+    mockedUseState.mockReset();
+    mockedUseState.mockImplementation((initial: unknown) => [initial, vi.fn()]);
+  });
+
+  it('shows which agent holds the floor via an AgentMarker', () => {
+    const vnode = Composer({
+      send: vi.fn(),
+      floorHolder: 'claude',
+      status: { claude: 'ready', codex: 'ready', gemini: 'ready' },
+      veyraMdPresent: false,
+    });
+
+    const marker = findNode(vnode, AgentMarker);
+    expect(marker).toBeTruthy();
+    expect(marker.props.agentId).toBe('claude');
+    expect(collectText(vnode)).toContain('Working');
+  });
+
+  it('shows no floor affordance when no agent holds the floor', () => {
+    const vnode = Composer({
+      send: vi.fn(),
+      floorHolder: null,
+      status: { claude: 'ready', codex: 'ready', gemini: 'ready' },
+      veyraMdPresent: false,
+    });
+
+    expect(findNode(vnode, AgentMarker)).toBeUndefined();
+    expect(collectText(vnode)).not.toContain('Working');
   });
 });
 

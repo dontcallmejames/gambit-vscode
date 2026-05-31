@@ -3,6 +3,7 @@ import { useState, useRef, useEffect, useMemo } from 'preact/hooks';
 import type { AgentId, AgentStatus } from '../../types.js';
 import type { FromWebview } from '../../shared/protocol.js';
 import { HealthStrip } from './HealthStrip.js';
+import { AgentMarker } from './AgentMarker.js';
 import {
   MentionAutocomplete,
   applyAutocompletePick,
@@ -161,6 +162,12 @@ export function Composer({ send, floorHolder, status, veyraMdPresent, draft = nu
       <div class="composer-row">
         <HealthStrip status={status} send={send} veyraMdPresent={veyraMdPresent} />
         <div class="composer-spacer" />
+        {isFloorHeld && floorHolder && (
+          <span class="composer-floor">
+            <AgentMarker agentId={floorHolder} />
+            <span class="composer-floor-state veyra-microlabel">Working</span>
+          </span>
+        )}
         {isFloorHeld && (
           <button class="cancel" onClick={() => send({ kind: 'cancel' })}>Cancel</button>
         )}

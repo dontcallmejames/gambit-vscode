@@ -798,47 +798,65 @@ body {
   gap: 6px;
 }
 
-/* First-launch empty state: centered orientation for the docked conversation. */
-.message-list-empty {
+/* Shared state surface (empty, no-agents, …): centered orientation for the
+   docked conversation, on the v0.2 type + space scale. */
+.state-panel {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 24px 18px;
+  gap: var(--veyra-space-2);
+  padding: var(--veyra-space-5);
   text-align: center;
 }
-.message-list-empty .codicon,
-.message-list-empty .icon-fallback {
+.state-panel .codicon,
+.state-panel .icon-fallback {
   font-size: 26px;
   line-height: 1;
-  margin-bottom: 4px;
+  margin-bottom: var(--veyra-space-1);
   color: var(--veyra-fg-muted);
 }
-.message-list-empty-title {
+.state-panel-title {
   margin: 0;
+  font-size: var(--veyra-text-label);
   font-weight: 600;
   color: var(--veyra-fg-default);
 }
-.message-list-empty-subtitle {
+.state-panel-subtitle {
   margin: 0;
+  font-size: var(--veyra-text-micro);
   color: var(--veyra-fg-muted);
 }
-.message-list-empty-hints {
+.state-panel-body {
+  margin-top: var(--veyra-space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--veyra-space-3);
+}
+.state-panel-hints {
   list-style: none;
-  margin: 10px 0 0;
+  margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--veyra-space-2);
   max-width: 320px;
-  font-size: 12px;
+  font-size: var(--veyra-text-micro);
   color: var(--veyra-fg-muted);
+  text-align: left;
 }
-.message-list-empty-hints code {
+.state-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--veyra-space-3);
+  justify-content: center;
+}
+.state-panel-hints code,
+.state-panel-actions code {
   font-family: var(--vscode-editor-font-family, monospace);
-  font-size: 11px;
+  font-size: var(--veyra-text-micro);
   padding: 1px 5px;
   border-radius: 3px;
   background: var(--veyra-bg-code);
@@ -943,8 +961,8 @@ body {
    foreground and hide the text (most visibly in Light High Contrast). */
 body.vscode-high-contrast .markdown-prose :not(pre) > code,
 body.vscode-high-contrast-light .markdown-prose :not(pre) > code,
-body.vscode-high-contrast .message-list-empty-hints code,
-body.vscode-high-contrast-light .message-list-empty-hints code {
+body.vscode-high-contrast .state-panel-hints code,
+body.vscode-high-contrast-light .state-panel-hints code {
   background: transparent;
   border: 1px solid var(--veyra-border-default);
   color: var(--veyra-fg-default);
@@ -1259,8 +1277,21 @@ body.vscode-high-contrast-light .message-list-empty-hints code {
   min-height: 36px;
   max-height: 200px;
 }
+.composer textarea:focus {
+  outline: 1px solid var(--veyra-border-focus);
+  outline-offset: -1px;
+  border-color: var(--veyra-border-focus);
+}
 .composer-spacer {
   flex: 1;
+}
+.composer-floor {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--veyra-space-2);
+}
+.composer-floor-state {
+  font-size: var(--veyra-text-micro);
 }
 .composer-row {
   display: flex;
@@ -1334,11 +1365,6 @@ body.vscode-high-contrast-light .message-list-empty-hints code {
   white-space: nowrap;
 }
 
-.pulse-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--ok-color);
-  animation: pulse 1.6s infinite;
-}
 @keyframes pulse {
   0% { box-shadow: 0 0 0 0 var(--veyra-status-ok-glow); }
   100% { box-shadow: 0 0 0 8px transparent; }

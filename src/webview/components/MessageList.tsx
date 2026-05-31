@@ -3,14 +3,16 @@ import { useEffect, useRef } from 'preact/hooks';
 import { UserBubble } from './UserBubble.js';
 import { AgentBubble } from './AgentBubble.js';
 import { SystemNotice } from './SystemNotice.js';
-import { Icon } from './Icon.js';
+import { StatePanel } from './StatePanel.js';
 import type { FromWebview, Session, InProgressMessage, Settings, SessionMessage } from '../../shared/protocol.js';
+import type { AgentId, AgentStatus } from '../../types.js';
 
 interface Props {
   session: Session;
   inProgress: Map<string, InProgressMessage>;
   settings: Settings;
   send: (message: FromWebview) => void;
+  status: Record<AgentId, AgentStatus>;
 }
 
 type PersistedItem = { kind: 'persisted'; message: SessionMessage; ts: number };
@@ -38,7 +40,12 @@ export function buildMessageListScrollDependency(session: Session, inProgress: M
   return [...persisted, ...live].join('|');
 }
 
-export function MessageList({ session, inProgress, settings, send }: Props) {
+function allAgentsUnavailable(status: Record<AgentId, AgentStatus>): boolean {
+  const values = Object.values(status);
+  return values.length > 0 && values.every((s) => s !== 'ready' && s !== 'busy');
+}
+
+export function MessageList({ session, inProgress, settings, send, status }: Props) {
   const listRef = useRef<HTMLDivElement>(null);
   const shouldFollowBottomRef = useRef(true);
   const scrollDependency = buildMessageListScrollDependency(session, inProgress);
@@ -62,16 +69,44 @@ export function MessageList({ session, inProgress, settings, send }: Props) {
   return (
     <div class="message-list" ref={listRef} onScroll={onScroll}>
       {items.length === 0 ? (
-        <div class="message-list-empty">
-          <Icon name="comment-discussion" fallback="❝" />
-          <p class="message-list-empty-title">Send your first prompt</p>
-          <p class="message-list-empty-subtitle">Veyra routes it to Claude, Codex, and Gemini.</p>
-          <ul class="message-list-empty-hints">
-            <li><code>@claude</code> <code>@codex</code> <code>@gemini</code> go to one agent — <code>@all</code> fans out to all three</li>
-            <li><code>/review</code> <code>/debate</code> <code>/consensus</code> <code>/implement</code> run a multi-agent workflow</li>
-            <li><code>@path/to/file</code> adds a file as context</li>
-          </ul>
-        </div>
+        allAgentsUnavailable(status) ? (
+          <StatePanel
+            icon="circle-slash"
+            iconFallback="∅"
+            title="No agents are available"
+            subtitle="No agent CLI is connected. Make sure Claude, Codex, or Gemini is installed and on your PATH."
+          >
+            <div class="state-panel-actions">
+              <button
+                type="button"
+                class="file-edited-link"
+                onClick={() => send({ kind: 'show-setup-guide' })}
+              >
+                Open setup guide
+              </button>
+              <button
+                type="button"
+                class="file-edited-link"
+                onClick={() => send({ kind: 'configure-cli-paths' })}
+              >
+                Configure CLI paths
+              </button>
+            </div>
+          </StatePanel>
+        ) : (
+          <StatePanel
+            icon="comment-discussion"
+            iconFallback="❝"
+            title="Send your first prompt"
+            subtitle="Veyra routes it to Claude, Codex, and Gemini."
+          >
+            <ul class="state-panel-hints">
+              <li><code>@claude</code> <code>@codex</code> <code>@gemini</code> go to one agent — <code>@all</code> fans out to all three</li>
+              <li><code>/review</code> <code>/debate</code> <code>/consensus</code> <code>/implement</code> run a multi-agent workflow</li>
+              <li><code>@path/to/file</code> adds a file as context</li>
+            </ul>
+          </StatePanel>
+        )
       ) : (
         items.map((item) => {
           if (item.kind === 'in-progress') {

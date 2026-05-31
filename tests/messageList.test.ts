@@ -12,6 +12,7 @@ vi.mock('preact/hooks', () => ({
 }));
 
 import { MessageList } from '../src/webview/components/MessageList.js';
+import { StatePanel } from '../src/webview/components/StatePanel.js';
 import { useEffect } from 'preact/hooks';
 
 const mockedUseEffect = useEffect as unknown as ReturnType<typeof vi.fn>;
@@ -33,6 +34,20 @@ function collect(node: unknown, acc: Collected): Collected {
   if (typeof cls === 'string') acc.classes.push(cls);
   if (vnode.props && 'children' in vnode.props) collect(vnode.props.children, acc);
   return acc;
+}
+
+function findNode(vnode: any, type: unknown): any | undefined {
+  if (vnode === null || vnode === undefined || typeof vnode !== 'object') return undefined;
+  if (vnode.type === type) return vnode;
+  const children = vnode.props?.children;
+  if (Array.isArray(children)) {
+    for (const child of children) {
+      const found = findNode(child, type);
+      if (found) return found;
+    }
+    return undefined;
+  }
+  return findNode(children, type);
 }
 
 describe('MessageList auto-scroll', () => {
@@ -61,6 +76,7 @@ describe('MessageList auto-scroll', () => {
       inProgress,
       settings: { toolCallRenderStyle: 'compact' },
       send: vi.fn(),
+      status: { claude: 'ready', codex: 'ready', gemini: 'ready' },
     });
 
     const deps = mockedUseEffect.mock.calls[0]?.[1] ?? [];
@@ -83,13 +99,15 @@ describe('MessageList empty state', () => {
       inProgress: new Map<string, InProgressMessage>(),
       settings: { toolCallRenderStyle: 'compact' },
       send: vi.fn(),
+      status: { claude: 'ready', codex: 'ready', gemini: 'ready' },
     });
 
     const collected = collect(vnode, { text: [], classes: [] });
     const text = collected.text.join(' ');
 
-    expect(collected.classes).toContain('message-list-empty');
-    expect(text).toContain('Send your first prompt');
+    const panel = findNode(vnode, StatePanel);
+    expect(panel).toBeTruthy();
+    expect(panel.props.title).toBe('Send your first prompt');
     expect(text).toContain('@all');
     expect(text).toContain('/review');
     expect(text).toContain('@path/to/file');
@@ -104,9 +122,36 @@ describe('MessageList empty state', () => {
       inProgress: new Map<string, InProgressMessage>(),
       settings: { toolCallRenderStyle: 'compact' },
       send: vi.fn(),
+      status: { claude: 'ready', codex: 'ready', gemini: 'ready' },
     });
 
-    const collected = collect(vnode, { text: [], classes: [] });
-    expect(collected.classes).not.toContain('message-list-empty');
+    expect(findNode(vnode, StatePanel)).toBeFalsy();
+  });
+
+  it('shows the no-agents-ready state when all agents are unavailable and there are no messages', () => {
+    const vnode = MessageList({
+      session: { version: 1, messages: [] },
+      inProgress: new Map<string, InProgressMessage>(),
+      settings: { toolCallRenderStyle: 'compact' },
+      send: vi.fn(),
+      status: { claude: 'unauthenticated', codex: 'not-installed', gemini: 'inaccessible' },
+    });
+
+    const panel = findNode(vnode, StatePanel);
+    expect(panel).toBeTruthy();
+    expect(panel.props.title).toBe('No agents are available');
+  });
+
+  it('shows the onboarding empty state when at least one agent is ready', () => {
+    const vnode = MessageList({
+      session: { version: 1, messages: [] },
+      inProgress: new Map<string, InProgressMessage>(),
+      settings: { toolCallRenderStyle: 'compact' },
+      send: vi.fn(),
+      status: { claude: 'unauthenticated', codex: 'ready', gemini: 'not-installed' },
+    });
+
+    const panel = findNode(vnode, StatePanel);
+    expect(panel.props.title).toBe('Send your first prompt');
   });
 });

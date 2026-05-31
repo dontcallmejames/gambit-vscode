@@ -144,6 +144,38 @@ body {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--veyra-space-2);
 }
+
+/* Shared agent identity marker (v0.2 Phase B): color dot + name, used in
+   Mission Control, message rows, and Trust Center. */
+.agent-marker {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--veyra-space-1);
+}
+.agent-marker-dot {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--veyra-fg-muted);
+}
+.agent-marker-claude .agent-marker-dot {
+  background: var(--veyra-agent-claude);
+}
+.agent-marker-codex .agent-marker-dot {
+  background: var(--veyra-agent-codex);
+}
+.agent-marker-gemini .agent-marker-dot {
+  background: var(--veyra-agent-gemini);
+}
+.agent-marker-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .mission-stage {
   min-width: 0;
   display: flex;

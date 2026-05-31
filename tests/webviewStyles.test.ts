@@ -74,3 +74,22 @@ describe('webview styles: color token discipline', () => {
     expect(missing, `Undefined Veyra tokens referenced in styles.css: ${missing.join(', ')}`).toEqual([]);
   });
 });
+
+describe('webview styles: non-color design tokens (v0.2 Phase A)', () => {
+  const tokens = fs.readFileSync(path.join(repoRoot, 'src', 'webview', 'tokens.css'), 'utf8');
+
+  const REQUIRED_TOKENS = [
+    '--veyra-space-1', '--veyra-space-2', '--veyra-space-3', '--veyra-space-4', '--veyra-space-5',
+    '--veyra-text-micro', '--veyra-text-body', '--veyra-text-label',
+    '--veyra-motion-fast', '--veyra-motion-base', '--veyra-ease',
+  ];
+
+  it.each(REQUIRED_TOKENS)('defines %s in tokens.css', (token) => {
+    const re = new RegExp(`${token.replace(/-/g, '\\-')}\\s*:`);
+    expect(re.test(tokens)).toBe(true);
+  });
+
+  it('includes a prefers-reduced-motion block', () => {
+    expect(tokens.includes('prefers-reduced-motion')).toBe(true);
+  });
+});

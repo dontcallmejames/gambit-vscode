@@ -49,6 +49,25 @@
   --veyra-agent-codex: var(--vscode-veyra-codexColor, #10a37f);
   --veyra-agent-gemini: var(--vscode-veyra-geminiColor, #4a8df0);
 
+  /* Spacing scale (non-color; v0.2 Phase A). Use these for padding/gap/margin. */
+  --veyra-space-1: 4px;
+  --veyra-space-2: 6px;
+  --veyra-space-3: 8px;
+  --veyra-space-4: 12px;
+  --veyra-space-5: 16px;
+
+  /* Type scale, em-based so it tracks the VS Code editor font size. Hierarchy
+     comes from weight + color + tracking, not many sizes; body stays at the
+     VS Code size for legibility. */
+  --veyra-text-micro: 0.85em;
+  --veyra-text-body: 1em;
+  --veyra-text-label: 1em;
+
+  /* Motion (non-color; v0.2 Phase A). */
+  --veyra-motion-fast: 120ms;
+  --veyra-motion-base: 200ms;
+  --veyra-ease: cubic-bezier(0.2, 0, 0, 1);
+
   /*
    * Transitional legacy aliases. Existing rules in styles.css reference these
    * short names; they now resolve to the tokens above. Prefer --veyra-* in new
@@ -77,4 +96,19 @@ body.vscode-high-contrast-light {
 body.vscode-dark,
 body.vscode-high-contrast {
   color-scheme: dark;
+}
+
+/*
+ * Respect the user's reduced-motion preference globally. v0.2 motion (message
+ * entrance, panel expand, streaming affordance) is added in later phases; this
+ * block neutralizes transitions/animations up front so every later rule
+ * inherits the safe default.
+ */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

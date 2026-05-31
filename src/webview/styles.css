@@ -862,23 +862,17 @@ body {
 .msg-body {
   min-width: 0;
 }
+/* Agent identity in message rows is carried by the AgentMarker dot (and the row's
+   left stripe below); the name text stays the default muted role color, matching
+   Mission Control. */
 .msg-claude {
   box-shadow: inset 2px 0 0 var(--veyra-agent-claude);
-}
-.msg-claude .msg-role {
-  color: var(--veyra-agent-claude);
 }
 .msg-codex {
   box-shadow: inset 2px 0 0 var(--veyra-agent-codex);
 }
-.msg-codex .msg-role {
-  color: var(--veyra-agent-codex);
-}
 .msg-gemini {
   box-shadow: inset 2px 0 0 var(--veyra-agent-gemini);
-}
-.msg-gemini .msg-role {
-  color: var(--veyra-agent-gemini);
 }
 .msg-cancelled {
   font-style: italic;

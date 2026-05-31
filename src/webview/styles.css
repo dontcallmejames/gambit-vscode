@@ -901,15 +901,6 @@ body {
   color: var(--veyra-status-error);
   margin-top: var(--veyra-space-1);
 }
-.msg.streaming::after {
-  content: '\2588';
-  display: inline-block;
-  margin-left: 2px;
-  animation: blink 1s steps(2) infinite;
-}
-.msg.thinking::after {
-  display: none;
-}
 .markdown-prose {
   white-space: normal;
 }
@@ -1054,20 +1045,47 @@ body.vscode-high-contrast-light .state-panel-hints code {
   box-shadow: inset 2px 0 0 var(--veyra-border-focus);
 }
 .thinking-line {
-  font-style: italic;
-  opacity: 0.7;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 4px;
+  min-height: 1.2em;
 }
-.braille-spinner {
-  font-family: var(--vscode-editor-font-family, monospace);
-  font-style: normal;
-  display: inline-block;
-  width: 1ch;
+
+/* One thin progress shimmer: a faint track with a single accent segment that
+   sweeps across while a row is streaming. Decorative (aria-hidden); the
+   working state is announced via role="status" on the thinking row. Colors are
+   token-only so the raw-color gate stays clean; under prefers-reduced-motion
+   the global tokens.css block freezes the sweep. */
+.streaming-shimmer {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 160px;
+  height: 2px;
+  margin-top: var(--veyra-space-1);
+  border-radius: 1px;
+  background: var(--veyra-border-default);
+  overflow: hidden;
 }
-@keyframes blink {
-  to { opacity: 0; }
+.streaming-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 40%;
+  border-radius: 1px;
+  background: var(--veyra-status-info);
+  animation: shimmer-slide 1.6s var(--veyra-motion-ease) infinite;
+}
+@keyframes shimmer-slide {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(320%); }
+}
+
+/* The agent's identity marker pulses calmly while its row streams (reuses the
+   Mission Control pulse keyframes). */
+.msg.streaming .agent-marker-dot {
+  animation: pulse 1.6s infinite;
 }
 
 .system-notice {

@@ -154,6 +154,44 @@ describe('AgentBubble edited files', () => {
   });
 });
 
+describe('AgentBubble streaming affordance', () => {
+  it('shows a calm shimmer while thinking (no text, no tools) and no random verb', () => {
+    const vnode = AgentBubbleModule.AgentBubble({
+      message: { id: 'm1', role: 'agent', agentId: 'claude', text: '', toolEvents: [], timestamp: 1 },
+      streaming: true,
+      settings: { toolCallRenderStyle: 'compact' },
+      send: vi.fn(),
+    });
+    const text = collectText(vnode);
+    expect(findByClass(vnode, 'streaming-shimmer')).toHaveLength(1);
+    for (const verb of ['thinking', 'pondering', 'considering', 'weighing', 'compiling', 'parsing', 'processing', 'cooking', 'researching', 'searching', 'looking up', 'digging']) {
+      expect(text).not.toContain(verb);
+    }
+    expect(findByClass(vnode, 'braille-spinner')).toHaveLength(0);
+  });
+
+  it('shows a shimmer on a streaming row that already has text', () => {
+    const vnode = AgentBubbleModule.AgentBubble({
+      message: { id: 'm2', role: 'agent', agentId: 'codex', text: 'Working on it', toolEvents: [], timestamp: 1 },
+      streaming: true,
+      settings: { toolCallRenderStyle: 'compact' },
+      send: vi.fn(),
+    });
+    expect(findByClass(vnode, 'streaming-shimmer')).toHaveLength(1);
+    expect(collectText(vnode)).toContain('Working on it');
+  });
+
+  it('shows no shimmer once the message is finalized (not streaming)', () => {
+    const vnode = AgentBubbleModule.AgentBubble({
+      message: { id: 'm3', role: 'agent', agentId: 'gemini', text: 'Done.', toolEvents: [], editedFiles: [], timestamp: 1, status: 'complete' },
+      streaming: false,
+      settings: { toolCallRenderStyle: 'compact' },
+      send: vi.fn(),
+    });
+    expect(findByClass(vnode, 'streaming-shimmer')).toHaveLength(0);
+  });
+});
+
 function findByType(vnode: any, type: string): any[] {
   if (!vnode) return [];
   if (Array.isArray(vnode)) return vnode.flatMap((child) => findByType(child, type));

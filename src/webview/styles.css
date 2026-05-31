@@ -14,12 +14,12 @@ body {
    through <PanelSection>, which owns the section, header, and body wrapper;
    panel-local CSS owns only body layout. */
 .panel-section {
-  padding: 7px 10px;
+  padding: var(--veyra-space-2) var(--veyra-space-3);
   border-bottom: 1px solid var(--veyra-border-default);
   background: var(--veyra-bg-panel);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--veyra-space-2);
   font-size: 11px;
 }
 .panel-section-open {
@@ -37,13 +37,13 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--veyra-space-3);
 }
 .panel-section-heading {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--veyra-space-2);
 }
 .veyra-microlabel,
 .panel-section-kicker,
@@ -110,18 +110,18 @@ body {
 }
 
 .mission-control {
-  padding: 8px 10px;
+  padding: var(--veyra-space-3) var(--veyra-space-3);
   border-bottom: 1px solid var(--border);
   background: var(--veyra-bg-panel);
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: var(--veyra-space-2);
   font-size: 11px;
 }
 .mission-control-head {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--veyra-space-3);
   align-items: baseline;
 }
 .mission-control-kicker {
@@ -134,20 +134,20 @@ body {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 6px;
+  gap: var(--veyra-space-2);
   opacity: 0.72;
 }
 .mission-control-stages {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+  gap: var(--veyra-space-2);
 }
 .mission-stage {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 7px;
+  gap: var(--veyra-space-2);
+  padding: var(--veyra-space-1) var(--veyra-space-2);
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--veyra-bg-card);

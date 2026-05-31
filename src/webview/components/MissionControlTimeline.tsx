@@ -1,6 +1,17 @@
 import { h } from 'preact';
-import type { MissionControlSnapshot, MissionControlStage } from '../missionControl.js';
+import type { MissionControlSnapshot, MissionControlStage, MissionControlStageState } from '../missionControl.js';
 import { agentLabel } from '../agentLabel.js';
+import { AgentMarker } from './AgentMarker.js';
+import { Icon } from './Icon.js';
+
+const STAGE_STATE_ICON: Record<MissionControlStageState, { name: string; fallback: string }> = {
+  waiting: { name: 'circle-large-outline', fallback: 'o' },
+  queued: { name: 'clock', fallback: '~' },
+  active: { name: 'play-circle', fallback: '>' },
+  complete: { name: 'pass-filled', fallback: 'v' },
+  failed: { name: 'error', fallback: 'x' },
+  cancelled: { name: 'circle-slash', fallback: '/' },
+};
 
 type MissionControlTimelineProps = {
   snapshot: MissionControlSnapshot;
@@ -40,11 +51,14 @@ export function MissionControlTimeline({ snapshot }: MissionControlTimelineProps
 }
 
 function Stage({ stage }: { stage: MissionControlStage }) {
+  const stateIcon = STAGE_STATE_ICON[stage.state];
   return (
     <div class={`mission-stage mission-stage-${stage.agentId} mission-stage-${stage.state}`}>
-      <span class="mission-stage-dot"></span>
-      <span class="mission-stage-label">{stage.label}</span>
-      <span class="mission-stage-state">{stage.state}</span>
+      <AgentMarker agentId={stage.agentId} />
+      <span class="mission-stage-state">
+        <Icon name={stateIcon.name} fallback={stateIcon.fallback} />
+        <span class="mission-stage-state-text">{stage.state}</span>
+      </span>
     </div>
   );
 }

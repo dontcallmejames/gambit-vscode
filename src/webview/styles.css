@@ -186,13 +186,6 @@ body {
   border-radius: 6px;
   background: var(--veyra-bg-card);
 }
-.mission-stage-dot {
-  flex: 0 0 auto;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--veyra-fg-muted);
-}
 .mission-stage-label {
   min-width: 0;
   font-weight: 600;
@@ -203,24 +196,29 @@ body {
 .mission-stage-state {
   flex: 0 0 auto;
   margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--veyra-space-1);
   opacity: 0.72;
 }
 .mission-stage-active {
   border-color: var(--veyra-border-focus);
 }
-.mission-stage-active .mission-stage-dot {
-  background: var(--ok-color);
+.mission-stage-active .agent-marker-dot {
   animation: pulse 1.6s infinite;
 }
-.mission-stage-complete .mission-stage-dot {
-  background: var(--ok-color);
+.mission-stage-complete .mission-stage-state {
+  color: var(--ok-color);
+  opacity: 1;
 }
-.mission-stage-failed .mission-stage-dot,
-.mission-stage-cancelled .mission-stage-dot {
-  background: var(--error-color);
+.mission-stage-failed .mission-stage-state,
+.mission-stage-cancelled .mission-stage-state {
+  color: var(--error-color);
+  opacity: 1;
 }
-.mission-stage-queued .mission-stage-dot {
-  background: var(--veyra-status-info);
+.mission-stage-active .mission-stage-state {
+  color: var(--veyra-status-info);
+  opacity: 1;
 }
 .mission-stage-claude {
   box-shadow: inset 2px 0 0 var(--veyra-agent-claude);

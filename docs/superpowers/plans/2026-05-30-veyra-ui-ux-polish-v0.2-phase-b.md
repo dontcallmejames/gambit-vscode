@@ -40,12 +40,12 @@
 
 ---
 
-## Task 1: Shared `agentLabel` module + consolidate the 6 copies
+## Task 1: Shared `agentLabel` module + consolidate the 7 copies
 
 **Files:**
 - Create: `src/webview/agentLabel.ts`
 - Create: `tests/agentLabel.test.ts`
-- Modify: `src/webview/state.ts`, `src/webview/workflowHistory.ts`, `src/webview/workflowReplay.ts`, `src/webview/components/AgentBubble.tsx`, `src/webview/components/MissionControlTimeline.tsx`, `src/webview/components/TrustCenter.tsx`
+- Modify: `src/webview/missionControl.ts`, `src/webview/state.ts`, `src/webview/workflowHistory.ts`, `src/webview/workflowReplay.ts`, `src/webview/components/AgentBubble.tsx`, `src/webview/components/MissionControlTimeline.tsx`, `src/webview/components/TrustCenter.tsx`
 
 - [ ] **Step 1: Write the failing test**
 
@@ -109,6 +109,11 @@ import { agentLabel } from './agentLabel.js';
 import { agentLabel } from './agentLabel.js';
 ```
 
+**`src/webview/missionControl.ts`** (local `function agentLabel(agentId: AgentId): string { ... }` near the bottom, used at the `stages.map(...)` label and in `labelForMode`): delete the local function and add to the import block near the top (this is a non-component module; it already imports `AgentId`):
+```ts
+import { agentLabel } from './agentLabel.js';
+```
+
 **`src/webview/components/AgentBubble.tsx`** (local `function agentLabel(agentId: string): string { ... }`): delete it and add to the import block:
 ```ts
 import { agentLabel } from '../agentLabel.js';
@@ -137,7 +142,7 @@ Expected: PASS (behavior unchanged; labels still render).
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/webview/agentLabel.ts tests/agentLabel.test.ts src/webview/state.ts src/webview/workflowHistory.ts src/webview/workflowReplay.ts src/webview/components/AgentBubble.tsx src/webview/components/MissionControlTimeline.tsx src/webview/components/TrustCenter.tsx
+git add src/webview/agentLabel.ts tests/agentLabel.test.ts src/webview/missionControl.ts src/webview/state.ts src/webview/workflowHistory.ts src/webview/workflowReplay.ts src/webview/components/AgentBubble.tsx src/webview/components/MissionControlTimeline.tsx src/webview/components/TrustCenter.tsx
 git commit -m "refactor(webview): consolidate agentLabel into one module (v0.2 Phase B)"
 ```
 
@@ -580,7 +585,7 @@ git push -u origin design/ui-ux-polish-v0.2-phase-b
 
 **Spec coverage (Phase B items):**
 - Shared `<AgentMarker>` (dot + optional codicon + name) used in Mission Control, message rows, Trust Center → Tasks 2, 3, 4. (Marker uses dot + name; the optional codicon is the per-state icon in Mission Control, kept as a separate `<Icon>` so the marker stays hook-free — a deliberate, documented refinement of "color dot + optional codicon".)
-- Consolidate `agentLabel` duplicated across files into one module → Task 1 (all 6 copies).
+- Consolidate `agentLabel` duplicated across files into one module → Task 1 (all 7 copies: missionControl.ts, state.ts, workflowHistory.ts, workflowReplay.ts, AgentBubble.tsx, MissionControlTimeline.tsx, TrustCenter.tsx). Note: `SystemNotice.tsx` uses a different inline `agentLabels` record object, not a `function agentLabel`, so it is intentionally out of scope.)
 - Mission Control: separate identity (agent color via marker + existing per-agent stripe from the same token) from state (per-state icon shape, HC-legible without color, state word kept, active pulse kept) → Task 3.
 - Constraints (token-only color, HC-safe, CSP/codicons, verify green) → guarded by `webviewStyles.test.ts` each task + Task 5.
 - Component test for `<AgentMarker>` (per-agent class, decorative dot, label toggle) → Task 2.

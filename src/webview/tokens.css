@@ -66,7 +66,7 @@
   /* Motion (non-color; v0.2 Phase A). */
   --veyra-motion-fast: 120ms;
   --veyra-motion-base: 200ms;
-  --veyra-ease: cubic-bezier(0.2, 0, 0, 1);
+  --veyra-motion-ease: cubic-bezier(0.2, 0, 0, 1);
 
   /*
    * Transitional legacy aliases. Existing rules in styles.css reference these

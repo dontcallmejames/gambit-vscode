@@ -81,7 +81,7 @@ describe('webview styles: non-color design tokens (v0.2 Phase A)', () => {
   const REQUIRED_TOKENS = [
     '--veyra-space-1', '--veyra-space-2', '--veyra-space-3', '--veyra-space-4', '--veyra-space-5',
     '--veyra-text-micro', '--veyra-text-body', '--veyra-text-label',
-    '--veyra-motion-fast', '--veyra-motion-base', '--veyra-ease',
+    '--veyra-motion-fast', '--veyra-motion-base', '--veyra-motion-ease',
   ];
 
   it.each(REQUIRED_TOKENS)('defines %s in tokens.css', (token) => {

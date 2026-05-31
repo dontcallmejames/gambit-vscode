@@ -45,6 +45,8 @@ body {
   align-items: center;
   gap: var(--veyra-space-2);
 }
+/* Shared microlabel treatment. .veyra-microlabel is a forward-declared utility
+   (adopted by components in later v0.2 phases); the kicker selectors use it now. */
 .veyra-microlabel,
 .panel-section-kicker,
 .mission-control-kicker,
@@ -852,6 +854,15 @@ body {
 .msg-gemini .msg-role {
   color: var(--veyra-agent-gemini);
 }
+.msg-cancelled {
+  font-style: italic;
+  color: var(--veyra-fg-muted);
+  margin-top: var(--veyra-space-1);
+}
+.msg-error {
+  color: var(--veyra-status-error);
+  margin-top: var(--veyra-space-1);
+}
 .msg.streaming::after {
   content: '\2588';
   display: inline-block;
@@ -1216,6 +1227,9 @@ body {
   min-height: 36px;
   max-height: 200px;
 }
+.composer-spacer {
+  flex: 1;
+}
 .composer-row {
   display: flex;
   gap: 6px;
@@ -1344,18 +1358,4 @@ body {
   cursor: pointer;
   color: var(--veyra-status-warning);
   border-color: var(--veyra-status-warning-border);
-}
-
-/* Message status lines + composer spacer (v0.2 Phase A: replacing inline styles). */
-.msg-cancelled {
-  font-style: italic;
-  color: var(--veyra-fg-muted);
-  margin-top: var(--veyra-space-1);
-}
-.msg-error {
-  color: var(--veyra-status-error);
-  margin-top: var(--veyra-space-1);
-}
-.composer-spacer {
-  flex: 1;
 }

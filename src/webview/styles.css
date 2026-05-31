@@ -1345,3 +1345,17 @@ body {
   color: var(--veyra-status-warning);
   border-color: var(--veyra-status-warning-border);
 }
+
+/* Message status lines + composer spacer (v0.2 Phase A: replacing inline styles). */
+.msg-cancelled {
+  font-style: italic;
+  color: var(--veyra-fg-muted);
+  margin-top: var(--veyra-space-1);
+}
+.msg-error {
+  color: var(--veyra-status-error);
+  margin-top: var(--veyra-space-1);
+}
+.composer-spacer {
+  flex: 1;
+}

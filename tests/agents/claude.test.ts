@@ -80,7 +80,7 @@ describe('ClaudeAgent', () => {
     ]);
   });
 
-  it('uses plan permission mode for read-only sends so writes are truly forbidden', async () => {
+  it('forbids the write tools for read-only sends and stays in default permission mode', async () => {
     const child = fakeClaudeProcess([{ type: 'result', subtype: 'success' }]);
     const { ClaudeAgent, spawn } = await importClaudeAgentWithCli(child);
 
@@ -89,15 +89,35 @@ describe('ClaudeAgent', () => {
       // drain
     }
 
-    // 'plan' is Claude Code's true read-only mode: it forbids edits at the CLI
-    // level rather than merely declining to auto-accept them (which 'default'
-    // does). Pin the exact flag so a regression back to 'default'/'acceptEdits'
-    // for a read-only send fails here.
+    // Read-only is enforced by removing the write tools from Claude's context
+    // (--disallowedTools), NOT by plan mode (which persists a plan file via the
+    // Write tool — that tripped the read-only violation detector in practice)
+    // nor by 'default' alone (which only withholds auto-approval). Bash stays
+    // available for read-only exploration that aids planning.
     const args = (spawn.mock.calls[0] as unknown as [string, string[]])[1];
-    expect(args).toContain('--permission-mode');
-    expect(args[args.indexOf('--permission-mode') + 1]).toBe('plan');
+    expect(args[args.indexOf('--permission-mode') + 1]).toBe('default');
+    expect(args).toContain('--disallowedTools');
+    const disallowed = args[args.indexOf('--disallowedTools') + 1];
+    expect(disallowed).toContain('Edit');
+    expect(disallowed).toContain('Write');
+    expect(disallowed).toContain('MultiEdit');
+    expect(disallowed).toContain('NotebookEdit');
+    expect(args).not.toContain('plan');
     expect(args).not.toContain('acceptEdits');
-    expect(args).not.toContain('default');
+  });
+
+  it('does not restrict tools for write-capable sends', async () => {
+    const child = fakeClaudeProcess([{ type: 'result', subtype: 'success' }]);
+    const { ClaudeAgent, spawn } = await importClaudeAgentWithCli(child);
+
+    const agent = new ClaudeAgent();
+    for await (const _chunk of agent.send('hi', {})) {
+      // drain (no readOnly → write-capable; default writeApproval is 'auto-edit')
+    }
+
+    const args = (spawn.mock.calls[0] as unknown as [string, string[]])[1];
+    expect(args[args.indexOf('--permission-mode') + 1]).toBe('acceptEdits');
+    expect(args).not.toContain('--disallowedTools');
   });
 
   it('maps tool-use and tool-result events with friendly names', async () => {

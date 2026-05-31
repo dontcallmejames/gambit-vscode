@@ -4,7 +4,13 @@ import type { AgentChunk } from './types.js';
 
 export interface ClaudeCliOptions {
   cwd?: string;
-  permissionMode: 'default' | 'acceptEdits' | 'plan';
+  permissionMode: 'default' | 'acceptEdits';
+  /**
+   * Tool names removed from Claude's context for this run (passed as
+   * --disallowedTools). Used to enforce read-only by stripping the write tools,
+   * so Claude cannot edit files at all rather than being asked not to.
+   */
+  disallowedTools?: string[];
   signal?: AbortSignal;
   onProcess?: (child: ChildProcess | null) => void;
 }
@@ -36,6 +42,12 @@ export async function* runClaudeCli(
         '--verbose',
         '--permission-mode',
         opts.permissionMode,
+        // Pass the disallowed tools as a single space-separated value so a
+        // variadic parser can't swallow the flags that follow (there are none
+        // here, but stay robust). A bare tool name removes it from context.
+        ...(opts.disallowedTools && opts.disallowedTools.length > 0
+          ? ['--disallowedTools', opts.disallowedTools.join(' ')]
+          : []),
       ],
       spawnOptions,
     );

@@ -256,6 +256,33 @@ describe('GeminiAgent', () => {
     ]);
   });
 
+  it('omits the Antigravity auto-edit override (--dangerously-skip-permissions) for read-only sends', async () => {
+    process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\agy\\agy.exe';
+    mockedSpawn.mockReturnValueOnce(fakeProcess(['plain answer\n']));
+
+    const agent = new GeminiAgent();
+    for await (const _c of agent.send('review only', { readOnly: true } as any)) {
+      // drain
+    }
+
+    const args = mockedSpawn.mock.calls.at(-1)?.[1] as string[];
+    expect(args).toContain('--print');
+    expect(args).not.toContain('--dangerously-skip-permissions');
+  });
+
+  it('includes the Antigravity auto-edit override for write-capable sends (proves the read-only assertion discriminates)', async () => {
+    process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\agy\\agy.exe';
+    mockedSpawn.mockReturnValueOnce(fakeProcess(['plain answer\n']));
+
+    const agent = new GeminiAgent();
+    for await (const _c of agent.send('edit something', {} as any)) {
+      // drain (no readOnly → write-capable; default writeApproval is 'auto-edit')
+    }
+
+    const args = mockedSpawn.mock.calls.at(-1)?.[1] as string[];
+    expect(args).toContain('--dangerously-skip-permissions');
+  });
+
   it('exposes id "gemini"', () => {
     expect(new GeminiAgent().id).toBe('gemini');
   });

@@ -30,9 +30,14 @@ export class ClaudeAgent implements Agent {
   }
 }
 
-function claudePermissionMode(readOnly?: boolean): 'default' | 'acceptEdits' {
+function claudePermissionMode(readOnly?: boolean): 'default' | 'acceptEdits' | 'plan' {
+  // Read-only sends (review/debate/consensus, and the non-Codex roles in
+  // /implement) use 'plan' — Claude Code's true read-only mode, which forbids
+  // file edits at the CLI level rather than merely declining to auto-accept
+  // them. 'default' would only withhold auto-approval, leaving writes possible.
+  if (readOnly) return 'plan';
   const writeApproval = vscode.workspace.getConfiguration('veyra').get<string>('writeApproval', 'auto-edit');
-  return !readOnly && writeApproval === 'auto-edit' ? 'acceptEdits' : 'default';
+  return writeApproval === 'auto-edit' ? 'acceptEdits' : 'default';
 }
 
 const CLAUDE_WRITE_TOOLS: Record<string, string[]> = {

@@ -80,7 +80,7 @@ describe('ClaudeAgent', () => {
     ]);
   });
 
-  it('uses default permission mode for read-only sends even when auto-edit is enabled', async () => {
+  it('uses plan permission mode for read-only sends so writes are truly forbidden', async () => {
     const child = fakeClaudeProcess([{ type: 'result', subtype: 'success' }]);
     const { ClaudeAgent, spawn } = await importClaudeAgentWithCli(child);
 
@@ -89,11 +89,15 @@ describe('ClaudeAgent', () => {
       // drain
     }
 
-    expect(spawn).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.arrayContaining(['--permission-mode', 'default']),
-      expect.any(Object),
-    );
+    // 'plan' is Claude Code's true read-only mode: it forbids edits at the CLI
+    // level rather than merely declining to auto-accept them (which 'default'
+    // does). Pin the exact flag so a regression back to 'default'/'acceptEdits'
+    // for a read-only send fails here.
+    const args = (spawn.mock.calls[0] as unknown as [string, string[]])[1];
+    expect(args).toContain('--permission-mode');
+    expect(args[args.indexOf('--permission-mode') + 1]).toBe('plan');
+    expect(args).not.toContain('acceptEdits');
+    expect(args).not.toContain('default');
   });
 
   it('maps tool-use and tool-result events with friendly names', async () => {

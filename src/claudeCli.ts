@@ -4,7 +4,7 @@ import type { AgentChunk } from './types.js';
 
 export interface ClaudeCliOptions {
   cwd?: string;
-  permissionMode: 'default' | 'acceptEdits';
+  permissionMode: 'default' | 'acceptEdits' | 'plan';
   signal?: AbortSignal;
   onProcess?: (child: ChildProcess | null) => void;
 }

@@ -1607,6 +1607,81 @@ describe('VeyraSessionService', () => {
     expect(geminiCancel).toHaveBeenCalled();
   });
 
+  it('flags a write-capable shell command from a read-only agent as a violation and cancels', async () => {
+    const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-readonly-shell-'));
+    const claudeCancel = vi.fn(async () => {});
+    const service = new VeyraSessionService(
+      workspacePath,
+      {
+        claude: {
+          id: 'claude',
+          status: async () => 'ready',
+          cancel: claudeCancel,
+          async *send() {
+            // A read-only planner runs a shell write via redirection — the
+            // disallowedTools write-tool stripping does not catch Bash.
+            yield { type: 'tool-call', name: 'Bash', input: { command: 'echo pwned > /tmp/out.txt' } } as AgentChunk;
+            yield { type: 'tool-result', name: 'Bash', output: '' } as AgentChunk;
+            yield { type: 'done' } as AgentChunk;
+          },
+        },
+        codex: agentNoop('codex'),
+        gemini: agentNoop('gemini'),
+      },
+      { hangSeconds: 0 },
+    );
+
+    const events: any[] = [];
+    await service.dispatch(
+      {
+        text: veyraWorkflowPrompt('implement', 'Plan the change.'),
+        source: 'panel',
+        cwd: workspacePath,
+        forcedTarget: 'veyra',
+      },
+      (event) => { events.push(event); },
+    );
+
+    expect(events.some((e) =>
+      e.kind === 'system-message' && e.message.workflowState?.kind === 'read-only-violation'
+    )).toBe(true);
+    expect(claudeCancel).toHaveBeenCalled();
+  });
+
+  it('does not flag a read-only shell command (grep) from a read-only agent', async () => {
+    const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-readonly-grep-'));
+    const claudeCancel = vi.fn(async () => {});
+    const service = new VeyraSessionService(
+      workspacePath,
+      {
+        claude: {
+          id: 'claude',
+          status: async () => 'ready',
+          cancel: claudeCancel,
+          async *send() {
+            yield { type: 'tool-call', name: 'Bash', input: { command: 'grep -r TODO src/' } } as AgentChunk;
+            yield { type: 'tool-result', name: 'Bash', output: 'src/a.ts: TODO' } as AgentChunk;
+            yield { type: 'done' } as AgentChunk;
+          },
+        },
+        codex: agentNoop('codex'),
+        gemini: agentNoop('gemini'),
+      },
+      { hangSeconds: 0 },
+    );
+
+    const events: any[] = [];
+    await service.dispatch(
+      { text: veyraWorkflowPrompt('implement', 'Explore.'), source: 'panel', cwd: workspacePath, forcedTarget: 'veyra' },
+      (event) => { events.push(event); },
+    );
+
+    expect(events.some((e) =>
+      e.kind === 'system-message' && e.message.workflowState?.kind === 'read-only-violation'
+    )).toBe(false);
+    expect(claudeCancel).not.toHaveBeenCalled();
+  });
+
   it('stops registering file badge edits after the badge controller is removed from options', async () => {
     const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-service-'));
     const badgeController = { registerEdit: vi.fn() };

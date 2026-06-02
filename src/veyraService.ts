@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { parseMentions } from './mentions.js';
 import { ulid } from './ulid.js';
+import { isShellTool, shellCommandFromInput, shellCommandWrites } from './shellWriteHeuristic.js';
 import { MessageRouter } from './messageRouter.js';
 import { chooseFacilitatorAgent, type FacilitatorFn } from './facilitator.js';
 import { SessionStore } from './sessionStore.js';
@@ -656,6 +657,16 @@ export class VeyraSessionService {
               input: event.chunk.input,
               timestamp: Date.now(),
             });
+            // A read-only agent can bypass write-tool stripping by writing via
+            // the shell (e.g. `echo x > f`). Shell commands are not tracked as
+            // file edits, so flag a write-looking shell command as a read-only
+            // violation here (which also hard-cancels the dispatch).
+            if (inProgress.readOnly && isShellTool(event.chunk.name)) {
+              const command = shellCommandFromInput(event.chunk.input);
+              if (command && shellCommandWrites(command)) {
+                await this.emitReadOnlyShellViolation(event.agentId, command, emit);
+              }
+            }
           } else if (event.chunk.type === 'tool-result') {
             const chunk = event.chunk;
             inProgress.toolEvents.push({
@@ -1086,6 +1097,31 @@ export class VeyraSessionService {
     // Hard stop: a read-only agent has written to disk, which the prevention
     // flags were supposed to forbid. Cancel the dispatch so no further turns or
     // writes happen rather than letting the workflow continue past the breach.
+    await this.cancelAll();
+  }
+
+  private async emitReadOnlyShellViolation(
+    agentId: AgentId,
+    command: string,
+    emit: VeyraDispatchEventSink,
+  ): Promise<void> {
+    const text = `Read-only workflow violation: ${agentLabel(agentId)} ran a write-capable shell command during a read-only dispatch: ${command}`;
+    const sys: SystemMessage = {
+      id: ulid(),
+      role: 'system',
+      kind: 'error',
+      text,
+      timestamp: Date.now(),
+      agentId,
+      workflowState: {
+        kind: 'read-only-violation',
+        severity: 'error',
+        agentId,
+        text,
+      },
+    };
+    this.store.appendSystem(sys);
+    await emit({ kind: 'system-message', message: sys });
     await this.cancelAll();
   }
 

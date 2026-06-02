@@ -2,6 +2,7 @@ import { execSync, spawn } from 'node:child_process';
 import type { ChildProcess, SpawnOptions } from 'node:child_process';
 import type { AgentChunk } from './types.js';
 import { DriftTracker } from './agents/driftWarning.js';
+import { StderrTail } from './agents/stderrTail.js';
 
 export interface ClaudeCliOptions {
   cwd?: string;
@@ -74,14 +75,14 @@ export async function* runClaudeCli(
   }
 
   const exitPromise = new Promise<{ code: number | null; stderr: string; processError?: string }>((resolve) => {
-    let stderr = '';
+    const stderr = new StderrTail();
     let settled = false;
     const finish = (code: number | null, processError?: string) => {
       if (settled) return;
       settled = true;
-      resolve({ code, stderr, processError });
+      resolve({ code, stderr: stderr.value(), processError });
     };
-    child.stderr?.on('data', (d) => (stderr += String(d)));
+    child.stderr?.on('data', (d) => stderr.append(String(d)));
     child.on('error', (err) => finish(null, errorMessage(err)));
     child.on('close', (code) => finish(code));
   });

@@ -9,6 +9,7 @@ import { findNode } from '../findNode.js';
 import { getCodexCliPathOverride } from '../cliPathOverrides.js';
 import { cliPathMisconfiguration, normalizeCliPathOverride, windowsNpmShimNames } from '../cliPathValidation.js';
 import { DriftTracker } from './driftWarning.js';
+import { StderrTail } from './stderrTail.js';
 import * as vscode from 'vscode';
 
 // Spike A3: invoke `codex exec --json '<prompt>'` for non-interactive JSONL.
@@ -190,14 +191,14 @@ export class CodexAgent implements Agent {
     }
 
     const exitPromise = new Promise<{ code: number | null; stderr: string; processError?: string }>((resolve) => {
-      let stderr = '';
+      const stderr = new StderrTail();
       let settled = false;
       const finish = (code: number | null, processError?: string) => {
         if (settled) return;
         settled = true;
-        resolve({ code, stderr, processError });
+        resolve({ code, stderr: stderr.value(), processError });
       };
-      child.stderr?.on('data', (d) => (stderr += String(d)));
+      child.stderr?.on('data', (d) => stderr.append(String(d)));
       child.on('error', (err) => finish(null, errorMessage(err)));
       child.on('close', (code) => finish(code));
     });

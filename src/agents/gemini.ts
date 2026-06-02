@@ -11,6 +11,7 @@ import { getAntigravityCliPathOverride, getGeminiCliPathOverride } from '../cliP
 import { cliPathMisconfiguration, normalizeCliPathOverride, windowsNpmShimNames } from '../cliPathValidation.js';
 import { getGeminiBackend } from '../geminiBackend.js';
 import { DriftTracker } from './driftWarning.js';
+import { StderrTail } from './stderrTail.js';
 import * as vscode from 'vscode';
 
 type GoogleCliCommand =
@@ -551,14 +552,14 @@ function errorMessage(err: unknown): string {
 
 function watchProcessExit(child: ChildProcess): Promise<{ code: number | null; stderr: string; processError?: string }> {
   return new Promise((resolve) => {
-    let stderr = '';
+    const stderr = new StderrTail();
     let settled = false;
     const finish = (code: number | null, processError?: string) => {
       if (settled) return;
       settled = true;
-      resolve({ code, stderr, processError });
+      resolve({ code, stderr: stderr.value(), processError });
     };
-    child.stderr?.on('data', (d) => (stderr += String(d)));
+    child.stderr?.on('data', (d) => stderr.append(String(d)));
     child.on('error', (err) => finish(null, errorMessage(err)));
     child.on('close', (code) => finish(code));
   });

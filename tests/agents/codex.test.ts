@@ -205,6 +205,29 @@ describe('CodexAgent', () => {
     expect(chunks.at(-1)).toEqual({ type: 'done' });
   });
 
+  it('caps a large stderr stream in the surfaced error (tail + truncation marker)', async () => {
+    const proc: any = new EventEmitter();
+    proc.stdout = Readable.from([]);
+    const noisy = 'deprecation warning line\n'.repeat(5000); // ~120 KB of stderr
+    proc.stderr = Readable.from([noisy, 'FINAL STDERR MARKER\n']);
+    proc.stdin = new Writable({ write(_c, _e, cb) { cb(); } });
+    proc.kill = vi.fn();
+    proc.stderr.once('end', () => setImmediate(() => proc.emit('close', 1)));
+    mockedSpawn.mockReturnValueOnce(proc);
+
+    const agent = new CodexAgent();
+    const chunks = [];
+    for await (const c of agent.send('hi')) chunks.push(c);
+
+    const err = chunks.find((c) => c.type === 'error') as { type: 'error'; message: string } | undefined;
+    expect(err).toBeTruthy();
+    // The surfaced error retains the tail (the most recent stderr) and a marker,
+    // and is nowhere near the full ~120 KB.
+    expect(err!.message).toContain('stderr truncated');
+    expect(err!.message).toContain('FINAL STDERR MARKER');
+    expect(err!.message.length).toBeLessThan(40_000);
+  });
+
   it('emits an error chunk when the Codex process cannot be spawned', async () => {
     mockedSpawn.mockImplementationOnce(() => {
       throw new Error('spawn failed');

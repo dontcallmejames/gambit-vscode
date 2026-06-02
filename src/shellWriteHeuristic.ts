@@ -21,8 +21,14 @@ export function isShellTool(toolName: string): boolean {
 const WRITE_COMMAND_RE =
   /(?:^|[\s;&|(])(?:rm|rmdir|mv|cp|dd|truncate|install|mkdir|touch|chmod|chown|ln|tee|patch|git\s+(?:add|commit|checkout|reset|restore|apply|rm|mv|clean|stash)|npm\s+(?:install|i|ci|publish)|pip\s+install|sed\s+-[a-z]*i|perl\s+-[a-z]*i)\b/iu;
 
-/** Output redirection that creates/overwrites/appends a file. */
-const REDIRECT_RE = /(?<![0-9<>])>>?(?!&)|\btee\b/u;
+/**
+ * Output redirection that creates/overwrites/appends a file. The negative
+ * lookbehind avoids `2>&1` (digit before `>`) and `>>`/`<>` artifacts; the
+ * lookahead `(?![&=])` avoids `>&` (fd dup) and `>=` (a comparison operator in
+ * grep/awk/test expressions), which would otherwise false-flag read-only
+ * exploration like `grep '>=' file`.
+ */
+const REDIRECT_RE = /(?<![0-9<>])>>?(?![&=])|\btee\b/u;
 
 /**
  * Returns true if the shell command appears to write to disk. Catches output

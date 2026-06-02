@@ -60,6 +60,18 @@ describe('shellCommandWrites', () => {
   it('returns false for an empty command', () => {
     expect(shellCommandWrites('')).toBe(false);
   });
+
+  it('does not flag comparison operators or fd redirection as file writes', () => {
+    // `>=` is a comparison, not a redirect — must not false-flag read-only
+    // exploration like grep/awk over code.
+    expect(shellCommandWrites("grep '>=' src/file.ts")).toBe(false);
+    expect(shellCommandWrites("awk '$3 >= 100' data.tsv")).toBe(false);
+    // 2>&1 is stderr->stdout fd duplication, not a file write.
+    expect(shellCommandWrites('npm test 2>&1')).toBe(false);
+    // But a real append/overwrite still flags.
+    expect(shellCommandWrites('npm test > out.log')).toBe(true);
+    expect(shellCommandWrites('cat a >> b')).toBe(true);
+  });
 });
 
 describe('shellCommandFromInput', () => {

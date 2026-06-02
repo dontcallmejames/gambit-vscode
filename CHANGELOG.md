@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.0 - 2026-06-02
+
+- Adds UI/UX Polish v0.2 ("Veyra Instrument"), a second visual pass on the docked webview: a spacing and type scale with a shared uppercase microlabel treatment for every kicker; a per-agent identity system (a shared `AgentMarker` color dot used identically in Mission Control, message rows, and Trust Center) that separates agent identity from stage state, with state shown by a distinct codicon per state so it stays legible in High Contrast without relying on color; a composer focus ring, a floor-held affordance showing which agent is working, and a shared `StatePanel` behind the empty and no-agents-ready states; and a calm motion layer — a pulsing marker plus one thin shimmer while streaming (replacing the random "thinking" verbs and braille spinners), gentle message-row entrance, a true height-slide for collapsible panels, and cross-faded Mission Control state changes — all gated behind `prefers-reduced-motion`.
+- Hardens read-only enforcement for the review/debate/consensus workflows and the non-Codex roles in `/implement`: Claude now runs with its write tools removed from context (`--disallowedTools`) so it cannot edit files at all, rather than only being asked not to, and Antigravity read-only sends are covered by regression tests. Codex (sandbox) and legacy Gemini (approval mode) read-only enforcement is unchanged.
+
 ## 1.1.0 - 2026-05-30
 
 - Adds Enterprise Polish v0.1, a VS Code-native visual pass: a token-driven theme that maps every color to VS Code theme variables and stays readable across Light+, Dark+, and High Contrast; a flat row-based message layout in place of chat bubbles; a shared PanelSection component with packaged `@vscode/codicons` icons; a status bar item showing idle and per-agent dispatching state; a denser docked layout where agent stages are single lines, panel headers double as collapse toggles, and Mission Control no longer restates other panels' summaries; first-launch empty-state guidance in the conversation; and Marketplace screenshots.

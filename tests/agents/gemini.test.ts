@@ -249,6 +249,25 @@ describe('GeminiAgent', () => {
     expect(() => proc.stdin.emit('error', new Error('EPIPE'))).not.toThrow();
   });
 
+  it('surfaces a drift warning when legacy Gemini output parses to zero chunks on a clean exit', async () => {
+    setBackend('gemini'); // force the legacy stream-json path so the JSONL parser runs
+    mockedSpawn.mockReturnValueOnce(
+      fakeProcess([
+        '{"type":"renamed_init","session_id":"x"}\n',
+        '{"type":"renamed_message","role":"assistant","content":"hi"}\n',
+        '{"type":"renamed_result","status":"success"}\n',
+      ])
+    );
+
+    const agent = new GeminiAgent();
+    const chunks = [];
+    for await (const c of agent.send('hi', {} as any)) chunks.push(c);
+
+    const errorChunk = chunks.find((c) => c.type === 'error') as { type: 'error'; message: string } | undefined;
+    expect(errorChunk).toBeTruthy();
+    expect(errorChunk!.message).toContain('Veyra could not parse');
+  });
+
   it('treats Antigravity --print output as plain assistant text', async () => {
     process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\agy\\agy.exe';
     mockedSpawn.mockReturnValueOnce(fakeProcess(['plain answer\n']));

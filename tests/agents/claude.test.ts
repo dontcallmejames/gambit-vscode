@@ -99,6 +99,24 @@ describe('ClaudeAgent', () => {
     expect(child.stdin.on).toHaveBeenCalledWith('error', expect.any(Function));
   });
 
+  it('surfaces a drift warning when Claude output parses to zero chunks on a clean exit', async () => {
+    // Valid JSON the parser no longer recognizes (renamed event types), exit 0.
+    const child = fakeClaudeProcess([
+      { type: 'renamed_system', subtype: 'init' },
+      { type: 'renamed_assistant', message: { content: [{ type: 'text', text: 'hi' }] } },
+      { type: 'renamed_result', subtype: 'success' },
+    ]);
+    const { ClaudeAgent } = await importClaudeAgentWithCli(child);
+
+    const agent = new ClaudeAgent();
+    const chunks = [];
+    for await (const chunk of agent.send('hi')) chunks.push(chunk);
+
+    const errorChunk = chunks.find((c) => c.type === 'error') as { type: 'error'; message: string } | undefined;
+    expect(errorChunk).toBeTruthy();
+    expect(errorChunk!.message).toContain('Veyra could not parse');
+  });
+
   it('forbids the write tools for read-only sends and stays in default permission mode', async () => {
     const child = fakeClaudeProcess([{ type: 'result', subtype: 'success' }]);
     const { ClaudeAgent, spawn } = await importClaudeAgentWithCli(child);

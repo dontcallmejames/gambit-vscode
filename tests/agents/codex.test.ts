@@ -78,6 +78,39 @@ describe('CodexAgent', () => {
     ]);
   });
 
+  it('surfaces a drift warning when non-empty output parses to zero chunks on a clean exit', async () => {
+    // Simulates an upstream CLI schema change: valid JSON lines the parser no
+    // longer recognizes (renamed event types), exiting 0. Without a guard this
+    // is a "complete but blank" turn with no error.
+    mockedSpawn.mockReturnValueOnce(
+      fakeProcess([
+        '{"type":"renamed.thread.started","id":"x"}\n',
+        '{"type":"renamed.item","payload":{"text":"hello"}}\n',
+        '{"type":"renamed.turn.done"}\n',
+      ])
+    );
+
+    const agent = new CodexAgent();
+    const chunks = [];
+    for await (const c of agent.send('hi')) chunks.push(c);
+
+    const errorChunk = chunks.find((c) => c.type === 'error') as { type: 'error'; message: string } | undefined;
+    expect(errorChunk).toBeTruthy();
+    expect(errorChunk!.message).toContain('Veyra could not parse');
+    expect(errorChunk!.message.toLowerCase()).toContain('cli may have updated');
+  });
+
+  it('does not surface a drift warning when only blank/whitespace output is received', async () => {
+    // Genuinely empty output (no lines) is a normal no-op, not drift.
+    mockedSpawn.mockReturnValueOnce(fakeProcess(['\n', '   \n']));
+
+    const agent = new CodexAgent();
+    const chunks = [];
+    for await (const c of agent.send('hi')) chunks.push(c);
+
+    expect(chunks.find((c) => c.type === 'error')).toBeUndefined();
+  });
+
   it('parses file_change item into tool-call chunks for badge firing', async () => {
     // Codex file_change event shape from codex-rs/exec source analysis:
     // item.completed with item.type === 'file_change' carries a changes array

@@ -10,6 +10,7 @@ import { findNode } from '../findNode.js';
 import { getAntigravityCliPathOverride, getGeminiCliPathOverride } from '../cliPathOverrides.js';
 import { cliPathMisconfiguration, normalizeCliPathOverride, windowsNpmShimNames } from '../cliPathValidation.js';
 import { getGeminiBackend } from '../geminiBackend.js';
+import { DriftTracker } from './driftWarning.js';
 import * as vscode from 'vscode';
 
 type GoogleCliCommand =
@@ -418,6 +419,7 @@ export class GeminiAgent implements Agent {
 
     let buffer = '';
     let sawDone = false;
+    const drift = new DriftTracker();
     // Track tool_id → tool_name within this send() call so tool_result events
     // can resolve the friendly tool name (the tool_result event carries only tool_id).
     const toolNameById = new Map<string, string>();
@@ -427,14 +429,18 @@ export class GeminiAgent implements Agent {
         const lines = buffer.split('\n');
         buffer = lines.pop() ?? '';
         for (const line of lines) {
+          drift.observeLine(line);
           for (const chunk of parseGeminiEvent(line, toolNameById)) {
+            drift.observeChunk();
             if (chunk.type === 'done') sawDone = true;
             yield chunk;
           }
         }
       }
       if (buffer.trim()) {
+        drift.observeLine(buffer);
         for (const chunk of parseGeminiEvent(buffer, toolNameById)) {
+          drift.observeChunk();
           if (chunk.type === 'done') sawDone = true;
           yield chunk;
         }
@@ -450,6 +456,9 @@ export class GeminiAgent implements Agent {
       yield { type: 'error', message: `Gemini process error: ${processError}` };
     } else if (code !== 0) {
       yield { type: 'error', message: `Gemini exited with exit code ${code}${stderr ? `: ${stderr.trim()}` : ''}` };
+    } else {
+      const driftChunk = drift.driftChunk(true);
+      if (driftChunk) yield driftChunk;
     }
     if (!sawDone) yield { type: 'done' };
     this.active = null;

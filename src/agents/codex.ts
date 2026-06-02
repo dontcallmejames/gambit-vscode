@@ -8,6 +8,7 @@ import { checkCodex } from '../statusChecks.js';
 import { findNode } from '../findNode.js';
 import { getCodexCliPathOverride } from '../cliPathOverrides.js';
 import { cliPathMisconfiguration, normalizeCliPathOverride, windowsNpmShimNames } from '../cliPathValidation.js';
+import { DriftTracker } from './driftWarning.js';
 import * as vscode from 'vscode';
 
 // Spike A3: invoke `codex exec --json '<prompt>'` for non-interactive JSONL.
@@ -203,20 +204,25 @@ export class CodexAgent implements Agent {
 
     let buffer = '';
     let sawDone = false;
+    const drift = new DriftTracker();
     try {
       for await (const data of child.stdout!) {
         buffer += String(data);
         const lines = buffer.split('\n');
         buffer = lines.pop() ?? '';
         for (const line of lines) {
+          drift.observeLine(line);
           for (const chunk of parseCodexEvent(line)) {
+            drift.observeChunk();
             if (chunk.type === 'done') sawDone = true;
             yield chunk;
           }
         }
       }
       if (buffer.trim()) {
+        drift.observeLine(buffer);
         for (const chunk of parseCodexEvent(buffer)) {
+          drift.observeChunk();
           if (chunk.type === 'done') sawDone = true;
           yield chunk;
         }
@@ -232,6 +238,9 @@ export class CodexAgent implements Agent {
       yield { type: 'error', message: `Codex process error: ${processError}` };
     } else if (code !== 0) {
       yield { type: 'error', message: `Codex exited with exit code ${code}${stderr ? `: ${stderr.trim()}` : ''}` };
+    } else {
+      const driftChunk = drift.driftChunk(true);
+      if (driftChunk) yield driftChunk;
     }
     if (!sawDone) yield { type: 'done' };
     this.active = null;

@@ -1,6 +1,7 @@
 import { execSync, spawn } from 'node:child_process';
 import type { ChildProcess, SpawnOptions } from 'node:child_process';
 import type { AgentChunk } from './types.js';
+import { DriftTracker } from './agents/driftWarning.js';
 
 export interface ClaudeCliOptions {
   cwd?: string;
@@ -88,20 +89,25 @@ export async function* runClaudeCli(
   const idToName = new Map<string, string>();
   let buffer = '';
   let sawDone = false;
+  const drift = new DriftTracker();
   try {
     for await (const data of child.stdout!) {
       buffer += String(data);
       const lines = buffer.split('\n');
       buffer = lines.pop() ?? '';
       for (const line of lines) {
+        drift.observeLine(line);
         for (const chunk of parseClaudeJsonLine(line, idToName)) {
+          drift.observeChunk();
           if (chunk.type === 'done') sawDone = true;
           yield chunk;
         }
       }
     }
     if (buffer.trim()) {
+      drift.observeLine(buffer);
       for (const chunk of parseClaudeJsonLine(buffer, idToName)) {
+        drift.observeChunk();
         if (chunk.type === 'done') sawDone = true;
         yield chunk;
       }
@@ -117,6 +123,9 @@ export async function* runClaudeCli(
     yield { type: 'error', message: `Claude process error: ${processError}` };
   } else if (code !== 0) {
     yield { type: 'error', message: `Claude exited with exit code ${code}${stderr ? `: ${stderr.trim()}` : ''}` };
+  } else {
+    const driftChunk = drift.driftChunk(true);
+    if (driftChunk) yield driftChunk;
   }
   if (!sawDone) yield { type: 'done' };
   opts.onProcess?.(null);

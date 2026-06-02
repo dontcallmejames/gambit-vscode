@@ -34,6 +34,12 @@
     "node": ">=20"
   },
   "main": "./dist/extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Veyra spawns the Claude, Codex, and Gemini CLIs, which read and write workspace files and run shell commands. In an untrusted workspace, Veyra will not run agents, verification, or commit-hook installation until you grant Workspace Trust."
+    }
+  },
   "files": [
     "package.json",
     "README.md",

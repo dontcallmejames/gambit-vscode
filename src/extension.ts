@@ -330,6 +330,10 @@ export function activate(context: vscode.ExtensionContext): void {
         vscode.window.showErrorMessage('Open a workspace folder first.');
         return;
       }
+      if (vscode.workspace.isTrusted === false) {
+        vscode.window.showErrorMessage('This workspace is not trusted; Veyra will not install a commit hook here. Grant Workspace Trust first.');
+        return;
+      }
       const result = installCommitHook(ws);
       if (result.status === 'installed') {
         vscode.window.showInformationMessage(`Installed Veyra commit hook at ${result.path}`);

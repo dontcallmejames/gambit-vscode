@@ -82,6 +82,13 @@ export interface VeyraSessionOptions {
   changeLedger?: ChangeLedger;
   checkpointLedger?: CheckpointLedger;
   agentRoleOverrides?: AgentRoleOverrides;
+  /**
+   * Returns whether the current workspace is trusted. When it returns false,
+   * dispatch refuses to spawn agents (which read/write files and run shell) and
+   * surfaces a notice. Defaults to always-trusted so non-VS-Code callers and
+   * existing tests are unaffected.
+   */
+  isWorkspaceTrusted?: () => boolean;
 }
 
 export interface WorkspaceChangeTracker {
@@ -144,6 +151,7 @@ export class VeyraSessionService {
   private changeLedger?: ChangeLedger;
   private checkpointLedger?: CheckpointLedger;
   private agentRoleOverrides?: AgentRoleOverrides;
+  private readonly isWorkspaceTrusted: () => boolean;
   private loadPromise: Promise<Session> | null = null;
   private dispatchQueue: Promise<void> = Promise.resolve();
   private cancelGeneration = 0;
@@ -171,6 +179,7 @@ export class VeyraSessionService {
     this.changeLedger = options.changeLedger;
     this.checkpointLedger = options.checkpointLedger;
     this.agentRoleOverrides = options.agentRoleOverrides;
+    this.isWorkspaceTrusted = options.isWorkspaceTrusted ?? (() => true);
     this.sentinel = new SentinelWriter(workspacePath, {
       enabled: this.commitSignatureEnabled,
     });
@@ -265,6 +274,13 @@ export class VeyraSessionService {
   }
 
   dispatch(request: VeyraDispatchRequest, emit: VeyraDispatchEventSink): Promise<void> {
+    // Workspace Trust gate: agents read/write files and run shell, so refuse to
+    // spawn them in an untrusted workspace. Inline autocomplete is silently
+    // skipped (no chat surface to notify); chat dispatches get a visible notice.
+    if (!this.isWorkspaceTrusted()) {
+      if (request.source === 'inline-autocomplete') return Promise.resolve();
+      return this.emitUntrustedWorkspaceNotice(emit);
+    }
     const generation = this.cancelGeneration;
     const queuedDispatch = this.dispatchQueue
       .catch(() => undefined)
@@ -277,6 +293,18 @@ export class VeyraSessionService {
       });
     this.dispatchQueue = queuedDispatch.then(() => undefined, () => undefined);
     return queuedDispatch;
+  }
+
+  private async emitUntrustedWorkspaceNotice(emit: VeyraDispatchEventSink): Promise<void> {
+    const sys: SystemMessage = {
+      id: ulid(),
+      role: 'system',
+      kind: 'error',
+      text: 'This workspace is not trusted, so Veyra will not run agents here. '
+        + 'Agents read and write files and run shell commands; grant Workspace Trust to use Veyra.',
+      timestamp: Date.now(),
+    };
+    await emit({ kind: 'system-message', message: sys });
   }
 
   private async runInlineAutocompleteDispatch(

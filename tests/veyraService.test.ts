@@ -143,6 +143,66 @@ describe('VeyraSessionService', () => {
     });
   });
 
+  it('refuses to dispatch agents in an untrusted workspace and surfaces a notice', async () => {
+    let agentStarted = false;
+    const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-untrusted-'));
+    const agent = (id: AgentId): Agent => ({
+      id,
+      status: async () => 'ready',
+      cancel: async () => {},
+      async *send() {
+        agentStarted = true;
+        yield { type: 'done' } as AgentChunk;
+      },
+    });
+    const service = new VeyraSessionService(
+      workspacePath,
+      { claude: agent('claude'), codex: agent('codex'), gemini: agent('gemini') },
+      { hangSeconds: 0, isWorkspaceTrusted: () => false },
+    );
+
+    const events: any[] = [];
+    await service.dispatch(
+      { text: '@codex review this', source: 'panel', cwd: workspacePath },
+      (event) => { events.push(event); },
+    );
+
+    // No agent process was started.
+    expect(agentStarted).toBe(false);
+    // A visible notice explains why nothing ran.
+    const notice = events.find((e) => e.kind === 'system-message');
+    expect(notice).toBeTruthy();
+    expect(notice.message.kind).toBe('error');
+    expect(notice.message.text.toLowerCase()).toContain('trust');
+  });
+
+  it('dispatches normally when the workspace is trusted (default)', async () => {
+    let agentStarted = false;
+    const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-trusted-'));
+    const agent = (id: AgentId): Agent => ({
+      id,
+      status: async () => 'ready',
+      cancel: async () => {},
+      async *send() {
+        agentStarted = true;
+        yield { type: 'text', text: 'ok' } as AgentChunk;
+        yield { type: 'done' } as AgentChunk;
+      },
+    });
+    const service = new VeyraSessionService(
+      workspacePath,
+      { claude: agent('claude'), codex: agent('codex'), gemini: agent('gemini') },
+      { hangSeconds: 0 }, // isWorkspaceTrusted defaults to trusted
+    );
+
+    await service.dispatch(
+      { text: '@codex review this', source: 'panel', cwd: workspacePath },
+      () => {},
+    );
+
+    expect(agentStarted).toBe(true);
+  });
+
   it('routes inline autocomplete without composing or persisting chat-session context', async () => {
     const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-inline-'));
     let capturedPrompt = '';

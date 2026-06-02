@@ -170,6 +170,10 @@ export class CodexAgent implements Agent {
         [...codexCommand.args, ...codexArgs(opts.readOnly)],
         { cwd: opts.cwd, stdio: ['pipe', 'pipe', 'pipe'] }
       );
+      // Guard a late stdin EPIPE (CLI exits before reading the prompt) from
+      // becoming an uncaughtException that can crash the host; the exit is still
+      // surfaced via the close/error watcher below.
+      child.stdin?.on('error', () => {});
       child.stdin?.end(prompt);
     } catch (err) {
       yield { type: 'error', message: `Unable to start Codex CLI: ${errorMessage(err)}` };

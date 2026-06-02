@@ -52,6 +52,12 @@ export async function* runClaudeCli(
       spawnOptions,
     );
     opts.onProcess?.(child);
+    // Guard against a late stdin EPIPE: if the CLI exits before reading the
+    // prompt (early auth failure, a large prompt that fills the pipe while the
+    // child dies), Node emits 'error' on the stdin stream. With no listener it
+    // becomes an uncaughtException that can tear down the extension host. The
+    // process exit is already surfaced via the close/error handlers below.
+    child.stdin?.on('error', () => {});
     child.stdin?.end(prompt);
   } catch (err) {
     opts.onProcess?.(null);

@@ -234,6 +234,21 @@ describe('GeminiAgent', () => {
     expect(proc.stdinText).toBe(prompt);
   });
 
+  it('attaches a stdin error listener so an EPIPE before the CLI reads cannot crash the host', async () => {
+    const proc = fakeProcess(['{"type":"result","status":"success"}\n']);
+    mockedSpawn.mockReturnValueOnce(proc);
+
+    const agent = new GeminiAgent();
+    for await (const _chunk of agent.send('hi', {} as any)) {
+      // drain
+    }
+
+    // The stdin Writable must have an 'error' listener; without one a late EPIPE
+    // (CLI exits before reading the prompt) becomes an uncaughtException.
+    expect(proc.stdin.listenerCount('error')).toBeGreaterThan(0);
+    expect(() => proc.stdin.emit('error', new Error('EPIPE'))).not.toThrow();
+  });
+
   it('treats Antigravity --print output as plain assistant text', async () => {
     process.env.VEYRA_ANTIGRAVITY_CLI_PATH = 'D:\\tools\\agy\\agy.exe';
     mockedSpawn.mockReturnValueOnce(fakeProcess(['plain answer\n']));

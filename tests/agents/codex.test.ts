@@ -232,6 +232,22 @@ describe('CodexAgent', () => {
     expect(proc.stdinText).toBe(prompt);
   });
 
+  it('attaches a stdin error listener so an EPIPE before the CLI reads cannot crash the host', async () => {
+    const proc = fakeProcess(['{"type":"turn.completed","usage":{}}\n']);
+    mockedSpawn.mockReturnValueOnce(proc);
+
+    const agent = new CodexAgent();
+    for await (const _chunk of agent.send('hi', {} as any)) {
+      // drain
+    }
+
+    // The stdin Writable must have an 'error' listener; without one a late EPIPE
+    // (CLI exits before reading the prompt) becomes an uncaughtException.
+    expect(proc.stdin.listenerCount('error')).toBeGreaterThan(0);
+    // And emitting that error must not throw (no rejection escapes the agent).
+    expect(() => proc.stdin.emit('error', new Error('EPIPE'))).not.toThrow();
+  });
+
   it('exposes id "codex"', () => {
     expect(new CodexAgent().id).toBe('codex');
   });

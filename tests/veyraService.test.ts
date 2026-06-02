@@ -1560,6 +1560,53 @@ describe('VeyraSessionService', () => {
     });
   });
 
+  it('hard-cancels the dispatch when a read-only agent edits a file (not just a notice)', async () => {
+    const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-readonly-cancel-'));
+    const changeLedger = fakeChangeLedger('change-set-cancel');
+    const geminiCancel = vi.fn(async () => {});
+    const service = new VeyraSessionService(
+      workspacePath,
+      {
+        claude: agentNoop('claude'),
+        codex: agentNoop('codex'),
+        gemini: {
+          id: 'gemini',
+          status: async () => 'ready',
+          cancel: geminiCancel,
+          async *send() {
+            yield { type: 'tool-call', name: 'Edit', input: { file_path: 'docs/review.md' } } as AgentChunk;
+            yield { type: 'tool-result', name: 'Edit', output: 'ok' } as AgentChunk;
+            yield { type: 'done' } as AgentChunk;
+          },
+        },
+      },
+      {
+        hangSeconds: 0,
+        changeLedger: changeLedger as ChangeLedger,
+        getEditedPathForAgent: (_agentId, _toolName, input) =>
+          (typeof input === 'object' && input && 'file_path' in input) ? String(input.file_path) : null,
+      },
+    );
+
+    const events: any[] = [];
+    await service.dispatch(
+      {
+        text: veyraWorkflowPrompt('implement', 'Update the docs safely.'),
+        source: 'panel',
+        cwd: workspacePath,
+        forcedTarget: 'veyra',
+      },
+      (event) => { events.push(event); },
+    );
+
+    // The violation notice is still emitted...
+    expect(events.some((e) =>
+      e.kind === 'system-message' && e.message.workflowState?.kind === 'read-only-violation'
+    )).toBe(true);
+    // ...AND the offending agent was cancelled (hard stop, not just a notice).
+    expect(geminiCancel).toHaveBeenCalled();
+  });
+
   it('stops registering file badge edits after the badge controller is removed from options', async () => {
     const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-service-'));
     const badgeController = { registerEdit: vi.fn() };

@@ -1082,6 +1082,11 @@ export class VeyraSessionService {
     };
     this.store.appendSystem(sys);
     await emit({ kind: 'system-message', message: sys });
+
+    // Hard stop: a read-only agent has written to disk, which the prevention
+    // flags were supposed to forbid. Cancel the dispatch so no further turns or
+    // writes happen rather than letting the workflow continue past the breach.
+    await this.cancelAll();
   }
 
   private async emitEditConflictIfNeeded(

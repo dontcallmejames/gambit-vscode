@@ -25,7 +25,6 @@ const mocks = vi.hoisted(() => {
   const smokeAgents = { id: 'smoke-agents' };
   const fileDecorationProviderDisposable = { dispose: vi.fn() };
   const statusBarItems: Array<Record<string, unknown>> = [];
-  const outputChannels: Array<{ name: string; appendLine: ReturnType<typeof vi.fn>; dispose: ReturnType<typeof vi.fn> }> = [];
   const webviewControllerInstances: Array<{
     attach: ReturnType<typeof vi.fn>;
     dispatchExternalMessage: ReturnType<typeof vi.fn>;
@@ -51,12 +50,6 @@ const mocks = vi.hoisted(() => {
       };
       statusBarItems.push(item);
       return item;
-    }),
-    outputChannels,
-    createOutputChannel: vi.fn((name: string) => {
-      const channel = { name, appendLine: vi.fn(), dispose: vi.fn() };
-      outputChannels.push(channel);
-      return channel;
     }),
     configGet: vi.fn((_key: string, dflt: unknown) => dflt),
     registerCommand: vi.fn((command: string, callback: (...args: unknown[]) => unknown) => {
@@ -159,9 +152,6 @@ const mocks = vi.hoisted(() => {
       this.webviewControllerInstances.length = 0;
       this.createStatusBarItem.mockClear();
       this.statusBarItems.length = 0;
-      // NOTE: outputChannels and createOutputChannel are intentionally NOT reset.
-      // The Veyra output channel is a module singleton created once across the
-      // whole run, so the recorded channel must persist for later tests to find.
       this.showInformationMessage.mockClear();
       this.showErrorMessage.mockClear();
       this.showWarningMessage.mockClear();
@@ -299,7 +289,6 @@ vi.mock('vscode', () => ({
     registerWebviewViewProvider: mocks.registerWebviewViewProvider,
     registerFileDecorationProvider: mocks.registerFileDecorationProvider,
     createStatusBarItem: mocks.createStatusBarItem,
-    createOutputChannel: mocks.createOutputChannel,
     showInformationMessage: mocks.showInformationMessage,
     showErrorMessage: mocks.showErrorMessage,
     showWarningMessage: mocks.showWarningMessage,
@@ -438,34 +427,18 @@ describe('activate', () => {
     expect(ctx.subscriptions).toContain(item);
   });
 
-  it('installs a global crash guard that logs to the Veyra output channel instead of crashing the host', () => {
-    const ctx = context();
-    const before = process.listenerCount('uncaughtException');
+  it('does not install process-wide uncaughtException/unhandledRejection handlers', () => {
+    // A global process handler that only logs would suppress OTHER extensions'
+    // fatal errors host-wide (Node stops crashing once any uncaughtException
+    // listener exists). The stdin EPIPE vector is handled locally on each child
+    // stream instead, so activation must not touch the process error handlers.
+    const beforeUncaught = process.listenerCount('uncaughtException');
+    const beforeUnhandled = process.listenerCount('unhandledRejection');
 
-    activate(ctx as any);
+    activate(context() as any);
 
-    // A Veyra output channel exists (created once and reused across activations).
-    const channel = mocks.outputChannels.find((c) => c.name === 'Veyra')
-      ?? mocks.createOutputChannel.mock.results.map((r) => r.value).find((c: any) => c?.name === 'Veyra');
-    expect(channel).toBeTruthy();
-
-    // Activation registers guards for both unhandled-error events without stacking
-    // duplicates across repeated activations (idempotent: net +1 listener at most).
-    const uncaught = process.listeners('uncaughtException');
-    const unhandled = process.listeners('unhandledRejection');
-    expect(uncaught.length).toBeGreaterThan(0);
-    expect(unhandled.length).toBeGreaterThan(0);
-    expect(process.listenerCount('uncaughtException')).toBeLessThanOrEqual(before + 1);
-
-    // Invoking the most-recently-added guard logs to the channel and does not throw.
-    const guard = uncaught.at(-1) as (err: unknown) => void;
-    expect(() => guard(new Error('EPIPE boom'))).not.toThrow();
-    expect(channel!.appendLine).toHaveBeenCalledWith(expect.stringContaining('EPIPE boom'));
-
-    // The guard is disposable via context.subscriptions (no leak across reloads).
-    const beforeDispose = process.listenerCount('uncaughtException');
-    for (const sub of ctx.subscriptions) sub.dispose();
-    expect(process.listenerCount('uncaughtException')).toBeLessThan(beforeDispose);
+    expect(process.listenerCount('uncaughtException')).toBe(beforeUncaught);
+    expect(process.listenerCount('unhandledRejection')).toBe(beforeUnhandled);
   });
 
   it('registers the native VS Code integration surface', () => {

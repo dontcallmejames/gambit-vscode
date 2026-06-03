@@ -138,53 +138,7 @@ const SHOW_LIVE_VALIDATION_GUIDE_ACTION = 'Show live validation guide';
 const CONFIGURE_CLI_PATHS_ACTION = 'Configure CLI paths';
 const ENTER_CLI_PATHS_ACTION = 'Enter paths manually';
 
-// Singleton crash-guard state so repeated activate() calls (e.g. in tests, or a
-// reload) never stack duplicate process listeners.
-let veyraOutputChannel: vscode.OutputChannel | undefined;
-let crashGuardUncaught: ((err: unknown) => void) | undefined;
-let crashGuardUnhandled: ((reason: unknown) => void) | undefined;
-
-/**
- * Install a last-resort guard so an unhandled async error from a spawned CLI
- * (e.g. a stdin EPIPE, a rejected stream) is logged to the Veyra output channel
- * instead of becoming an uncaughtException that can tear down the extension
- * host. Idempotent: removes any previously-registered guard before adding, and
- * returns a disposable that detaches the listeners.
- */
-function installGlobalCrashGuard(channel: vscode.OutputChannel): vscode.Disposable {
-  if (crashGuardUncaught) process.removeListener('uncaughtException', crashGuardUncaught);
-  if (crashGuardUnhandled) process.removeListener('unhandledRejection', crashGuardUnhandled);
-
-  const describe = (value: unknown): string =>
-    value instanceof Error ? (value.stack ?? value.message) : String(value);
-
-  crashGuardUncaught = (err: unknown): void => {
-    channel.appendLine(`[Veyra] uncaught exception: ${describe(err)}`);
-  };
-  crashGuardUnhandled = (reason: unknown): void => {
-    channel.appendLine(`[Veyra] unhandled rejection: ${describe(reason)}`);
-  };
-
-  process.on('uncaughtException', crashGuardUncaught);
-  process.on('unhandledRejection', crashGuardUnhandled);
-
-  return {
-    dispose: () => {
-      if (crashGuardUncaught) process.removeListener('uncaughtException', crashGuardUncaught);
-      if (crashGuardUnhandled) process.removeListener('unhandledRejection', crashGuardUnhandled);
-      crashGuardUncaught = undefined;
-      crashGuardUnhandled = undefined;
-    },
-  };
-}
-
 export function activate(context: vscode.ExtensionContext): void {
-  if (!veyraOutputChannel) {
-    veyraOutputChannel = vscode.window.createOutputChannel('Veyra');
-  }
-  const outputChannel = veyraOutputChannel;
-  context.subscriptions.push(installGlobalCrashGuard(outputChannel));
-
   let badgeController: FileBadgesController | undefined;
   let badgeProviderDisposable: vscode.Disposable | undefined;
   const fileBadgesEnabled = (): boolean =>

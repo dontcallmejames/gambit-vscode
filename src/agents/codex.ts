@@ -140,10 +140,17 @@ function isUnsupportedWindowsCommandShim(filePath: string): boolean {
 
 const CODEX_BASE_ARGS = ['exec', '--json', '--skip-git-repo-check'];
 const CODEX_AUTO_EDIT_ARGS = ['--sandbox', 'workspace-write'];
+// codex exec defaults to workspace-write inside a git repo (verified against
+// codex-rs: default_builtin_permission_profile_name), so read-only must be
+// asserted positively rather than by omitting the write flag.
+const CODEX_READ_ONLY_ARGS = ['--sandbox', 'read-only'];
 
 function codexArgs(readOnly = false): string[] {
+  if (readOnly) {
+    return [...CODEX_BASE_ARGS, ...CODEX_READ_ONLY_ARGS, '-'];
+  }
   const writeApproval = vscode.workspace.getConfiguration('veyra').get<string>('writeApproval', 'auto-edit');
-  const extra = !readOnly && writeApproval === 'auto-edit' ? CODEX_AUTO_EDIT_ARGS : [];
+  const extra = writeApproval === 'auto-edit' ? CODEX_AUTO_EDIT_ARGS : [];
   return [...CODEX_BASE_ARGS, ...extra, '-'];
 }
 

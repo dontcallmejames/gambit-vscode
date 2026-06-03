@@ -293,6 +293,10 @@ export function createVeyraSessionService(
     {
       ...readVeyraSessionOptions(badgeController),
       facilitator: shouldUseSmokeAgents() ? smokeFacilitator : undefined,
+      // Gate agent execution on Workspace Trust. `isTrusted` can be absent in
+      // very old hosts; treat absent as trusted to match prior behavior.
+      isWorkspaceTrusted: () =>
+        typeof vscode.workspace.isTrusted === 'boolean' ? vscode.workspace.isTrusted : true,
       workspaceChangeTracker: createWorkspaceChangeTracker(workspacePath),
       workspaceContextProvider: new WorkspaceContextProvider(workspacePath, readWorkspaceContextOptions()),
       projectCommandProvider: new ProjectCommandProvider(workspacePath),

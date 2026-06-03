@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { parseMentions } from './mentions.js';
 import { ulid } from './ulid.js';
+import { isShellTool, shellCommandFromInput, shellCommandWrites } from './shellWriteHeuristic.js';
 import { MessageRouter } from './messageRouter.js';
 import { chooseFacilitatorAgent, type FacilitatorFn } from './facilitator.js';
 import { SessionStore } from './sessionStore.js';
@@ -82,6 +83,13 @@ export interface VeyraSessionOptions {
   changeLedger?: ChangeLedger;
   checkpointLedger?: CheckpointLedger;
   agentRoleOverrides?: AgentRoleOverrides;
+  /**
+   * Returns whether the current workspace is trusted. When it returns false,
+   * dispatch refuses to spawn agents (which read/write files and run shell) and
+   * surfaces a notice. Defaults to always-trusted so non-VS-Code callers and
+   * existing tests are unaffected.
+   */
+  isWorkspaceTrusted?: () => boolean;
 }
 
 export interface WorkspaceChangeTracker {
@@ -144,6 +152,7 @@ export class VeyraSessionService {
   private changeLedger?: ChangeLedger;
   private checkpointLedger?: CheckpointLedger;
   private agentRoleOverrides?: AgentRoleOverrides;
+  private readonly isWorkspaceTrusted: () => boolean;
   private loadPromise: Promise<Session> | null = null;
   private dispatchQueue: Promise<void> = Promise.resolve();
   private cancelGeneration = 0;
@@ -171,6 +180,7 @@ export class VeyraSessionService {
     this.changeLedger = options.changeLedger;
     this.checkpointLedger = options.checkpointLedger;
     this.agentRoleOverrides = options.agentRoleOverrides;
+    this.isWorkspaceTrusted = options.isWorkspaceTrusted ?? (() => true);
     this.sentinel = new SentinelWriter(workspacePath, {
       enabled: this.commitSignatureEnabled,
     });
@@ -265,6 +275,13 @@ export class VeyraSessionService {
   }
 
   dispatch(request: VeyraDispatchRequest, emit: VeyraDispatchEventSink): Promise<void> {
+    // Workspace Trust gate: agents read/write files and run shell, so refuse to
+    // spawn them in an untrusted workspace. Inline autocomplete is silently
+    // skipped (no chat surface to notify); chat dispatches get a visible notice.
+    if (!this.isWorkspaceTrusted()) {
+      if (request.source === 'inline-autocomplete') return Promise.resolve();
+      return this.emitUntrustedWorkspaceNotice(emit);
+    }
     const generation = this.cancelGeneration;
     const queuedDispatch = this.dispatchQueue
       .catch(() => undefined)
@@ -277,6 +294,18 @@ export class VeyraSessionService {
       });
     this.dispatchQueue = queuedDispatch.then(() => undefined, () => undefined);
     return queuedDispatch;
+  }
+
+  private async emitUntrustedWorkspaceNotice(emit: VeyraDispatchEventSink): Promise<void> {
+    const sys: SystemMessage = {
+      id: ulid(),
+      role: 'system',
+      kind: 'error',
+      text: 'This workspace is not trusted, so Veyra will not run agents here. '
+        + 'Agents read and write files and run shell commands; grant Workspace Trust to use Veyra.',
+      timestamp: Date.now(),
+    };
+    await emit({ kind: 'system-message', message: sys });
   }
 
   private async runInlineAutocompleteDispatch(
@@ -628,6 +657,16 @@ export class VeyraSessionService {
               input: event.chunk.input,
               timestamp: Date.now(),
             });
+            // A read-only agent can bypass write-tool stripping by writing via
+            // the shell (e.g. `echo x > f`). Shell commands are not tracked as
+            // file edits, so flag a write-looking shell command as a read-only
+            // violation here (which also hard-cancels the dispatch).
+            if (inProgress.readOnly && isShellTool(event.chunk.name)) {
+              const command = shellCommandFromInput(event.chunk.input);
+              if (command && shellCommandWrites(command)) {
+                await this.emitReadOnlyShellViolation(event.agentId, command, emit);
+              }
+            }
           } else if (event.chunk.type === 'tool-result') {
             const chunk = event.chunk;
             inProgress.toolEvents.push({
@@ -1054,6 +1093,36 @@ export class VeyraSessionService {
     };
     this.store.appendSystem(sys);
     await emit({ kind: 'system-message', message: sys });
+
+    // Hard stop: a read-only agent has written to disk, which the prevention
+    // flags were supposed to forbid. Cancel the dispatch so no further turns or
+    // writes happen rather than letting the workflow continue past the breach.
+    await this.cancelAll();
+  }
+
+  private async emitReadOnlyShellViolation(
+    agentId: AgentId,
+    command: string,
+    emit: VeyraDispatchEventSink,
+  ): Promise<void> {
+    const text = `Read-only workflow violation: ${agentLabel(agentId)} ran a write-capable shell command during a read-only dispatch: ${command}`;
+    const sys: SystemMessage = {
+      id: ulid(),
+      role: 'system',
+      kind: 'error',
+      text,
+      timestamp: Date.now(),
+      agentId,
+      workflowState: {
+        kind: 'read-only-violation',
+        severity: 'error',
+        agentId,
+        text,
+      },
+    };
+    this.store.appendSystem(sys);
+    await emit({ kind: 'system-message', message: sys });
+    await this.cancelAll();
   }
 
   private async emitEditConflictIfNeeded(

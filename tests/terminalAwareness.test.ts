@@ -121,6 +121,25 @@ describe('terminal awareness', () => {
     expect(harness.api.window.showInformationMessage).toHaveBeenCalledWith('Verification command cancelled.');
   });
 
+  it('refuses to run a verification command in an untrusted workspace', async () => {
+    const harness = verificationHarness({ output: ['should not run'], exitCode: 0 });
+    (harness.api as any).workspace = { isTrusted: false };
+
+    await runApprovedVerificationCommand(
+      harness.api,
+      registration(),
+      safeProvider(),
+      async () => undefined,
+      async () => true,
+    );
+
+    expect(harness.api.window.showQuickPick).not.toHaveBeenCalled();
+    expect(harness.shellIntegration.executeCommand).not.toHaveBeenCalled();
+    expect(harness.api.window.showErrorMessage).toHaveBeenCalledWith(
+      expect.stringContaining('not trusted'),
+    );
+  });
+
   it('filters destructive-looking package scripts out of verification choices', async () => {
     const harness = verificationHarness({ output: ['should not run'], exitCode: 0 });
     const provider = {

@@ -143,6 +143,66 @@ describe('VeyraSessionService', () => {
     });
   });
 
+  it('refuses to dispatch agents in an untrusted workspace and surfaces a notice', async () => {
+    let agentStarted = false;
+    const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-untrusted-'));
+    const agent = (id: AgentId): Agent => ({
+      id,
+      status: async () => 'ready',
+      cancel: async () => {},
+      async *send() {
+        agentStarted = true;
+        yield { type: 'done' } as AgentChunk;
+      },
+    });
+    const service = new VeyraSessionService(
+      workspacePath,
+      { claude: agent('claude'), codex: agent('codex'), gemini: agent('gemini') },
+      { hangSeconds: 0, isWorkspaceTrusted: () => false },
+    );
+
+    const events: any[] = [];
+    await service.dispatch(
+      { text: '@codex review this', source: 'panel', cwd: workspacePath },
+      (event) => { events.push(event); },
+    );
+
+    // No agent process was started.
+    expect(agentStarted).toBe(false);
+    // A visible notice explains why nothing ran.
+    const notice = events.find((e) => e.kind === 'system-message');
+    expect(notice).toBeTruthy();
+    expect(notice.message.kind).toBe('error');
+    expect(notice.message.text.toLowerCase()).toContain('trust');
+  });
+
+  it('dispatches normally when the workspace is trusted (default)', async () => {
+    let agentStarted = false;
+    const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-trusted-'));
+    const agent = (id: AgentId): Agent => ({
+      id,
+      status: async () => 'ready',
+      cancel: async () => {},
+      async *send() {
+        agentStarted = true;
+        yield { type: 'text', text: 'ok' } as AgentChunk;
+        yield { type: 'done' } as AgentChunk;
+      },
+    });
+    const service = new VeyraSessionService(
+      workspacePath,
+      { claude: agent('claude'), codex: agent('codex'), gemini: agent('gemini') },
+      { hangSeconds: 0 }, // isWorkspaceTrusted defaults to trusted
+    );
+
+    await service.dispatch(
+      { text: '@codex review this', source: 'panel', cwd: workspacePath },
+      () => {},
+    );
+
+    expect(agentStarted).toBe(true);
+  });
+
   it('routes inline autocomplete without composing or persisting chat-session context', async () => {
     const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-inline-'));
     let capturedPrompt = '';
@@ -1498,6 +1558,128 @@ describe('VeyraSessionService', () => {
       status: 'pending',
       files: [{ path: 'docs/review.md', changeKind: 'edited' }],
     });
+  });
+
+  it('hard-cancels the dispatch when a read-only agent edits a file (not just a notice)', async () => {
+    const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-readonly-cancel-'));
+    const changeLedger = fakeChangeLedger('change-set-cancel');
+    const geminiCancel = vi.fn(async () => {});
+    const service = new VeyraSessionService(
+      workspacePath,
+      {
+        claude: agentNoop('claude'),
+        codex: agentNoop('codex'),
+        gemini: {
+          id: 'gemini',
+          status: async () => 'ready',
+          cancel: geminiCancel,
+          async *send() {
+            yield { type: 'tool-call', name: 'Edit', input: { file_path: 'docs/review.md' } } as AgentChunk;
+            yield { type: 'tool-result', name: 'Edit', output: 'ok' } as AgentChunk;
+            yield { type: 'done' } as AgentChunk;
+          },
+        },
+      },
+      {
+        hangSeconds: 0,
+        changeLedger: changeLedger as ChangeLedger,
+        getEditedPathForAgent: (_agentId, _toolName, input) =>
+          (typeof input === 'object' && input && 'file_path' in input) ? String(input.file_path) : null,
+      },
+    );
+
+    const events: any[] = [];
+    await service.dispatch(
+      {
+        text: veyraWorkflowPrompt('implement', 'Update the docs safely.'),
+        source: 'panel',
+        cwd: workspacePath,
+        forcedTarget: 'veyra',
+      },
+      (event) => { events.push(event); },
+    );
+
+    // The violation notice is still emitted...
+    expect(events.some((e) =>
+      e.kind === 'system-message' && e.message.workflowState?.kind === 'read-only-violation'
+    )).toBe(true);
+    // ...AND the offending agent was cancelled (hard stop, not just a notice).
+    expect(geminiCancel).toHaveBeenCalled();
+  });
+
+  it('flags a write-capable shell command from a read-only agent as a violation and cancels', async () => {
+    const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-readonly-shell-'));
+    const claudeCancel = vi.fn(async () => {});
+    const service = new VeyraSessionService(
+      workspacePath,
+      {
+        claude: {
+          id: 'claude',
+          status: async () => 'ready',
+          cancel: claudeCancel,
+          async *send() {
+            // A read-only planner runs a shell write via redirection — the
+            // disallowedTools write-tool stripping does not catch Bash.
+            yield { type: 'tool-call', name: 'Bash', input: { command: 'echo pwned > /tmp/out.txt' } } as AgentChunk;
+            yield { type: 'tool-result', name: 'Bash', output: '' } as AgentChunk;
+            yield { type: 'done' } as AgentChunk;
+          },
+        },
+        codex: agentNoop('codex'),
+        gemini: agentNoop('gemini'),
+      },
+      { hangSeconds: 0 },
+    );
+
+    const events: any[] = [];
+    await service.dispatch(
+      {
+        text: veyraWorkflowPrompt('implement', 'Plan the change.'),
+        source: 'panel',
+        cwd: workspacePath,
+        forcedTarget: 'veyra',
+      },
+      (event) => { events.push(event); },
+    );
+
+    expect(events.some((e) =>
+      e.kind === 'system-message' && e.message.workflowState?.kind === 'read-only-violation'
+    )).toBe(true);
+    expect(claudeCancel).toHaveBeenCalled();
+  });
+
+  it('does not flag a read-only shell command (grep) from a read-only agent', async () => {
+    const workspacePath = fs.mkdtempSync(path.join(os.tmpdir(), 'veyra-readonly-grep-'));
+    const claudeCancel = vi.fn(async () => {});
+    const service = new VeyraSessionService(
+      workspacePath,
+      {
+        claude: {
+          id: 'claude',
+          status: async () => 'ready',
+          cancel: claudeCancel,
+          async *send() {
+            yield { type: 'tool-call', name: 'Bash', input: { command: 'grep -r TODO src/' } } as AgentChunk;
+            yield { type: 'tool-result', name: 'Bash', output: 'src/a.ts: TODO' } as AgentChunk;
+            yield { type: 'done' } as AgentChunk;
+          },
+        },
+        codex: agentNoop('codex'),
+        gemini: agentNoop('gemini'),
+      },
+      { hangSeconds: 0 },
+    );
+
+    const events: any[] = [];
+    await service.dispatch(
+      { text: veyraWorkflowPrompt('implement', 'Explore.'), source: 'panel', cwd: workspacePath, forcedTarget: 'veyra' },
+      (event) => { events.push(event); },
+    );
+
+    expect(events.some((e) =>
+      e.kind === 'system-message' && e.message.workflowState?.kind === 'read-only-violation'
+    )).toBe(false);
+    expect(claudeCancel).not.toHaveBeenCalled();
   });
 
   it('stops registering file badge edits after the badge controller is removed from options', async () => {

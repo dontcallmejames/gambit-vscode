@@ -202,7 +202,8 @@ describe('GeminiAgent', () => {
     ]);
   });
 
-  it('omits auto-edit approval args for read-only sends', async () => {
+  it('passes the explicit plan approval mode for legacy-Gemini read-only sends', async () => {
+    setBackend('gemini'); // force the legacy path
     mockedSpawn.mockReturnValueOnce(fakeProcess(['{"type":"result","status":"success"}\n']));
 
     const agent = new GeminiAgent();
@@ -210,9 +211,12 @@ describe('GeminiAgent', () => {
       // drain
     }
 
+    // 'plan' is Gemini CLI's documented read-only mode; passing it positively
+    // beats relying on omission (a user's defaultApprovalMode setting could
+    // otherwise re-enable writes).
     const args = mockedSpawn.mock.calls.at(-1)?.[1] as string[];
-    expect(args).toContain('-o');
-    expect(args).not.toContain('--approval-mode');
+    expect(args).toContain('--approval-mode');
+    expect(args[args.indexOf('--approval-mode') + 1]).toBe('plan');
     expect(args).not.toContain('auto_edit');
   });
 

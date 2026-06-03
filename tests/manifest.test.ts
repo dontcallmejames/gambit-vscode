@@ -92,6 +92,12 @@ describe('extension manifest', () => {
     });
     expect(manifest.homepage).toBe('https://github.com/dontcallmejames/veyra-vscode#readme');
     expect(manifest.icon).toBe('resources/icon.png');
+    // Workspace Trust: Veyra spawns filesystem/shell-capable CLIs, so it must
+    // declare limited support and gate agent execution behind isTrusted.
+    expect(manifest.capabilities?.untrustedWorkspaces).toEqual({
+      supported: 'limited',
+      description: expect.stringContaining('trust'),
+    });
     expect(manifest.galleryBanner).toEqual({
       color: '#15171a',
       theme: 'dark',

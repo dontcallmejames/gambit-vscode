@@ -256,7 +256,7 @@ describe('CodexAgent', () => {
     ]);
   });
 
-  it('omits workspace-write sandbox args for read-only sends', async () => {
+  it('passes an explicit read-only sandbox for read-only sends (not mere omission)', async () => {
     mockedSpawn.mockReturnValueOnce(fakeProcess(['{"type":"turn.completed","usage":{}}\n']));
 
     const agent = new CodexAgent();
@@ -264,9 +264,12 @@ describe('CodexAgent', () => {
       // drain
     }
 
+    // codex exec defaults to workspace-write for a git repo, so omitting the
+    // flag does NOT guarantee read-only. Pass --sandbox read-only positively.
     const args = mockedSpawn.mock.calls.at(-1)?.[1] as string[];
     expect(args).toContain('exec');
-    expect(args).not.toContain('--sandbox');
+    expect(args).toContain('--sandbox');
+    expect(args[args.indexOf('--sandbox') + 1]).toBe('read-only');
     expect(args).not.toContain('workspace-write');
   });
 

@@ -195,6 +195,9 @@ function isUnsupportedWindowsCommandShim(filePath: string): boolean {
 
 const GEMINI_BASE_ARGS = ['-o', 'stream-json'];
 const GEMINI_AUTO_EDIT_ARGS = ['--approval-mode', 'auto_edit'];
+// Gemini CLI's documented read-only mode. Passed positively so a user's
+// general.defaultApprovalMode setting cannot silently re-enable writes.
+const GEMINI_READ_ONLY_ARGS = ['--approval-mode', 'plan'];
 const ANTIGRAVITY_PRINT_TIMEOUT_ARGS = ['--print-timeout', '1m30s'];
 const ANTIGRAVITY_AUTO_EDIT_ARGS = ['--dangerously-skip-permissions'];
 const ANTIGRAVITY_FIRST_OUTPUT_TIMEOUT_MS = 20_000;
@@ -206,8 +209,11 @@ const ANTIGRAVITY_WINDOWS_PROMPT_ARG_LIMIT = 24_000;
 const ANTIGRAVITY_UNIX_PROMPT_ARG_LIMIT = 120_000;
 
 function geminiArgs(readOnly = false): string[] {
+  if (readOnly) {
+    return [...GEMINI_READ_ONLY_ARGS, ...GEMINI_BASE_ARGS];
+  }
   const writeApproval = vscode.workspace.getConfiguration('veyra').get<string>('writeApproval', 'auto-edit');
-  const extra = !readOnly && writeApproval === 'auto-edit' ? GEMINI_AUTO_EDIT_ARGS : [];
+  const extra = writeApproval === 'auto-edit' ? GEMINI_AUTO_EDIT_ARGS : [];
   return [...extra, ...GEMINI_BASE_ARGS];
 }
 
@@ -224,6 +230,11 @@ function resolveWindowsAntigravityInstallPath(): string | null {
   }
 }
 
+// NOTE: the Antigravity CLI (agy) exposes no positive read-only/plan flag as of
+// 2026-06 — only --dangerously-skip-permissions (auto-edit). So read-only here
+// can only OMIT that flag and rely on agy's default permission behavior, which
+// Veyra does not control. The read-only violation detector (and the shell-event
+// hardening in R7) is the backstop for an Antigravity write that slips through.
 function antigravityArgs(prompt: string, readOnly = false): string[] {
   const writeApproval = vscode.workspace.getConfiguration('veyra').get<string>('writeApproval', 'auto-edit');
   const extra = !readOnly && writeApproval === 'auto-edit' ? ANTIGRAVITY_AUTO_EDIT_ARGS : [];

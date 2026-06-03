@@ -93,6 +93,27 @@ describe('SessionStore', () => {
     });
   });
 
+  it('backs up the corrupt file before the reset overwrites it, and names the backup in the notice', async () => {
+    fsState.set(FILE, '{not valid json');
+    const store = new SessionStore(FOLDER);
+    const session = await store.load();
+
+    // A backup copy of the original corrupt bytes must exist beside the file so
+    // the next debounced write cannot destroy a recoverable transcript.
+    const backupKeys = [...fsState.keys()].filter(
+      (k) => k.includes('sessions.corrupt-') && k.endsWith('.json'),
+    );
+    expect(backupKeys).toHaveLength(1);
+    expect(fsState.get(backupKeys[0])).toBe('{not valid json');
+
+    // The notice tells the user where the recoverable copy is.
+    expect(session.messages[0]).toMatchObject({
+      role: 'system',
+      kind: 'error',
+      text: expect.stringContaining('sessions.corrupt-'),
+    });
+  });
+
   it('coalesces multiple appends into one write', async () => {
     const store = new SessionStore(FOLDER);
     await store.load();

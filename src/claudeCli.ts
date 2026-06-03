@@ -1,6 +1,8 @@
 import { execSync, spawn } from 'node:child_process';
 import type { ChildProcess, SpawnOptions } from 'node:child_process';
 import type { AgentChunk } from './types.js';
+import { DriftTracker } from './agents/driftWarning.js';
+import { StderrTail } from './agents/stderrTail.js';
 
 export interface ClaudeCliOptions {
   cwd?: string;
@@ -52,6 +54,12 @@ export async function* runClaudeCli(
       spawnOptions,
     );
     opts.onProcess?.(child);
+    // Guard against a late stdin EPIPE: if the CLI exits before reading the
+    // prompt (early auth failure, a large prompt that fills the pipe while the
+    // child dies), Node emits 'error' on the stdin stream. With no listener it
+    // becomes an uncaughtException that can tear down the extension host. The
+    // process exit is already surfaced via the close/error handlers below.
+    child.stdin?.on('error', () => {});
     child.stdin?.end(prompt);
   } catch (err) {
     opts.onProcess?.(null);
@@ -67,14 +75,14 @@ export async function* runClaudeCli(
   }
 
   const exitPromise = new Promise<{ code: number | null; stderr: string; processError?: string }>((resolve) => {
-    let stderr = '';
+    const stderr = new StderrTail();
     let settled = false;
     const finish = (code: number | null, processError?: string) => {
       if (settled) return;
       settled = true;
-      resolve({ code, stderr, processError });
+      resolve({ code, stderr: stderr.value(), processError });
     };
-    child.stderr?.on('data', (d) => (stderr += String(d)));
+    child.stderr?.on('data', (d) => stderr.append(String(d)));
     child.on('error', (err) => finish(null, errorMessage(err)));
     child.on('close', (code) => finish(code));
   });
@@ -82,20 +90,25 @@ export async function* runClaudeCli(
   const idToName = new Map<string, string>();
   let buffer = '';
   let sawDone = false;
+  const drift = new DriftTracker();
   try {
     for await (const data of child.stdout!) {
       buffer += String(data);
       const lines = buffer.split('\n');
       buffer = lines.pop() ?? '';
       for (const line of lines) {
+        drift.observeLine(line);
         for (const chunk of parseClaudeJsonLine(line, idToName)) {
+          drift.observeChunk();
           if (chunk.type === 'done') sawDone = true;
           yield chunk;
         }
       }
     }
     if (buffer.trim()) {
+      drift.observeLine(buffer);
       for (const chunk of parseClaudeJsonLine(buffer, idToName)) {
+        drift.observeChunk();
         if (chunk.type === 'done') sawDone = true;
         yield chunk;
       }
@@ -111,6 +124,9 @@ export async function* runClaudeCli(
     yield { type: 'error', message: `Claude process error: ${processError}` };
   } else if (code !== 0) {
     yield { type: 'error', message: `Claude exited with exit code ${code}${stderr ? `: ${stderr.trim()}` : ''}` };
+  } else {
+    const driftChunk = drift.driftChunk(true);
+    if (driftChunk) yield driftChunk;
   }
   if (!sawDone) yield { type: 'done' };
   opts.onProcess?.(null);

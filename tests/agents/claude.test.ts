@@ -2,18 +2,23 @@ import { EventEmitter } from 'node:events';
 import { PassThrough, Readable } from 'node:stream';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+type FakeStdin = { end: ReturnType<typeof vi.fn>; on: ReturnType<typeof vi.fn> };
 type FakeChild = EventEmitter & {
   stdout: Readable;
   stderr: PassThrough;
-  stdin: { end: ReturnType<typeof vi.fn> };
+  stdin: FakeStdin;
   kill: ReturnType<typeof vi.fn>;
 };
+
+function fakeStdin(): FakeStdin {
+  return { end: vi.fn(), on: vi.fn() };
+}
 
 function fakeClaudeProcess(stdoutLines: unknown[], closeCode = 0, stderrText = ''): FakeChild {
   const child = new EventEmitter() as FakeChild;
   child.stdout = Readable.from(stdoutLines.map((line) => `${JSON.stringify(line)}\n`));
   child.stderr = new PassThrough();
-  child.stdin = { end: vi.fn() };
+  child.stdin = fakeStdin();
   child.kill = vi.fn();
   return child;
 }
@@ -22,7 +27,7 @@ function fakePendingClaudeProcess(): FakeChild {
   const child = new EventEmitter() as FakeChild;
   child.stdout = new PassThrough();
   child.stderr = new PassThrough();
-  child.stdin = { end: vi.fn() };
+  child.stdin = fakeStdin();
   child.kill = vi.fn();
   return child;
 }
@@ -78,6 +83,38 @@ describe('ClaudeAgent', () => {
       { type: 'text', text: 'world' },
       { type: 'done' },
     ]);
+  });
+
+  it('attaches a stdin error listener so an EPIPE before the CLI reads cannot crash the host', async () => {
+    const child = fakeClaudeProcess([{ type: 'result', subtype: 'success' }]);
+    const { ClaudeAgent } = await importClaudeAgentWithCli(child);
+
+    const agent = new ClaudeAgent();
+    for await (const _chunk of agent.send('hi')) {
+      // drain
+    }
+
+    // Without an 'error' listener a late EPIPE (CLI exits before reading stdin)
+    // becomes an uncaughtException that can tear down the extension host.
+    expect(child.stdin.on).toHaveBeenCalledWith('error', expect.any(Function));
+  });
+
+  it('surfaces a drift warning when Claude output parses to zero chunks on a clean exit', async () => {
+    // Valid JSON the parser no longer recognizes (renamed event types), exit 0.
+    const child = fakeClaudeProcess([
+      { type: 'renamed_system', subtype: 'init' },
+      { type: 'renamed_assistant', message: { content: [{ type: 'text', text: 'hi' }] } },
+      { type: 'renamed_result', subtype: 'success' },
+    ]);
+    const { ClaudeAgent } = await importClaudeAgentWithCli(child);
+
+    const agent = new ClaudeAgent();
+    const chunks = [];
+    for await (const chunk of agent.send('hi')) chunks.push(chunk);
+
+    const errorChunk = chunks.find((c) => c.type === 'error') as { type: 'error'; message: string } | undefined;
+    expect(errorChunk).toBeTruthy();
+    expect(errorChunk!.message).toContain('Veyra could not parse');
   });
 
   it('forbids the write tools for read-only sends and stays in default permission mode', async () => {

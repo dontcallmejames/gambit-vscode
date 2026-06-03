@@ -6,7 +6,7 @@ import type { AgentStatus } from '../src/types.js';
 type FakeChild = EventEmitter & {
   stdout: Readable;
   stderr: PassThrough;
-  stdin: { end: ReturnType<typeof vi.fn> };
+  stdin: { end: ReturnType<typeof vi.fn>; on: ReturnType<typeof vi.fn> };
   kill: ReturnType<typeof vi.fn>;
 };
 
@@ -20,7 +20,7 @@ function fakeClaudeProcess(text: string, closeCode = 0, stderrText = ''): FakeCh
     `${JSON.stringify({ type: 'result', subtype: closeCode === 0 ? 'success' : 'error', error: stderrText })}\n`,
   ]);
   child.stderr = new PassThrough();
-  child.stdin = { end: vi.fn() };
+  child.stdin = { end: vi.fn(), on: vi.fn() };
   child.kill = vi.fn();
   return child;
 }

@@ -10,6 +10,8 @@ import { findNode } from '../findNode.js';
 import { getAntigravityCliPathOverride, getGeminiCliPathOverride } from '../cliPathOverrides.js';
 import { cliPathMisconfiguration, normalizeCliPathOverride, windowsNpmShimNames } from '../cliPathValidation.js';
 import { getGeminiBackend } from '../geminiBackend.js';
+import { DriftTracker } from './driftWarning.js';
+import { StderrTail } from './stderrTail.js';
 import * as vscode from 'vscode';
 
 type GoogleCliCommand =
@@ -407,6 +409,10 @@ export class GeminiAgent implements Agent {
         [...command.args, ...geminiArgs(opts.readOnly)],
         { cwd: opts.cwd, stdio: ['pipe', 'pipe', 'pipe'] },
       );
+      // Guard a late stdin EPIPE (CLI exits before reading the prompt) from
+      // becoming an uncaughtException that can crash the host; the exit is still
+      // surfaced via the close/error watcher below.
+      child.stdin?.on('error', () => {});
       child.stdin?.end(prompt);
     } catch (err) {
       yield { type: 'error', message: `Unable to start Gemini CLI: ${errorMessage(err)}` };
@@ -425,6 +431,7 @@ export class GeminiAgent implements Agent {
 
     let buffer = '';
     let sawDone = false;
+    const drift = new DriftTracker();
     // Track tool_id → tool_name within this send() call so tool_result events
     // can resolve the friendly tool name (the tool_result event carries only tool_id).
     const toolNameById = new Map<string, string>();
@@ -434,14 +441,18 @@ export class GeminiAgent implements Agent {
         const lines = buffer.split('\n');
         buffer = lines.pop() ?? '';
         for (const line of lines) {
+          drift.observeLine(line);
           for (const chunk of parseGeminiEvent(line, toolNameById)) {
+            drift.observeChunk();
             if (chunk.type === 'done') sawDone = true;
             yield chunk;
           }
         }
       }
       if (buffer.trim()) {
+        drift.observeLine(buffer);
         for (const chunk of parseGeminiEvent(buffer, toolNameById)) {
+          drift.observeChunk();
           if (chunk.type === 'done') sawDone = true;
           yield chunk;
         }
@@ -457,6 +468,9 @@ export class GeminiAgent implements Agent {
       yield { type: 'error', message: `Gemini process error: ${processError}` };
     } else if (code !== 0) {
       yield { type: 'error', message: `Gemini exited with exit code ${code}${stderr ? `: ${stderr.trim()}` : ''}` };
+    } else {
+      const driftChunk = drift.driftChunk(true);
+      if (driftChunk) yield driftChunk;
     }
     if (!sawDone) yield { type: 'done' };
     this.active = null;
@@ -549,14 +563,14 @@ function errorMessage(err: unknown): string {
 
 function watchProcessExit(child: ChildProcess): Promise<{ code: number | null; stderr: string; processError?: string }> {
   return new Promise((resolve) => {
-    let stderr = '';
+    const stderr = new StderrTail();
     let settled = false;
     const finish = (code: number | null, processError?: string) => {
       if (settled) return;
       settled = true;
-      resolve({ code, stderr, processError });
+      resolve({ code, stderr: stderr.value(), processError });
     };
-    child.stderr?.on('data', (d) => (stderr += String(d)));
+    child.stderr?.on('data', (d) => stderr.append(String(d)));
     child.on('error', (err) => finish(null, errorMessage(err)));
     child.on('close', (code) => finish(code));
   });

@@ -8,6 +8,8 @@ import { checkCodex } from '../statusChecks.js';
 import { findNode } from '../findNode.js';
 import { getCodexCliPathOverride } from '../cliPathOverrides.js';
 import { cliPathMisconfiguration, normalizeCliPathOverride, windowsNpmShimNames } from '../cliPathValidation.js';
+import { DriftTracker } from './driftWarning.js';
+import { StderrTail } from './stderrTail.js';
 import * as vscode from 'vscode';
 
 // Spike A3: invoke `codex exec --json '<prompt>'` for non-interactive JSONL.
@@ -177,6 +179,10 @@ export class CodexAgent implements Agent {
         [...codexCommand.args, ...codexArgs(opts.readOnly)],
         { cwd: opts.cwd, stdio: ['pipe', 'pipe', 'pipe'] }
       );
+      // Guard a late stdin EPIPE (CLI exits before reading the prompt) from
+      // becoming an uncaughtException that can crash the host; the exit is still
+      // surfaced via the close/error watcher below.
+      child.stdin?.on('error', () => {});
       child.stdin?.end(prompt);
     } catch (err) {
       yield { type: 'error', message: `Unable to start Codex CLI: ${errorMessage(err)}` };
@@ -192,34 +198,39 @@ export class CodexAgent implements Agent {
     }
 
     const exitPromise = new Promise<{ code: number | null; stderr: string; processError?: string }>((resolve) => {
-      let stderr = '';
+      const stderr = new StderrTail();
       let settled = false;
       const finish = (code: number | null, processError?: string) => {
         if (settled) return;
         settled = true;
-        resolve({ code, stderr, processError });
+        resolve({ code, stderr: stderr.value(), processError });
       };
-      child.stderr?.on('data', (d) => (stderr += String(d)));
+      child.stderr?.on('data', (d) => stderr.append(String(d)));
       child.on('error', (err) => finish(null, errorMessage(err)));
       child.on('close', (code) => finish(code));
     });
 
     let buffer = '';
     let sawDone = false;
+    const drift = new DriftTracker();
     try {
       for await (const data of child.stdout!) {
         buffer += String(data);
         const lines = buffer.split('\n');
         buffer = lines.pop() ?? '';
         for (const line of lines) {
+          drift.observeLine(line);
           for (const chunk of parseCodexEvent(line)) {
+            drift.observeChunk();
             if (chunk.type === 'done') sawDone = true;
             yield chunk;
           }
         }
       }
       if (buffer.trim()) {
+        drift.observeLine(buffer);
         for (const chunk of parseCodexEvent(buffer)) {
+          drift.observeChunk();
           if (chunk.type === 'done') sawDone = true;
           yield chunk;
         }
@@ -235,6 +246,9 @@ export class CodexAgent implements Agent {
       yield { type: 'error', message: `Codex process error: ${processError}` };
     } else if (code !== 0) {
       yield { type: 'error', message: `Codex exited with exit code ${code}${stderr ? `: ${stderr.trim()}` : ''}` };
+    } else {
+      const driftChunk = drift.driftChunk(true);
+      if (driftChunk) yield driftChunk;
     }
     if (!sawDone) yield { type: 'done' };
     this.active = null;

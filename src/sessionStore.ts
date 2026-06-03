@@ -40,8 +40,9 @@ export class SessionStore {
       this.session = { version: 1, messages: [] };
       return this.session;
     }
+    let raw: string | undefined;
     try {
-      const raw = readFileSync(this.filePath, 'utf8');
+      raw = readFileSync(this.filePath, 'utf8');
       const parsed = JSON.parse(raw) as Session;
       if (parsed.version !== 1 || !Array.isArray(parsed.messages)) {
         throw new Error('schema mismatch');
@@ -49,6 +50,11 @@ export class SessionStore {
       this.session = parsed;
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
+      // Preserve the original bytes before the reset's first debounced write
+      // overwrites them. Critical for a local-first tool people run in
+      // OneDrive/Dropbox-synced folders, where a sync merge can corrupt the file
+      // and a recoverable transcript would otherwise be lost forever.
+      const backupNote = raw !== undefined ? await this.backupCorruptFile(raw) : '';
       this.session = {
         version: 1,
         messages: [
@@ -56,7 +62,8 @@ export class SessionStore {
             id: ulid(),
             role: 'system',
             kind: 'error',
-            text: 'Existing session file was corrupted and could not be loaded; starting fresh. (' + errMsg + ')',
+            text: 'Existing session file was corrupted and could not be loaded; starting fresh. ('
+              + errMsg + ')' + backupNote,
             timestamp: Date.now(),
           },
         ],
@@ -64,6 +71,24 @@ export class SessionStore {
       this.scheduleWrite();
     }
     return this.session;
+  }
+
+  /**
+   * Copy the corrupt bytes to sessions.corrupt-<timestamp>.json beside the
+   * session file. Returns a note naming the backup for the reset notice, or an
+   * empty string if the backup itself fails (we still start fresh rather than
+   * block load).
+   */
+  private async backupCorruptFile(raw: string): Promise<string> {
+    const dir = dirname(this.filePath);
+    const backupPath = join(dir, `sessions.corrupt-${Date.now()}.json`).replace(/\\/g, '/');
+    try {
+      await fsp.mkdir(dir, { recursive: true });
+      await fsp.writeFile(backupPath, raw, 'utf8');
+      return ` A copy of the unreadable file was saved to ${backupPath}.`;
+    } catch {
+      return '';
+    }
   }
 
   appendUser(msg: UserMessage): void {

@@ -427,6 +427,20 @@ describe('activate', () => {
     expect(ctx.subscriptions).toContain(item);
   });
 
+  it('does not install process-wide uncaughtException/unhandledRejection handlers', () => {
+    // A global process handler that only logs would suppress OTHER extensions'
+    // fatal errors host-wide (Node stops crashing once any uncaughtException
+    // listener exists). The stdin EPIPE vector is handled locally on each child
+    // stream instead, so activation must not touch the process error handlers.
+    const beforeUncaught = process.listenerCount('uncaughtException');
+    const beforeUnhandled = process.listenerCount('unhandledRejection');
+
+    activate(context() as any);
+
+    expect(process.listenerCount('uncaughtException')).toBe(beforeUncaught);
+    expect(process.listenerCount('unhandledRejection')).toBe(beforeUnhandled);
+  });
+
   it('registers the native VS Code integration surface', () => {
     const ctx = context();
 

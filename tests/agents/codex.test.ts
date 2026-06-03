@@ -78,6 +78,39 @@ describe('CodexAgent', () => {
     ]);
   });
 
+  it('surfaces a drift warning when non-empty output parses to zero chunks on a clean exit', async () => {
+    // Simulates an upstream CLI schema change: valid JSON lines the parser no
+    // longer recognizes (renamed event types), exiting 0. Without a guard this
+    // is a "complete but blank" turn with no error.
+    mockedSpawn.mockReturnValueOnce(
+      fakeProcess([
+        '{"type":"renamed.thread.started","id":"x"}\n',
+        '{"type":"renamed.item","payload":{"text":"hello"}}\n',
+        '{"type":"renamed.turn.done"}\n',
+      ])
+    );
+
+    const agent = new CodexAgent();
+    const chunks = [];
+    for await (const c of agent.send('hi')) chunks.push(c);
+
+    const errorChunk = chunks.find((c) => c.type === 'error') as { type: 'error'; message: string } | undefined;
+    expect(errorChunk).toBeTruthy();
+    expect(errorChunk!.message).toContain('Veyra could not parse');
+    expect(errorChunk!.message.toLowerCase()).toContain('cli may have updated');
+  });
+
+  it('does not surface a drift warning when only blank/whitespace output is received', async () => {
+    // Genuinely empty output (no lines) is a normal no-op, not drift.
+    mockedSpawn.mockReturnValueOnce(fakeProcess(['\n', '   \n']));
+
+    const agent = new CodexAgent();
+    const chunks = [];
+    for await (const c of agent.send('hi')) chunks.push(c);
+
+    expect(chunks.find((c) => c.type === 'error')).toBeUndefined();
+  });
+
   it('parses file_change item into tool-call chunks for badge firing', async () => {
     // Codex file_change event shape from codex-rs/exec source analysis:
     // item.completed with item.type === 'file_change' carries a changes array
@@ -172,6 +205,29 @@ describe('CodexAgent', () => {
     expect(chunks.at(-1)).toEqual({ type: 'done' });
   });
 
+  it('caps a large stderr stream in the surfaced error (tail + truncation marker)', async () => {
+    const proc: any = new EventEmitter();
+    proc.stdout = Readable.from([]);
+    const noisy = 'deprecation warning line\n'.repeat(5000); // ~120 KB of stderr
+    proc.stderr = Readable.from([noisy, 'FINAL STDERR MARKER\n']);
+    proc.stdin = new Writable({ write(_c, _e, cb) { cb(); } });
+    proc.kill = vi.fn();
+    proc.stderr.once('end', () => setImmediate(() => proc.emit('close', 1)));
+    mockedSpawn.mockReturnValueOnce(proc);
+
+    const agent = new CodexAgent();
+    const chunks = [];
+    for await (const c of agent.send('hi')) chunks.push(c);
+
+    const err = chunks.find((c) => c.type === 'error') as { type: 'error'; message: string } | undefined;
+    expect(err).toBeTruthy();
+    // The surfaced error retains the tail (the most recent stderr) and a marker,
+    // and is nowhere near the full ~120 KB.
+    expect(err!.message).toContain('stderr truncated');
+    expect(err!.message).toContain('FINAL STDERR MARKER');
+    expect(err!.message.length).toBeLessThan(40_000);
+  });
+
   it('emits an error chunk when the Codex process cannot be spawned', async () => {
     mockedSpawn.mockImplementationOnce(() => {
       throw new Error('spawn failed');
@@ -233,6 +289,22 @@ describe('CodexAgent', () => {
     expect(args).not.toContain(prompt);
     expect(options.stdio[0]).toBe('pipe');
     expect(proc.stdinText).toBe(prompt);
+  });
+
+  it('attaches a stdin error listener so an EPIPE before the CLI reads cannot crash the host', async () => {
+    const proc = fakeProcess(['{"type":"turn.completed","usage":{}}\n']);
+    mockedSpawn.mockReturnValueOnce(proc);
+
+    const agent = new CodexAgent();
+    for await (const _chunk of agent.send('hi', {} as any)) {
+      // drain
+    }
+
+    // The stdin Writable must have an 'error' listener; without one a late EPIPE
+    // (CLI exits before reading the prompt) becomes an uncaughtException.
+    expect(proc.stdin.listenerCount('error')).toBeGreaterThan(0);
+    // And emitting that error must not throw (no rejection escapes the agent).
+    expect(() => proc.stdin.emit('error', new Error('EPIPE'))).not.toThrow();
   });
 
   it('exposes id "codex"', () => {

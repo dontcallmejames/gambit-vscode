@@ -61,16 +61,31 @@ describe('shellCommandWrites', () => {
     expect(shellCommandWrites('')).toBe(false);
   });
 
-  it('does not flag comparison operators or fd redirection as file writes', () => {
+  it('does not flag fd-duplication or comparison operators as file writes', () => {
     // `>=` is a comparison, not a redirect — must not false-flag read-only
     // exploration like grep/awk over code.
     expect(shellCommandWrites("grep '>=' src/file.ts")).toBe(false);
     expect(shellCommandWrites("awk '$3 >= 100' data.tsv")).toBe(false);
-    // 2>&1 is stderr->stdout fd duplication, not a file write.
+    // fd duplication (N>&M) is not a file write.
     expect(shellCommandWrites('npm test 2>&1')).toBe(false);
-    // But a real append/overwrite still flags.
+    expect(shellCommandWrites('cmd 1>&2')).toBe(false);
+  });
+
+  it('flags fd-PREFIXED redirections that create/truncate a file', () => {
+    // `1>foo`, `2>err.log` are real file writes — only the &-duplication form is
+    // exempt. The digit must not blanket-exempt the redirect.
+    expect(shellCommandWrites('printf x 1>src/foo')).toBe(true);
+    expect(shellCommandWrites('cmd 2>err.log')).toBe(true);
+    expect(shellCommandWrites('cmd 2>>err.log')).toBe(true);
+    // ...while a real append/overwrite still flags.
     expect(shellCommandWrites('npm test > out.log')).toBe(true);
     expect(shellCommandWrites('cat a >> b')).toBe(true);
+  });
+
+  it('flags git subcommands that mutate the working tree or repo state', () => {
+    for (const cmd of ['git switch main', 'git pull', 'git merge feature', 'git rebase main']) {
+      expect(shellCommandWrites(cmd), cmd).toBe(true);
+    }
   });
 });
 

@@ -19,16 +19,18 @@ export function isShellTool(toolName: string): boolean {
 
 /** Commands whose mere presence implies a write/mutation. */
 const WRITE_COMMAND_RE =
-  /(?:^|[\s;&|(])(?:rm|rmdir|mv|cp|dd|truncate|install|mkdir|touch|chmod|chown|ln|tee|patch|git\s+(?:add|commit|checkout|reset|restore|apply|rm|mv|clean|stash)|npm\s+(?:install|i|ci|publish)|pip\s+install|sed\s+-[a-z]*i|perl\s+-[a-z]*i)\b/iu;
+  /(?:^|[\s;&|(])(?:rm|rmdir|mv|cp|dd|truncate|install|mkdir|touch|chmod|chown|ln|tee|patch|git\s+(?:add|commit|checkout|switch|reset|restore|apply|rm|mv|clean|stash|pull|merge|rebase|cherry-pick|revert)|npm\s+(?:install|i|ci|publish)|pip\s+install|sed\s+-[a-z]*i|perl\s+-[a-z]*i)\b/iu;
 
 /**
- * Output redirection that creates/overwrites/appends a file. The negative
- * lookbehind avoids `2>&1` (digit before `>`) and `>>`/`<>` artifacts; the
- * lookahead `(?![&=])` avoids `>&` (fd dup) and `>=` (a comparison operator in
- * grep/awk/test expressions), which would otherwise false-flag read-only
- * exploration like `grep '>=' file`.
+ * Output redirection that creates/overwrites/appends a file. Matches `>` and
+ * `>>`, INCLUDING an fd prefix like `1>` / `2>>` (those still create or truncate
+ * a file). The lookahead `(?![&=])` exempts only the fd-DUPLICATION form `>&`
+ * (e.g. `2>&1`) and the comparison operator `>=` (in grep/awk/test). The
+ * lookbehind `(?<![<>])` only prevents re-matching the second `>` of `>>` and
+ * the `>` of `<>`; it deliberately does NOT exempt a digit, so a fd-prefixed
+ * redirect such as `2>err.log` correctly flags as a write.
  */
-const REDIRECT_RE = /(?<![0-9<>])>>?(?![&=])|\btee\b/u;
+const REDIRECT_RE = /(?<![<>])>>?(?![&=])|\btee\b/u;
 
 /**
  * Returns true if the shell command appears to write to disk. Catches output

@@ -68,6 +68,8 @@ export interface TerminalAwarenessApi {
   commands: {
     registerCommand(command: string, callback: (...args: unknown[]) => unknown): { dispose(): void };
   };
+  /** Optional Workspace Trust state; when isTrusted is false the runner refuses. */
+  workspace?: { isTrusted?: boolean };
   env: {
     clipboard: {
       readText(): Thenable<string>;
@@ -229,6 +231,10 @@ export async function runApprovedVerificationCommand(
   revealVeyraView: () => Thenable<unknown> | Promise<unknown>,
   dispatchToView?: (text: string) => Promise<boolean>,
 ): Promise<void> {
+  if (api.workspace?.isTrusted === false) {
+    api.window.showErrorMessage('This workspace is not trusted; Veyra will not run verification commands here. Grant Workspace Trust first.');
+    return;
+  }
   const choices = verificationCommandChoices(await commandProvider.retrieve());
   if (choices.length === 0) {
     api.window.showInformationMessage('No safe verification commands detected.');

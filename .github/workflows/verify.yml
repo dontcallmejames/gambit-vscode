@@ -12,7 +12,12 @@ concurrency:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    # The suite is Windows-coupled by design: many tests assert the Windows CLI
+    # resolution path (where.exe, native .exe / npm-shim paths, D:\ paths,
+    # process.platform 'win32'). They fail on Linux, so run verify on the OS the
+    # verify script actually supports. (Cross-platform-izing those ~29 tests is a
+    # separate effort, not a CI-bootstrap concern.)
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
